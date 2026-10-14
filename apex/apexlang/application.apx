@@ -29,6 +29,10 @@ app HARVESTLINK (
     userInterface {
         currentTheme: @universal-theme
     }
+    errorHandling {
+        defaultDisplayLocation: inlineInNotification
+        errorHandlingFunctionName: hl_apex_error.handle
+    }
     authentication {
         scheme: @oracle-apex-accounts
     }

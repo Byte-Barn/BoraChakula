@@ -116,11 +116,19 @@ Operations users have no buyer of their own; give them a buyer select list and r
   p_need_by_date => :P11_DELIVERY_DATE,   -- at least 7 days from today
   p_delivery_lat => :P11_LAT,             -- optional; buyer location when null
   p_delivery_lon => :P11_LON,
-  p_notes        => :P11_NOTES);
+  p_notes        => :P11_NOTES,
+  p_receiving_window => :P11_WINDOW);     -- '06-10' | '10-14' | '14-18', optional
 -- then branch to the matching page with P12_DEMAND_ID = :P11_DEMAND_ID
 ```
 
-Review panel values are computed in the page (`qty × price` = order value). Receiving time window and "save draft" are not stored yet (Planned).
+Review panel values are computed in the page (`qty × price` = order value).
+
+| Button | Call |
+|---|---|
+| Save draft | `:P11_DEMAND_ID := hl_demand_api.save_draft(p_demand_id => :P11_DEMAND_ID, ...same parameters...);` (first save: pass null; drafts skip the 7-day and 50 t rules and are never matched) |
+| Post demand (from a draft) | `hl_demand_api.publish(p_demand_id => :P11_DEMAND_ID);` applies every rule above, opens the demand and matches it |
+
+Drafts have `status = 'DRAFT'` in `HL_FULFIL_V` and `HL_MY_DEMANDS_V`. `receiving_window` is a column in both.
 
 ### 5 · Matching and aggregation — Ready
 
@@ -230,7 +238,9 @@ Before a rehearsal or the pitch: `begin hl_demo.reset; end;` (commits). A "Reset
 | -20204 | `create_demand` | Price must be more than KES 0/kg |
 | -20205 | `create_demand` | Give both delivery latitude and longitude, or neither |
 | -20206 | `cancel` | Demand is already closed or cancelled |
-| -20207 | `cancel` | Demand does not exist |
+| -20207 | `cancel`, `publish` | Demand does not exist |
+| -20208 | `create_demand`, `save_draft` | Receiving time must be 06:00–10:00, 10:00–14:00 or 14:00–18:00 |
+| -20209 | `save_draft`, `publish` | Demand is not a draft |
 | -20211 | `register`, `update_estimate` | Expected quantity must be more than 0 kg |
 | -20212 | `register`, `update_estimate` | Harvest end must be on or after harvest start |
 | -20213 | `register`, `update_estimate` | Harvest start cannot be in the past |
@@ -257,4 +267,3 @@ raise it from a validation or use `apex_error.add_error` with the item name. Com
 
 | PR | Adds | Unblocks |
 |---|---|---|
-| Demand extras | Receiving time window, draft demands | Post-a-demand form fields |
