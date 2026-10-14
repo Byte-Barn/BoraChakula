@@ -20,6 +20,9 @@ insert into hl_settings values ('TRUCK_CO2_KG_PER_KM',  0.7,  'Medium truck emis
 insert into hl_settings values ('PICKUP_CAPACITY_KG',   1000, 'Pickup hired by an individual farmer');
 insert into hl_settings values ('PICKUP_CO2_KG_PER_KM', 0.25, 'Pickup emissions (kg CO2 per km)');
 insert into hl_settings values ('BASELINE_LOSS_RATE',   0.30, 'Share of produce lost without a pre-arranged buyer');
+insert into hl_settings values ('ROUTE_START_HOUR',     5,    'Pickup vehicle leaves the buyer at this hour the day before delivery');
+insert into hl_settings values ('AVG_SPEED_KMH',        40,   'Average road speed for pickup time estimates (simulated)');
+insert into hl_settings values ('STOP_MINUTES',         30,   'Loading time at each farm');
 
 -- ---------------------------------------------------------------------------
 -- Crops (KES per kg at farm gate from brokers, and at wholesale market)

@@ -211,6 +211,15 @@ create or replace package body hl_match_pkg as
     l_stop_count    pls_integer;
     l_sequence      varchar2(4000);
     l_locked        number;
+    l_need_by       date;
+    l_route_id      hl_routes.route_id%type;
+    type t_nums is table of number index by pls_integer;
+    l_order         t_nums;   -- step -> index into l_stops
+    l_leg           t_nums;   -- step -> km driven to reach that stop
+    l_clock         date;
+    l_cum_km        number := 0;
+    l_speed         number := get_setting('AVG_SPEED_KMH');
+    l_dwell         number := get_setting('STOP_MINUTES') / 1440;
   begin
     select count(*) into l_locked
       from hl_routes
@@ -222,8 +231,8 @@ create or replace package body hl_match_pkg as
 
     delete from hl_routes where demand_id = p_demand_id;
 
-    select nvl(d.delivery_lat, b.latitude), nvl(d.delivery_lon, b.longitude)
-      into l_dest_lat, l_dest_lon
+    select nvl(d.delivery_lat, b.latitude), nvl(d.delivery_lon, b.longitude), d.need_by_date
+      into l_dest_lat, l_dest_lon, l_need_by
       from hl_demands d
       join hl_buyers b on b.buyer_id = d.buyer_id
      where d.demand_id = p_demand_id;
@@ -267,6 +276,8 @@ create or replace package body hl_match_pkg as
       end loop;
 
       l_visited(l_best) := true;
+      l_order(step) := l_best;
+      l_leg(step) := l_best_km;
       l_tour_km := l_tour_km + l_best_km;
       l_cur_lat := l_stops(l_best).lat;
       l_cur_lon := l_stops(l_best).lon;
@@ -276,7 +287,8 @@ create or replace package body hl_match_pkg as
         || case when step > 1 then ' > ' end
         || l_stops(l_best).name || ' (' || l_stops(l_best).place || ')', 1, 4000);
     end loop;
-    l_tour_km := l_tour_km + distance_km(l_cur_lat, l_cur_lon, l_dest_lat, l_dest_lon);
+    l_leg(l_stops.count + 1) := distance_km(l_cur_lat, l_cur_lon, l_dest_lat, l_dest_lon);
+    l_tour_km := l_tour_km + l_leg(l_stops.count + 1);
 
     -- Small loads go by pickup; pick whichever fleet emits less on this tour
     l_truck_trips  := ceil(l_total_kg / get_setting('TRUCK_CAPACITY_KG'));
@@ -313,7 +325,37 @@ create or replace package body hl_match_pkg as
       round(l_tour_km * l_trips * l_co2_per_km, 2),
       round(l_individual_km * get_setting('PICKUP_CO2_KG_PER_KM'), 2),
       l_sequence
-    );
+    ) returning route_id into l_route_id;
+
+    -- Stops of one shared trip: farms in pickup order, then the buyer. The
+    -- vehicle leaves the buyer at ROUTE_START_HOUR the day before delivery.
+    if l_vehicle <> 'DIRECT' then
+      l_clock := trunc(l_need_by) - 1 + get_setting('ROUTE_START_HOUR') / 24;
+      for step in 1 .. l_stop_count + 1 loop
+        l_cum_km := l_cum_km + l_leg(step);
+        l_clock  := l_clock + l_leg(step) / l_speed / 24;
+        if step <= l_stop_count then
+          insert into hl_route_stops (
+            route_id, stop_no, stop_type, match_id, stop_name, place,
+            latitude, longitude, load_kg, leg_km, cumulative_km, arrive_at)
+          values (
+            l_route_id, step, 'FARM', l_stops(l_order(step)).match_id,
+            l_stops(l_order(step)).name, l_stops(l_order(step)).place,
+            l_stops(l_order(step)).lat, l_stops(l_order(step)).lon,
+            l_stops(l_order(step)).qty, round(l_leg(step), 2), round(l_cum_km, 2), l_clock);
+          l_clock := l_clock + l_dwell;
+        else
+          insert into hl_route_stops (
+            route_id, stop_no, stop_type, stop_name, place,
+            latitude, longitude, load_kg, leg_km, cumulative_km, arrive_at)
+          select l_route_id, step, 'DESTINATION', b.buyer_name, b.location_name,
+                 l_dest_lat, l_dest_lon, l_total_kg, round(l_leg(step), 2), round(l_cum_km, 2), l_clock
+            from hl_demands d
+            join hl_buyers b on b.buyer_id = d.buyer_id
+           where d.demand_id = p_demand_id;
+        end if;
+      end loop;
+    end if;
   end plan_route;
 
   procedure run_matching (p_demand_id in number) is
