@@ -9,4 +9,9 @@ set define off
 @04_seed.sql
 @05_auto_match.sql
 @06_agreements.sql
+@07_api.sql
+-- The seed's ALTER TABLE statements leave dependent views needing recompilation
+exec dbms_utility.compile_schema(schema => user, compile_all => false)
 show errors package body hl_match_pkg
+show errors package body hl_demand_api
+show errors package body hl_harvest_api

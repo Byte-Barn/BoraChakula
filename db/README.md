@@ -12,6 +12,7 @@ Oracle Autonomous Database / Oracle Database 23ai schema, matching engine and de
 | `04_seed.sql` | Demo data (fictional farmers and buyers in Murang'a, Kiambu, Nairobi); runs matching |
 | `05_auto_match.sql` | Triggers that re-run matching after any change to demands, harvests or farm locations |
 | `06_agreements.sql` | `HL_AGREEMENTS` blockchain table: tamper-evident ledger of confirmed, rejected and delivered farmer agreements |
+| `07_api.sql` | Frontend contract: `HL_DEMAND_API`, `HL_HARVEST_API` and the `HL_MATCH_V`, `HL_FULFIL_V`, `HL_IMPACT_METRICS_V` views (see `docs/backend-api.md`) |
 | `install.sql` / `uninstall.sql` | Install everything / drop everything |
 
 ## Install
@@ -49,7 +50,7 @@ The best-scoring farmers are allocated volume until the order is filled. Each ma
 
 `plan_route` then builds one nearest-neighbour pickup tour from the buyer through all matched farms. It compares truck vs pickup fleets and uses the one that emits less. If pooling would not beat farmers delivering directly, it falls back to `DIRECT`. Savings are measured against every farmer hiring their own pickup.
 
-Other entry points: `rematch_all` (clears proposals and re-matches all active demands, earliest deadline first; called by the triggers), `run_all_open`, `accept_match`, `reject_match`.
+Frontend entry points (see `docs/backend-api.md`): `run`, `confirm`, `decline`, `rerun_open`. Other entry points: `rematch_all` (clears proposals and re-matches all active demands, earliest deadline first; called by the triggers), `run_all_open`, `accept_match`, `reject_match`.
 
 Deleting a demand or harvest cascades to its matches and routes.
 

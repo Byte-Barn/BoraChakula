@@ -1,0 +1,391 @@
+-- HarvestLink: backend API for the frontend.
+--
+-- The contract the canvas screens are built against (docs/backend-api.md):
+-- pages read the views below and change data only through these packages and
+-- HL_MATCH_PKG.run / confirm / decline / rerun_open. Tables underneath may
+-- change; these names, parameters and columns stay stable.
+--
+-- Error codes raised here: -20201..-20299 (see docs/backend-api.md).
+
+-- =============================================================================
+-- HL_DEMAND_API: buyers post, cancel and close demands
+-- =============================================================================
+create or replace package hl_demand_api as
+
+  c_min_lead_days constant pls_integer := 7;      -- farmers need time to plan
+  c_max_qty_kg    constant number      := 50000;  -- 50 t per demand
+
+  -- Validates, stores kg only, and returns the new DEMAND_ID. Matching runs
+  -- automatically (HL_DEMANDS trigger), so HL_MATCH_V is filled on return.
+  function create_demand (
+    p_buyer_id     in number,
+    p_crop_id      in number,
+    p_grade        in varchar2,
+    p_quantity_kg  in number,
+    p_price_per_kg in number,
+    p_need_by_date in date,
+    p_delivery_lat in number   default null,  -- default: buyer location
+    p_delivery_lon in number   default null,
+    p_notes        in varchar2 default null
+  ) return number;
+
+  -- Releases proposed farmers, records confirmed ones as REJECTED in the
+  -- ledger, and re-matches the freed supply to other demands
+  procedure cancel (p_demand_id in number);
+
+  -- Closes a demand once confirmed and delivered kg cover the quantity;
+  -- returns TRUE when it was closed
+  function close_if_filled (p_demand_id in number) return boolean;
+
+end hl_demand_api;
+/
+
+create or replace package body hl_demand_api as
+
+  function create_demand (
+    p_buyer_id     in number,
+    p_crop_id      in number,
+    p_grade        in varchar2,
+    p_quantity_kg  in number,
+    p_price_per_kg in number,
+    p_need_by_date in date,
+    p_delivery_lat in number   default null,
+    p_delivery_lon in number   default null,
+    p_notes        in varchar2 default null
+  ) return number is
+    l_id hl_demands.demand_id%type;
+  begin
+    if p_quantity_kg is null or p_quantity_kg <= 0 or p_quantity_kg > c_max_qty_kg then
+      raise_application_error(-20201, 'Quantity must be more than 0 kg and at most '
+                                      || c_max_qty_kg || ' kg');
+    end if;
+    if p_need_by_date is null or trunc(p_need_by_date) < trunc(sysdate) + c_min_lead_days then
+      raise_application_error(-20202, 'Delivery date must be at least '
+                                      || c_min_lead_days || ' days from today');
+    end if;
+    if p_grade is null or p_grade not in ('A', 'B', 'C') then
+      raise_application_error(-20203, 'Grade must be A, B or C');
+    end if;
+    if p_price_per_kg is null or p_price_per_kg <= 0 then
+      raise_application_error(-20204, 'Price must be more than KES 0/kg');
+    end if;
+    if (p_delivery_lat is null) <> (p_delivery_lon is null) then
+      raise_application_error(-20205, 'Give both delivery latitude and longitude, or neither');
+    end if;
+
+    insert into hl_demands (
+      buyer_id, crop_id, grade_required, quantity_kg, price_per_kg,
+      need_by_date, delivery_lat, delivery_lon, notes)
+    values (
+      p_buyer_id, p_crop_id, p_grade, p_quantity_kg, p_price_per_kg,
+      trunc(p_need_by_date), p_delivery_lat, p_delivery_lon, p_notes)
+    returning demand_id into l_id;
+    return l_id;
+  end create_demand;
+
+  procedure cancel (p_demand_id in number) is
+    l_status hl_demands.status%type;
+  begin
+    select status into l_status from hl_demands where demand_id = p_demand_id for update;
+    if l_status in ('CLOSED', 'CANCELLED') then
+      raise_application_error(-20206, 'Demand ' || p_demand_id || ' is already ' || l_status);
+    end if;
+
+    delete from hl_matches where demand_id = p_demand_id and status = 'PROPOSED';
+    update hl_matches set status = 'REJECTED'
+     where demand_id = p_demand_id and status = 'ACCEPTED';
+    delete from hl_routes where demand_id = p_demand_id;
+    update hl_demands set status = 'CANCELLED' where demand_id = p_demand_id;
+
+    -- The freed supply may fill other demands
+    hl_match_pkg.rematch_all;
+  exception
+    when no_data_found then
+      raise_application_error(-20207, 'Demand ' || p_demand_id || ' does not exist');
+  end cancel;
+
+  function close_if_filled (p_demand_id in number) return boolean is
+    l_qty      hl_demands.quantity_kg%type;
+    l_secured  number;
+  begin
+    select d.quantity_kg,
+           (select nvl(sum(m.allocated_kg), 0) from hl_matches m
+             where m.demand_id = d.demand_id and m.status in ('ACCEPTED', 'DELIVERED'))
+      into l_qty, l_secured
+      from hl_demands d
+     where d.demand_id = p_demand_id
+       and d.status in ('OPEN', 'PARTIAL', 'FILLED');
+
+    if l_secured < l_qty then
+      return false;
+    end if;
+    delete from hl_matches where demand_id = p_demand_id and status = 'PROPOSED';
+    update hl_demands set status = 'CLOSED' where demand_id = p_demand_id;
+    return true;
+  exception
+    when no_data_found then
+      return false;
+  end close_if_filled;
+
+end hl_demand_api;
+/
+
+-- =============================================================================
+-- HL_HARVEST_API: farmers register and update expected harvests
+-- =============================================================================
+create or replace package hl_harvest_api as
+
+  -- Validates and returns the new HARVEST_ID; matching re-runs automatically
+  function register (
+    p_farmer_id       in number,
+    p_crop_id         in number,
+    p_grade           in varchar2,
+    p_expected_qty_kg in number,
+    p_harvest_from    in date,
+    p_harvest_to      in date,
+    p_notes           in varchar2 default null
+  ) return number;
+
+  -- Allowed until a buyer match on this harvest has been confirmed
+  procedure update_estimate (
+    p_harvest_id      in number,
+    p_expected_qty_kg in number,
+    p_harvest_from    in date,
+    p_harvest_to      in date
+  );
+
+end hl_harvest_api;
+/
+
+create or replace package body hl_harvest_api as
+
+  procedure check_values (p_qty in number, p_from in date, p_to in date) is
+  begin
+    if p_qty is null or p_qty <= 0 then
+      raise_application_error(-20211, 'Expected quantity must be more than 0 kg');
+    end if;
+    if p_from is null or p_to is null or trunc(p_to) < trunc(p_from) then
+      raise_application_error(-20212, 'Harvest end must be on or after harvest start');
+    end if;
+    if trunc(p_from) < trunc(sysdate) then
+      raise_application_error(-20213, 'Harvest start cannot be in the past');
+    end if;
+  end check_values;
+
+  function register (
+    p_farmer_id       in number,
+    p_crop_id         in number,
+    p_grade           in varchar2,
+    p_expected_qty_kg in number,
+    p_harvest_from    in date,
+    p_harvest_to      in date,
+    p_notes           in varchar2 default null
+  ) return number is
+    l_id hl_harvests.harvest_id%type;
+  begin
+    check_values(p_expected_qty_kg, p_harvest_from, p_harvest_to);
+    if p_grade is null or p_grade not in ('A', 'B', 'C') then
+      raise_application_error(-20214, 'Grade must be A, B or C');
+    end if;
+
+    insert into hl_harvests (farmer_id, crop_id, grade, expected_qty_kg,
+                             harvest_from, harvest_to, notes)
+    values (p_farmer_id, p_crop_id, p_grade, p_expected_qty_kg,
+            trunc(p_harvest_from), trunc(p_harvest_to), p_notes)
+    returning harvest_id into l_id;
+    return l_id;
+  end register;
+
+  procedure update_estimate (
+    p_harvest_id      in number,
+    p_expected_qty_kg in number,
+    p_harvest_from    in date,
+    p_harvest_to      in date
+  ) is
+    l_confirmed number;
+  begin
+    check_values(p_expected_qty_kg, p_harvest_from, p_harvest_to);
+
+    select count(*) into l_confirmed
+      from hl_matches
+     where harvest_id = p_harvest_id and status in ('ACCEPTED', 'DELIVERED');
+    if l_confirmed > 0 then
+      raise_application_error(-20215, 'This harvest is already promised to a buyer; '
+                                      || 'decline the match before changing it');
+    end if;
+
+    update hl_harvests
+       set expected_qty_kg = p_expected_qty_kg,
+           harvest_from    = trunc(p_harvest_from),
+           harvest_to      = trunc(p_harvest_to)
+     where harvest_id = p_harvest_id;
+    if sql%rowcount = 0 then
+      raise_application_error(-20216, 'Harvest ' || p_harvest_id || ' does not exist');
+    end if;
+  end update_estimate;
+
+end hl_harvest_api;
+/
+
+-- =============================================================================
+-- Views the screens read
+-- =============================================================================
+
+-- One row per farmer offered to a demand, ranked, with one plain-language
+-- reason (and an ok/warn state) for each matching criterion. Farmer phone
+-- numbers stay masked until the farmer has confirmed.
+create or replace view hl_match_v as
+select m.match_id,
+       m.demand_id,
+       m.harvest_id,
+       row_number() over (partition by m.demand_id
+                          order by case when m.status = 'REJECTED' then 1 else 0 end,
+                                   m.score_total desc, m.distance_km) as rank_no,
+       case m.status
+         when 'PROPOSED'  then 'PENDING'
+         when 'ACCEPTED'  then 'MATCHED'
+         when 'DELIVERED' then 'MATCHED'
+         when 'REJECTED'  then 'DECLINED'
+       end                                                   as ui_status,
+       m.status                                              as match_status,
+       f.farmer_id,
+       f.full_name                                           as farmer_name,
+       f.location_name || ', ' || f.county                   as farmer_location,
+       case when m.status in ('ACCEPTED', 'DELIVERED') then f.phone
+            else '•••• ••• ' || substr(f.phone, -3) end      as farmer_phone,
+       f.latitude                                            as farmer_lat,
+       f.longitude                                           as farmer_lon,
+       c.crop_name,
+       h.grade,
+       d.grade_required,
+       h.expected_qty_kg                                     as available_kg,
+       m.allocated_kg,
+       h.harvest_from,
+       h.harvest_to,
+       d.need_by_date,
+       round(m.distance_km)                                  as distance_km,
+       m.stop_order,
+       m.score_total,
+       -- Quantity
+       'ok'                                                  as reason_qty_state,
+       m.allocated_kg || ' kg of ' || h.expected_qty_kg || ' kg allocated, '
+         || round(m.allocated_kg / d.quantity_kg * 100) || '% of the order'
+                                                             as reason_qty,
+       -- Grade
+       'ok'                                                  as reason_grade_state,
+       'Grade ' || h.grade
+         || case when h.grade = d.grade_required then ' meets'
+                 else ' exceeds' end
+         || ' the Grade ' || d.grade_required || ' request'  as reason_grade,
+       -- Harvest window
+       case when m.score_timing >= 0.5 then 'ok' else 'warn' end
+                                                             as reason_window_state,
+       to_char(h.harvest_from, 'DD Mon') || '–' || to_char(h.harvest_to, 'DD Mon')
+         || case when h.harvest_to < d.need_by_date
+                 then ', ready before delivery on ' || to_char(d.need_by_date, 'Dy DD Mon')
+                 when h.harvest_to = d.need_by_date
+                 then ', ready on the delivery day'
+                 else ', overlaps delivery on ' || to_char(d.need_by_date, 'Dy DD Mon') end
+                                                             as reason_window,
+       -- Distance
+       case when m.score_distance >= 0.5 then 'ok' else 'warn' end
+                                                             as reason_dist_state,
+       round(m.distance_km) || ' km by road to the delivery point'
+                                                             as reason_dist,
+       (select a.row_hash_short
+          from hl_agreements_v a
+         where a.match_id = m.match_id
+         order by a.chain_seq desc
+         fetch first 1 row only)                             as agreement_hash
+  from hl_matches m
+  join hl_demands d on d.demand_id = m.demand_id
+  join hl_harvests h on h.harvest_id = m.harvest_id
+  join hl_farmers f on f.farmer_id = h.farmer_id
+  join hl_crops c on c.crop_id = h.crop_id;
+
+-- Fulfilment per demand: matched (farmer confirmed), pending (awaiting the
+-- farmer) and unmatched kg, as the FulfilmentBar draws them
+create or replace view hl_fulfil_v as
+select d.demand_id,
+       d.buyer_id,
+       b.buyer_name,
+       d.crop_id,
+       c.crop_name,
+       d.grade_required,
+       d.quantity_kg                                          as target_kg,
+       nvl(x.matched_kg, 0)                                   as matched_kg,
+       nvl(x.pending_kg, 0)                                   as pending_kg,
+       greatest(d.quantity_kg - nvl(x.matched_kg, 0) - nvl(x.pending_kg, 0), 0)
+                                                              as unmatched_kg,
+       nvl(x.matched_farmers, 0)                              as matched_farmers,
+       nvl(x.pending_farmers, 0)                              as pending_farmers,
+       round(least(nvl(x.matched_kg, 0) + nvl(x.pending_kg, 0), d.quantity_kg)
+             / d.quantity_kg * 100)                           as fill_pct,
+       d.price_per_kg,
+       d.quantity_kg * d.price_per_kg                         as order_value_kes,
+       d.need_by_date,
+       d.status
+  from hl_demands d
+  join hl_buyers b on b.buyer_id = d.buyer_id
+  join hl_crops c on c.crop_id = d.crop_id
+  left join (
+        select demand_id,
+               sum(case when status in ('ACCEPTED', 'DELIVERED') then allocated_kg end) as matched_kg,
+               sum(case when status = 'PROPOSED' then allocated_kg end)                 as pending_kg,
+               count(case when status in ('ACCEPTED', 'DELIVERED') then 1 end)          as matched_farmers,
+               count(case when status = 'PROPOSED' then 1 end)                          as pending_farmers
+          from hl_matches
+         group by demand_id
+       ) x on x.demand_id = d.demand_id;
+
+-- One row per impact metric, with its unit, provenance and the method text
+-- the StatCard's "How this is calculated" note shows.
+--   provenance: live (computed from records), simulated (prototype stand-in),
+--   demo (illustrative factor or seeded price)
+create or replace view hl_impact_metrics_v as
+with i as (select * from hl_impact_v),
+     r as (select nvl(sum(stops), 0) as separate_trips, nvl(sum(trips), 0) as shared_trips
+             from hl_routes where vehicle_type <> 'DIRECT'),
+     a as (select count(distinct match_id) as confirmed
+             from hl_agreements where event = 'ACCEPTED')
+select 1 as sort_order, 'MARKET_ACCESS' as metric_group, 'PRODUCE_SOURCED' as metric_key,
+       'Produce sourced' as label, i.total_matched_kg as value, 'kg' as unit, 'live' as provenance,
+       'Sum of kg allocated to farmers on proposed, confirmed and delivered matches.' as method
+  from i
+union all
+select 2, 'MARKET_ACCESS', 'FARMERS_REACHED', 'Farmers reached', i.farmers_matched, 'farmers', 'live',
+       'Distinct farmers with at least one allocation that was not declined.'
+  from i
+union all
+select 3, 'MARKET_ACCESS', 'DEMANDS_SERVED', 'Demands served', i.demands_served, 'demands', 'live',
+       'Distinct buyer demands with at least one farmer allocated.'
+  from i
+union all
+select 4, 'MARKET_ACCESS', 'AGREEMENTS_RECORDED', 'Agreements recorded', a.confirmed, 'agreements', 'live',
+       'Farmer confirmations written to the HL_AGREEMENTS blockchain table.'
+  from a
+union all
+select 5, 'MARKET_ACCESS', 'INCOME_UPLIFT', 'Estimated farmer income uplift', i.farmer_income_uplift_kes, 'KES', 'demo',
+       'Allocated kg × (buyer price − typical broker price). Grade C counts against KES 0, '
+       || 'because it usually goes unsold. Broker prices are placeholders until market interviews.'
+  from i
+union all
+select 6, 'WASTE_EMISSIONS', 'LOSS_AVOIDED', 'Estimated post-harvest loss avoided', i.loss_avoided_kg, 'kg', 'demo',
+       'Allocated kg × baseline loss rate of '
+       || to_char(hl_match_pkg.get_setting('BASELINE_LOSS_RATE') * 100, 'fm990') || '% (illustrative factor).'
+  from i
+union all
+select 7, 'WASTE_EMISSIONS', 'DISTANCE_SAVED', 'Truck distance saved', i.km_saved, 'km', 'simulated',
+       'Each farmer travelling alone minus one shared pickup route. Distances are straight-line × '
+       || to_char(hl_match_pkg.get_setting('ROAD_FACTOR'), 'fm990.0') || ' (simulated road distance).'
+  from i
+union all
+select 8, 'WASTE_EMISSIONS', 'CO2_AVOIDED', 'Estimated CO₂ avoided', i.co2_saved_kg, 'kg CO₂e', 'simulated',
+       'Kilometres saved × vehicle emission factors (pickup '
+       || to_char(hl_match_pkg.get_setting('PICKUP_CO2_KG_PER_KM'), 'fm0.00') || ', truck '
+       || to_char(hl_match_pkg.get_setting('TRUCK_CO2_KG_PER_KM'), 'fm0.00') || ' kg CO₂ per km).'
+  from i
+union all
+select 9, 'WASTE_EMISSIONS', 'TRIPS_REPLACED', 'Trips replaced', r.separate_trips - r.shared_trips, 'trips', 'simulated',
+       'Separate farmer trips minus shared pickup trips, on demands where pooling beats direct delivery.'
+  from r;
