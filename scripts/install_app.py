@@ -72,6 +72,10 @@ def connect(wallet, wallet_dir):
     )
 
 
+# Files below are written with newline="\n": the APEXlang parser rejects CRLF,
+# which text mode writes on Windows.
+
+
 def apply_theme():
     """Add the HarvestLink stylesheet and app icons to the generated app.
 
@@ -85,7 +89,7 @@ def apply_theme():
     target = shared / "static-files" / "css" / THEME_CSS.name
     target.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(THEME_CSS, target)
-    with open(shared / "static-files.apx", "a") as f:
+    with open(shared / "static-files.apx", "a", newline="\n") as f:
         f.write(f'\nfile "css/{THEME_CSS.name}" (\n    mimeType: text/css\n    charSet: utf-8\n)\n')
 
     theme = shared / "themes" / "universal-theme" / "theme.apx"
@@ -97,7 +101,7 @@ def apply_theme():
         "fileUrls: [\n"
         "            #THEME_FILES#css/Core#MIN#.css?v=#APEX_VERSION#\n"
         f"            #APP_FILES#css/{THEME_CSS.name}\n"
-        "        ]")))
+        "        ]")), newline="\n")
     print(f"Added {THEME_CSS.relative_to(REPO)} and the HarvestLink icons to the app")
 
 
@@ -113,7 +117,7 @@ def apply_error_handling():
         "    errorHandling {\n"
         "        defaultDisplayLocation: inlineInNotification\n"
         "        errorHandlingFunctionName: hl_apex_error.handle\n"
-        "    }\n" + anchor), 1))
+        "    }\n" + anchor), 1), newline="\n")
     print("Set hl_apex_error.handle as the error handling function")
 
 
