@@ -65,6 +65,8 @@ page 20 (
                                     || '</div>' end as BODY_HTML
                 from HL_MY_OFFERS_V o
                 where o.UI_STATUS <> 'DECLINED'
+                  -- Past deliveries are history, not offers
+                  and o.NEED_BY_DATE >= trunc(sysdate)
                 order by case o.UI_STATUS when 'PENDING' then 0 else 1 end, o.NEED_BY_DATE
                 ```
         }
