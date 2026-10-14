@@ -49,6 +49,40 @@ terraform output app_url
 To force a rebuild of one layer: `terraform apply -replace=terraform_data.apex_app`
 (or `terraform_data.database`, which also re-imports the app).
 
+## Continuous deployment (GitHub Actions)
+
+`.github/workflows/deploy.yml` deploys `main` to the same database whenever `db/`, `apex/` or `scripts/` change:
+
+1. **Backend tests**: `db/tests/run.sh` on Oracle Database 23ai Free. A failure stops the deploy.
+2. **Deploy**, in the `production` environment (only `main` may deploy):
+   - `db/*.sql` or `scripts/bootstrap_db.py` changed: `bootstrap_db.py --reset` (schema and demo data rebuilt),
+     then `enable_select_ai.py` if the `HL_AI_API_KEY` secret is set, then the app.
+   - `apex/` or `scripts/install_app.py` changed: `install_app.py` rebuilds and imports app 100.
+   - The landing page must answer HTTP 200 afterwards.
+
+Run it by hand from **Actions → Deploy to OCI → Run workflow** (choose database and/or app).
+
+Secrets live in the `production` environment and are set with `gh`, piped from the secrets file so values never
+appear on screen:
+
+```bash
+source ~/.config/harvestlink/secrets.env
+for n in HL_ADMIN_PASSWORD HL_WALLET_PASSWORD HL_SCHEMA_PASSWORD HL_APEX_USER HL_APEX_PASSWORD HL_APEX_EMAIL \
+         HL_DEMO_USER HL_DEMO_PASSWORD HL_ROLE_DEMO_PASSWORD; do
+  printf '%s' "${!n}" | gh secret set "$n" --env production
+done
+base64 -w0 infra/.wallet/wallet.zip | gh secret set HL_WALLET_ZIP_B64 --env production
+# optional, switches Select AI on after each schema rebuild
+printf '%s' "$HL_AI_API_KEY" | gh secret set HL_AI_API_KEY --env production
+gh variable set HL_AI_PROVIDER --env production --body openai
+```
+
+Re-run the wallet line whenever Terraform regenerates the wallet (for example after a wallet password change).
+
+Terraform and CI run the same scripts. After CI has deployed, a local `terraform apply` sees new source hashes
+and runs them once more, which is harmless but resets the demo data. Use Terraform for the database and wallet,
+and CI for schema and app changes.
+
 ## Notes
 
 - An Always Free tenancy allows two free Autonomous Databases. This config imported the
