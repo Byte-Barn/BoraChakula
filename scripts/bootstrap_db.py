@@ -3,13 +3,15 @@
 
 Steps (each can be skipped):
   1. As ADMIN: create the HARVESTLINK schema user.
-  2. As ADMIN: create the HARVESTLINK APEX workspace, a developer login and
-     (if HL_DEMO_USER is set) an end-user login for judges.
-  3. As HARVESTLINK: install db/01..08 (optionally dropping existing objects).
+  2. As ADMIN: create the HARVESTLINK APEX workspace, a developer login, a
+     judge login (HL_DEMO_USER) and buyer/farmer/ops demo logins
+     (HL_ROLE_DEMO_PASSWORD).
+  3. As HARVESTLINK: install db/01..09 (optionally dropping existing objects).
 
 Secrets are read from the environment, never from arguments:
   HL_ADMIN_PASSWORD, HL_WALLET_PASSWORD, HL_SCHEMA_PASSWORD,
-  HL_APEX_USER, HL_APEX_PASSWORD, HL_APEX_EMAIL, optional HL_DEMO_USER, HL_DEMO_PASSWORD
+  HL_APEX_USER, HL_APEX_PASSWORD, HL_APEX_EMAIL, optional HL_DEMO_USER, HL_DEMO_PASSWORD,
+  optional HL_ROLE_DEMO_PASSWORD (BUYER_DEMO, FARMER_DEMO, OPS_DEMO logins)
 
 Examples:
   # Cloud (after terraform apply)
@@ -30,7 +32,7 @@ import oracledb
 REPO = Path(__file__).resolve().parent.parent
 SQL_FILES = ["01_schema.sql", "02_match_pkg.sql", "03_views.sql", "04_seed.sql", "05_auto_match.sql",
              "06_agreements.sql", "07_api.sql",
-             "08_demo.sql"]
+             "08_demo.sql", "09_auth.sql"]
 SCHEMA = "HARVESTLINK"
 PLSQL_START = re.compile(
     r"^\s*(create\s+or\s+replace\s+(package|trigger|procedure|function|type)|begin|declare)\b", re.I)
@@ -123,11 +125,11 @@ def create_workspace(conn):
     print(f"Created APEX workspace {SCHEMA} with developer {env('HL_APEX_USER').upper()}")
 
 
-def create_demo_user(conn):
-    """End-user login (no builder access) for judges; skipped if HL_DEMO_USER is unset."""
-    if not os.environ.get("HL_DEMO_USER"):
-        return
-    user = env("HL_DEMO_USER").upper()
+ROLE_DEMO_USERS = ["BUYER_DEMO", "FARMER_DEMO", "OPS_DEMO"]  # roles mapped in db/09_auth.sql
+
+
+def create_end_user(conn, user, password):
+    """APEX login with no builder access; skipped if it already exists."""
     cur = conn.cursor()
     cur.execute("""select count(*) from apex_workspace_apex_users
                     where workspace_name = :w and user_name = :u""", w=SCHEMA, u=user)
@@ -143,8 +145,26 @@ def create_demo_user(conn):
             p_developer_privs              => null,
             p_change_password_on_first_use => 'N');
           commit;
-        end;""", ws=SCHEMA, usr=user, pwd=env("HL_DEMO_PASSWORD"))
+        end;""", ws=SCHEMA, usr=user, pwd=password)
     print(f"Created APEX end user {user}")
+
+
+def create_end_users(conn):
+    """Judge login (HL_DEMO_USER) and the buyer/farmer/ops demo logins
+    (HL_ROLE_DEMO_PASSWORD); each is skipped when its variable is unset."""
+    if os.environ.get("HL_DEMO_USER"):
+        create_end_user(conn, env("HL_DEMO_USER").upper(), env("HL_DEMO_PASSWORD"))
+    if os.environ.get("HL_ROLE_DEMO_PASSWORD"):
+        for user in ROLE_DEMO_USERS:
+            create_end_user(conn, user, env("HL_ROLE_DEMO_PASSWORD"))
+
+
+def register_developer(conn):
+    """The workspace developer signs in to the app as operations."""
+    if not os.environ.get("HL_APEX_USER"):
+        return
+    cur = conn.cursor()
+    cur.execute("begin hl_auth.register_user(:u, 'OPS'); commit; end;", u=env("HL_APEX_USER"))
 
 
 def install(conn, reset):
@@ -208,11 +228,12 @@ def main():
                     create_schema_user(admin)
                 if not args.skip_apex:
                     create_workspace(admin)
-                    create_demo_user(admin)
+                    create_end_users(admin)
 
         if not args.skip_install:
             with connect(SCHEMA, env("HL_SCHEMA_PASSWORD"), args, wallet_dir) as conn:
                 install(conn, args.reset)
+                register_developer(conn)
 
 
 if __name__ == "__main__":

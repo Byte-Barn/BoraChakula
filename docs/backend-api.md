@@ -6,7 +6,7 @@ Tables behind them may change; the names, parameters and columns here will not
 change without a note in this file.
 
 - Database: Oracle Autonomous AI Database 26ai, schema `HARVESTLINK` (APEX parsing schema).
-- Source: `db/02_match_pkg.sql` (matching), `db/06_agreements.sql` (ledger), `db/07_api.sql` (APIs and contract views), `db/08_demo.sql` (demo dataset and reset).
+- Source: `db/02_match_pkg.sql` (matching), `db/06_agreements.sql` (ledger), `db/07_api.sql` (APIs and contract views), `db/08_demo.sql` (demo dataset and reset), `db/09_auth.sql` (roles and "my" views).
 - Status of each item: **Ready** (in this PR) or **Planned** (a later backend PR, listed at the end).
 
 ## Conventions
@@ -30,6 +30,37 @@ change without a note in this file.
 | `reason_*_state` | `ok`, `warn` (`HL_MATCH_V`), `no` (`HL_NEAR_MISS_V`) | MatchCard reason icon: check, warning, cross |
 | `provenance` | `live`, `simulated`, `demo` | ProvenanceTag of the same name |
 
+## Roles and the signed-in party — Ready
+
+Every APEX login maps to one role. Buyer and farmer logins are linked to their party by name, so they keep
+working after `hl_demo.reset`.
+
+| Login | Role | Party |
+|---|---|---|
+| `BUYER_DEMO` | `BUYER` | Kijani Fresh Grocers |
+| `FARMER_DEMO` | `FARMER` | Wanjiru Muthoni |
+| `OPS_DEMO`, `JUDGE`, the workspace developer | `OPS` | sees everything |
+
+Passwords are in the team's secrets file (`HL_ROLE_DEMO_PASSWORD`, `HL_DEMO_PASSWORD`), never in the repo.
+
+| Use | Call |
+|---|---|
+| Authorization scheme `IS_BUYER` (PL/SQL function returning boolean) | `return hl_auth.is_buyer;` |
+| Authorization scheme `IS_FARMER` | `return hl_auth.is_farmer;` |
+| Authorization scheme `IS_OPS` | `return hl_auth.is_ops;` |
+| Pages operations may also open | `return hl_auth.is_buyer or hl_auth.is_ops;` |
+| Application item `G_BUYER_ID` / `G_FARMER_ID` (computation after login) | `hl_auth.buyer_id` / `hl_auth.farmer_id` (null for other roles) |
+| Current role, e.g. to choose the home page | `hl_auth.role` returns `BUYER`, `FARMER`, `OPS` or null |
+| Map a new login (admin) | `hl_auth.register_user(p_user_name, p_role, p_party_name)` |
+
+"My" views filter to the signed-in party, so pages need no ID parameter:
+
+| View | Rows | Screen |
+|---|---|---|
+| `HL_MY_DEMANDS_V` | The buyer's demands; same columns as `HL_FULFIL_V` | Buyer dashboard |
+| `HL_MY_HARVESTS_V` | The farmer's harvests: `crop_name`, `grade`, `expected_qty_kg`, `available_kg` (not yet promised), window, `status` | Farmer dashboard |
+| `HL_MY_OFFERS_V` | Matches offered to the farmer with the buyer's terms: `ui_status`, `allocated_kg`, `price_per_kg`, `offer_value_kes`, `need_by_date`, `buyer_name`, `buyer_location`, reasons, `agreement_hash` | Farmer dashboard (accept: `hl_match_pkg.confirm`, decline: `hl_match_pkg.decline`) |
+
 ## Screen by screen
 
 ### 1 · Landing page (public) — Ready
@@ -46,7 +77,7 @@ The page must be public (no login): read-only queries only, label figures "Illus
 ```sql
 -- Page process "Register harvest" (P20)
 :P20_HARVEST_ID := hl_harvest_api.register(
-  p_farmer_id       => :P20_FARMER_ID,     -- from the session once roles land (Planned); a select list until then
+  p_farmer_id       => hl_auth.farmer_id,   -- the signed-in farmer
   p_crop_id         => :P20_CROP_ID,
   p_grade           => :P20_GRADE,         -- 'A' | 'B' | 'C'
   p_expected_qty_kg => :P20_QTY_KG,        -- convert crates × 25 in the page if the unit picker says crates
@@ -65,19 +96,19 @@ Crop tiles: `select crop_id, crop_name from hl_crops order by crop_name`.
 
 | Needs | Source |
 |---|---|
-| Demands table | `HL_FULFIL_V` filtered by `buyer_id` (`crop_name`, `grade_required`, `target_kg`, `matched_kg + pending_kg` as sourced, `need_by_date`, `status`) |
-| Stat cards | `count(*)` active demands, `sum(matched_kg)` confirmed supply, `sum(pending_kg)` awaiting farmers, all from `HL_FULFIL_V` for the buyer |
+| Demands table | `HL_MY_DEMANDS_V` (`crop_name`, `grade_required`, `target_kg`, `matched_kg + pending_kg` as sourced, `need_by_date`, `status`) |
+| Stat cards | `count(*)` active demands, `sum(matched_kg)` confirmed supply, `sum(pending_kg)` awaiting farmers, all from `HL_MY_DEMANDS_V` |
 | "Farmers have not confirmed" alert | `HL_MATCH_V` where `ui_status = 'PENDING'` for the buyer's demands |
 | Route preview | `HL_MATCH_V` (`farmer_lat`, `farmer_lon`, `stop_order`, `ui_status`) plus the demand's route (see 7) |
 
-Until roles land (Planned), pass the buyer with a select list or page item.
+Operations users have no buyer of their own; give them a buyer select list and read `HL_FULFIL_V` instead.
 
 ### 4 · Post a demand — Ready
 
 ```sql
 -- Page process "Post demand" (P11)
 :P11_DEMAND_ID := hl_demand_api.create_demand(
-  p_buyer_id     => :P11_BUYER_ID,
+  p_buyer_id     => hl_auth.buyer_id,     -- the signed-in buyer
   p_crop_id      => :P11_CROP_ID,
   p_grade        => :P11_GRADE,
   p_quantity_kg  => :P11_QTY_KG,          -- tonnes × 1000 in the page
@@ -178,6 +209,8 @@ Before a rehearsal or the pitch: `begin hl_demo.reset; end;` (commits). A "Reset
 | -20215 | `update_estimate` | Harvest already promised to a buyer |
 | -20216 | `update_estimate` | Harvest does not exist |
 | -20301 | `hl_demo.seed` | Demo tables are not empty; use `hl_demo.reset` |
+| -20501 | `hl_auth.register_user` | Role must be BUYER, FARMER or OPS |
+| -20502 | `hl_auth.register_user` | No buyer or farmer with that name |
 
 In APEX, map these to inline errors with an Error Handling Function, or let the default handler show the message.
 
@@ -185,7 +218,6 @@ In APEX, map these to inline errors with an Error Handling Function, or let the 
 
 | PR | Adds | Unblocks |
 |---|---|---|
-| Roles and demo users | Buyer, farmer and operations logins linked to `buyer_id` / `farmer_id`; `G_PARTY_ID`; authorization helpers | Per-role navigation, "my demands", "my harvests" |
 | Grade allocation | Lots, outlets, allocations, `HL_ALLOC_PKG.allocate` with the sum ≤ lot guard | Grade routing screen edits |
 | Route stops | `HL_ROUTE_STOP` with order, times and per-leg km; separate-trip lines for the map | Logistics screen table and map |
 | Demand extras | Receiving time window, draft demands | Post-a-demand form fields |
