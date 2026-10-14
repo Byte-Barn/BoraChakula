@@ -1,0 +1,138 @@
+name: Deploy to OCI
+
+# Deploys main to the Autonomous Database: the backend tests run first, then
+# the schema and demo data are rebuilt when db/ changed, and the APEX app is
+# rebuilt and imported when apex/ or the install script changed.
+#
+# The database and wallet themselves are managed by Terraform in infra/ (run by
+# hand); this workflow only runs the same build scripts Terraform runs.
+# Secrets live in the "production" environment, which only main can use.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "db/**"
+      - "apex/**"
+      - "scripts/**"
+      - ".github/workflows/deploy.yml"
+  workflow_dispatch:
+    inputs:
+      database:
+        description: "Rebuild the schema and reset the demo data"
+        type: boolean
+        default: false
+      app:
+        description: "Rebuild and import the APEX app"
+        type: boolean
+        default: true
+
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - run: db/tests/run.sh
+
+  deploy:
+    name: Deploy
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: production
+      url: https://gc0208e4d90b947-harvestlinkstrathmore.adb.eu-frankfurt-1.oraclecloudapps.com/ords/r/harvestlink/harvestlink/
+    env:
+      HL_ADMIN_PASSWORD: ${{ secrets.HL_ADMIN_PASSWORD }}
+      HL_WALLET_PASSWORD: ${{ secrets.HL_WALLET_PASSWORD }}
+      HL_SCHEMA_PASSWORD: ${{ secrets.HL_SCHEMA_PASSWORD }}
+      HL_APEX_USER: ${{ secrets.HL_APEX_USER }}
+      HL_APEX_PASSWORD: ${{ secrets.HL_APEX_PASSWORD }}
+      HL_APEX_EMAIL: ${{ secrets.HL_APEX_EMAIL }}
+      HL_DEMO_USER: ${{ secrets.HL_DEMO_USER }}
+      HL_DEMO_PASSWORD: ${{ secrets.HL_DEMO_PASSWORD }}
+      HL_ROLE_DEMO_PASSWORD: ${{ secrets.HL_ROLE_DEMO_PASSWORD }}
+      HL_AI_API_KEY: ${{ secrets.HL_AI_API_KEY }}
+      HL_AI_PROVIDER: ${{ vars.HL_AI_PROVIDER }}
+      HL_AI_MODEL: ${{ vars.HL_AI_MODEL }}
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Decide what to deploy
+        id: plan
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "database=${{ inputs.database }}" >> "$GITHUB_OUTPUT"
+            echo "app=${{ inputs.app }}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          before="${{ github.event.before }}"
+          if ! git cat-file -e "$before^{commit}" 2>/dev/null; then before="HEAD~1"; fi
+          changed="$(git diff --name-only "$before" HEAD)"
+          echo "$changed"
+          db=false; app=false
+          if echo "$changed" | grep -qE '^(db/[^/]+\.sql|scripts/bootstrap_db\.py)$'; then db=true; app=true; fi
+          if echo "$changed" | grep -qE '^(apex/|scripts/install_app\.py|\.github/workflows/deploy\.yml)'; then app=true; fi
+          echo "database=$db" >> "$GITHUB_OUTPUT"
+          echo "app=$app" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+
+      - name: Write the database wallet
+        env:
+          WALLET_B64: ${{ secrets.HL_WALLET_ZIP_B64 }}
+        run: |
+          echo "$WALLET_B64" | base64 -d > "$RUNNER_TEMP/wallet.zip"
+          echo "HL_WALLET=$RUNNER_TEMP/wallet.zip" >> "$GITHUB_ENV"
+
+      - name: Rebuild schema and demo data
+        if: steps.plan.outputs.database == 'true'
+        run: python scripts/bootstrap_db.py --wallet "$HL_WALLET" --reset
+
+      - name: Switch Select AI back on
+        if: steps.plan.outputs.database == 'true' && env.HL_AI_API_KEY != ''
+        run: python scripts/enable_select_ai.py --wallet "$HL_WALLET"
+
+      - uses: actions/setup-java@v4
+        if: steps.plan.outputs.app == 'true'
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install SQLcl
+        if: steps.plan.outputs.app == 'true'
+        run: |
+          curl -sSfL -o "$RUNNER_TEMP/sqlcl.zip" https://download.oracle.com/otn_software/java/sqldeveloper/sqlcl-latest.zip
+          unzip -q "$RUNNER_TEMP/sqlcl.zip" -d "$RUNNER_TEMP"
+          echo "SQLCL=$RUNNER_TEMP/sqlcl/bin/sql" >> "$GITHUB_ENV"
+
+      - name: Rebuild and import the APEX app
+        if: steps.plan.outputs.app == 'true'
+        run: python scripts/install_app.py --wallet "$HL_WALLET" --app-id 100
+
+      - name: Check the live app
+        if: steps.plan.outputs.app == 'true' || steps.plan.outputs.database == 'true'
+        run: |
+          url="https://gc0208e4d90b947-harvestlinkstrathmore.adb.eu-frankfurt-1.oraclecloudapps.com/ords/r/harvestlink/harvestlink/welcome"
+          code=$(curl -s -o /dev/null -w '%{http_code}' -L "$url")
+          echo "Landing page: HTTP $code"
+          test "$code" = "200"
+
+      - name: Remove the wallet
+        if: always()
+        run: rm -f "$RUNNER_TEMP/wallet.zip" "$RUNNER_TEMP/sqlcl.zip"
