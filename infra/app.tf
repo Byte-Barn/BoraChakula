@@ -19,6 +19,7 @@ locals {
       "${local.repo_root}/scripts/install_app.py",
     ],
     [for f in sort(fileset(local.repo_root, "apex/theme/**")) : "${local.repo_root}/${f}"],
+    [for f in sort(fileset(local.repo_root, "apex/pages/**")) : "${local.repo_root}/${f}"],
   )
 }
 
