@@ -353,6 +353,56 @@ kbd,
 .hl-dot--pending { background: var(--hl-lime); }
 .hl-dot--open { background: var(--hl-surface-sunken); box-shadow: inset 0 0 0 1px var(--hl-line-strong); }
 
+/* GradeAllocation: where each grade went (matched, sent to an outlet, still to place) */
+.hl-split {
+  display: flex;
+  height: 14px;
+  margin-top: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--hl-surface-sunken);
+}
+.hl-split__seg { display: block; height: 100%; }
+.hl-split__seg--matched { background: var(--hl-forest); }
+.hl-split__seg--allocated { background: var(--hl-lime); }
+.hl-split__seg--unallocated { background: var(--hl-surface-sunken); box-shadow: inset 0 0 0 1px var(--hl-line-strong); }
+.hl-dot--allocated { background: var(--hl-lime); }
+.hl-dot--unallocated { background: var(--hl-surface-sunken); box-shadow: inset 0 0 0 1px var(--hl-line-strong); }
+
+/* RouteSummary: shared route against every farmer travelling alone */
+.hl-compare {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr));
+  gap: 12px;
+  margin: 8px 0 12px;
+}
+.hl-compare div {
+  padding: 12px 14px;
+  border-radius: var(--hl-radius-sm);
+  background: var(--hl-surface-sunken);
+}
+.hl-compare span { display: block; font-size: 12px; color: var(--hl-ink-muted); }
+.hl-compare b { font: 700 20px/28px var(--hl-font-display); font-variant-numeric: tabular-nums; }
+
+/* Public landing page */
+.hl-hero { padding: 32px 4px 8px; }
+.hl-hero__eyebrow {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--hl-forest);
+}
+.hl-hero__title {
+  margin: 0;
+  font: 800 clamp(32px, 6vw, 56px)/1.05 var(--hl-font-display);
+  letter-spacing: -.025em;
+  color: var(--hl-forest-deep);
+}
+.hl-hero__lead { max-width: 60ch; margin: 16px 0 0; font-size: 17px; line-height: 26px; color: var(--hl-ink-muted); }
+.hl-steps { display: grid; gap: 10px; margin: 0; padding-left: 22px; line-height: 22px; }
+
 /* StatusBadge */
 .hl-badge {
   display: inline-block;

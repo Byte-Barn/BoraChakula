@@ -149,6 +149,37 @@ def apply_frontend_pages():
         sys.exit(f"Unexpected navigation menu in {lists}; cannot add the canvas screens")
     entries = (PAGES_DIR / "navigation.apx").read_text(encoding="utf-8")
     lists.write_text(text.replace(anchor, anchor + "    \n" + entries, 1), encoding="utf-8", newline="\n")
+
+    # APEX enforces an app-wide "must not be public user" scheme even on public
+    # pages, which would block the public landing page. Every other page carries
+    # the check itself (verified here), so the app-wide one is dropped.
+    for page in (APEXLANG_DIR / "pages").glob("*.apx"):
+        source = page.read_text(encoding="utf-8")
+        if "authentication: public" not in source and "authorizationScheme:" not in source:
+            sys.exit(f"{page.name} has no authorization scheme; cannot drop the app-wide one")
+    app = APEXLANG_DIR / "application.apx"
+    text = app.read_text(encoding="utf-8")
+    block = "    authorization {\n        scheme: mustNotBePublicUser\n    }\n"
+    if block not in text:
+        sys.exit(f"Unexpected authorization block in {app}; cannot open the public landing page")
+    text = text.replace(block, "", 1)
+
+    # The public landing page (50) is the home page; it sends signed-in users
+    # on to their own screen
+    home = "        homeUrl: {\n            page: 1\n        }\n"
+    if home not in text:
+        sys.exit(f"Unexpected home URL in {app}; cannot make the landing page the home page")
+    app.write_text(text.replace(home, home.replace("page: 1", "page: 50"), 1), encoding="utf-8", newline="\n")
+
+    # Visitors on the landing page should not see a user menu for "nobody"
+    user_entry = "    entry app-user (\n        label: &APP_USER.\n"
+    text = lists.read_text(encoding="utf-8")
+    if user_entry not in text:
+        sys.exit(f"Unexpected navigation bar in {lists}; cannot hide it from visitors")
+    lists.write_text(text.replace(user_entry, user_entry + (
+        "        serverSideCondition {\n"
+        "            type: userIsAuthenticated\n"
+        "        }\n"), 1), encoding="utf-8", newline="\n")
     print(f"Added {len(pages)} canvas screens from {PAGES_DIR.relative_to(REPO)}")
 
 

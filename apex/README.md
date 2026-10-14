@@ -33,17 +33,24 @@ for the roles that use it (`hl_auth`).
 
 | # | Screen | Roles | Reads | Calls |
 |---|---|---|---|---|
-| 20 | My farm | Farmer, operations | `HL_MY_OFFERS_V`, `HL_MY_HARVESTS_V` | `hl_match_pkg.confirm` / `decline`, `hl_harvest_api.register` |
+| 20 | My farm | Farmer, operations | `HL_MY_OFFERS_V`, `HL_MY_HARVESTS_V`, `HL_CONSENT_TEXTS`, `HL_MY_DATA_V` | `hl_match_pkg.confirm` / `decline`, `hl_harvest_api.register`, `hl_farmer_api.delete_account` |
 | 30 | My demands | Buyer, operations | `HL_FULFIL_V` (the buyer's own) | |
 | 31 | Post a demand | Buyer, operations | | `hl_demand_api.create_demand` / `save_draft` / `publish` |
 | 32 | Matches | Buyer, operations | `HL_FULFIL_V`, `HL_MATCH_V`, `HL_NEAR_MISS_V`, `hl_ai` | `hl_match_pkg.confirm` / `decline` / `run` |
+| 40 | Route by grade | Operations | `HL_GRADE_ALLOCATION_V`, `HL_GRADE_ROUTING_V`, `HL_ALLOCATIONS_V` | `hl_alloc_pkg.allocate` / `remove`, `hl_demo.reset` |
+| 41 | Logistics | Buyer, operations | `HL_ROUTE_LINE_V` (map line), `HL_ROUTE_STOP_V` (pins, pickup order) | |
 | 42 | Impact | Everyone | `HL_IMPACT_METRICS_V` | |
+| 50 | Welcome (public, no login) | Anyone | `HL_IMPACT_METRICS_V`, `HL_FULFIL_V` (featured demand) | |
 
 Each `p*.apx` file is one page. `navigation.apx` holds their menu entries and `lovs.apx` extra lists of values;
 the installer adds both to the generated shared components. Cards are Content Row template components whose
 description is HTML built in the page query (values escaped with `apex_escape.html`); the classes it uses
 (`hl-fulfil`, `hl-badge`, `hl-reason`, `hl-prov`, ...) are styled in `theme/harvestlink.css`. Page numbers must
 not clash with blueprint pages (the installer stops if they do).
+
+APEX enforces an app-wide "must not be public user" scheme even on public pages, so the installer drops it to let
+the landing page (50) open without a login. Every other page sets the same check itself, and the installer stops
+if a non-public page does not.
 
 ## Build and install
 

@@ -1,0 +1,461 @@
+page 41 (
+    name: Logistics
+    alias: LOGISTICS
+    title: Logistics and pickup route
+    pageGroup: @matching-and-logistics
+    appearance {
+        pageTemplate: @/standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        authorizationScheme: mustNotBePublicUser
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+    advanced {
+        enableDuplicatePageSubmissions: false
+    }
+    comments {
+        comments: Canvas screen 7. Shared pickup routes (HL_ROUTE_LINE_V), the selected route on a map and its stops in order (HL_ROUTE_STOP_V). Distances and times are simulated.
+    }
+
+    region route-summary (
+        name: Pickup route
+        type: themeTemplateComponent/contentRow
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select r.ROUTE_ID as ROUTE_ID
+                     , 'HL-D-' || lpad(r.DEMAND_ID, 4, '0') || ' · ' || f.BUYER_NAME as OVERLINE
+                     , case r.VEHICLE_TYPE
+                         when 'DIRECT' then 'Direct delivery: pooling would not save distance'
+                         else initcap(r.VEHICLE_TYPE) || ' · ' || r.TRIPS || case r.TRIPS when 1 then ' trip' else ' trips' end
+                              || ' · ' || r.STOPS || ' farms'
+                       end as TITLE
+                     , to_char(f.TARGET_KG, 'FM999G999G990') || ' kg of Grade ' || f.GRADE_REQUIRED || ' ' || f.CROP_NAME
+                       || ' · deliver ' || to_char(f.NEED_BY_DATE, 'Dy DD Mon') as MISC
+                     , '<div class="hl-compare">'
+                       || '<div><span>Shared route</span><b>' || to_char(r.AGGREGATED_KM, 'FM999G999G990') || ' km</b></div>'
+                       || '<div><span>Each farmer alone</span><b>' || to_char(r.INDIVIDUAL_KM, 'FM999G999G990') || ' km</b></div>'
+                       || '<div><span>Saved</span><b>' || to_char(r.KM_SAVED, 'FM999G999G990') || ' km · '
+                       || to_char(r.CO2_SAVED_KG, 'FM999G999G990') || ' kg CO₂</b></div>'
+                       || '</div>'
+                       || case when r.VEHICLE_TYPE <> 'DIRECT' and r.LAST_PICKUP_AT is not null
+                               then '<p class="hl-method">Last pickup ' || to_char(r.LAST_PICKUP_AT, 'Dy DD Mon HH24:MI')
+                                    || ' · at the buyer ' || to_char(r.DELIVERED_AT, 'Dy DD Mon HH24:MI') || '</p>' end
+                       || '<span class="hl-prov hl-prov--' || r.PROVENANCE || '">' || initcap(r.PROVENANCE) || '</span>'
+                       || '<p class="hl-method">Road distance is straight-line × the road factor; times use an average speed and a stop time per farm.</p>'
+                       as BODY_HTML
+                from HL_ROUTE_LINE_V r
+                join HL_FULFIL_V f on f.DEMAND_ID = r.DEMAND_ID
+                where r.DEMAND_ID = :P41_DEMAND_ID
+                ```
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+        accessibility {
+            landmarkType: region
+        }
+        componentAppearance {
+            display: report
+        }
+        settings {
+            overline: &OVERLINE.
+            title: &TITLE.
+            description: &BODY_HTML!RAW.
+            miscellaneous: &MISC.
+        }
+
+        column BODY_HTML (
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: BODY_HTML
+                dataType: varchar2
+            }
+        )
+
+        column MISC (
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: MISC
+                dataType: varchar2
+            }
+        )
+
+        column OVERLINE (
+            layout {
+                sequence: 20
+            }
+            source {
+                databaseColumn: OVERLINE
+                dataType: varchar2
+            }
+        )
+
+        column ROUTE_ID (
+            layout {
+                sequence: 10
+            }
+            source {
+                databaseColumn: ROUTE_ID
+                dataType: number
+                primaryKey: true
+            }
+        )
+
+        column TITLE (
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: TITLE
+                dataType: varchar2
+            }
+        )
+
+    )
+
+    region route-map (
+        name: Route map
+        type: map
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select s.STOP_NO as STOP_NO
+                     , s.LATITUDE as LATITUDE
+                     , s.LONGITUDE as LONGITUDE
+                     , case s.STOP_TYPE when 'DESTINATION' then 'Destination: ' else 'Stop ' || s.STOP_NO || ': ' end
+                       || s.STOP_NAME || ' (' || s.PLACE || ')'
+                       || case when s.STOP_TYPE = 'FARM' then ' · ' || to_char(s.LOAD_KG, 'FM999G999G990') || ' kg' end
+                       || case when s.UI_STATUS = 'PENDING' then ' · awaiting the farmer' end as MAP_TOOLTIP
+                from HL_ROUTE_STOP_V s
+                where s.DEMAND_ID = :P41_DEMAND_ID
+                ```
+            pageItemsToSubmit: P41_DEMAND_ID
+        }
+        layout {
+            sequence: 20
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+        controls {
+            options: [
+                scaleBar
+                infiniteMap
+                rectangleZoom
+            ]
+        }
+        attributes {
+            messagesPosition: below
+        }
+
+        layer route-line (
+            name: Shared route
+            layerType: lines
+            layout {
+                sequence: 10
+            }
+            source {
+                location: localDatabase
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    select r.ROUTE_ID as ROUTE_ID
+                         , r.ROUTE_GEOJSON as ROUTE_GEOJSON
+                    from HL_ROUTE_LINE_V r
+                    where r.DEMAND_ID = :P41_DEMAND_ID
+                      and r.VEHICLE_TYPE <> 'DIRECT'
+                    ```
+                pageItemsToSubmit: P41_DEMAND_ID
+            }
+            columnMapping {
+                geometryColumnDataType: geojson
+                geojsonColumn: ROUTE_GEOJSON
+            }
+            appearance {
+                strokeColor: #166534
+                strokeWidth: 4
+            }
+        )
+
+        layer stops (
+            name: Pickups and destination
+            layout {
+                sequence: 20
+            }
+            source {
+                location: regionSource
+            }
+            columnMapping {
+                geometryColumnDataType: longitudeLatitude
+                longitudeColumn: LONGITUDE
+                latitudeColumn: LATITUDE
+            }
+            tooltip {
+                advancedFormatting: true
+                htmlExpression: &MAP_TOOLTIP.
+            }
+        )
+
+    )
+
+    region stops (
+        name: Pickup order
+        type: themeTemplateComponent/contentRow
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select s.STOP_NO as STOP_NO
+                     , case s.STOP_TYPE when 'DESTINATION' then 'Destination' else 'Stop ' || s.STOP_NO end as OVERLINE
+                     , s.STOP_NAME || ' · ' || s.PLACE as TITLE
+                     , case when s.STOP_TYPE = 'FARM' then to_char(s.LOAD_KG, 'FM999G999G990') || ' kg · ' end
+                       || to_char(s.LEG_KM, 'FM999G990') || ' km leg · ' || to_char(s.CUMULATIVE_KM, 'FM999G990') || ' km so far'
+                       || ' · ' || to_char(s.ARRIVE_AT, 'Dy HH24:MI') as MISC
+                     , case s.UI_STATUS
+                         when 'MATCHED' then '<span class="hl-badge hl-badge--matched">Confirmed</span>'
+                         when 'PENDING' then '<span class="hl-badge hl-badge--pending">Awaiting farmer</span>'
+                       end as BODY_HTML
+                from HL_ROUTE_STOP_V s
+                where s.DEMAND_ID = :P41_DEMAND_ID
+                order by s.STOP_NO
+                ```
+        }
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+        accessibility {
+            landmarkType: region
+        }
+        componentAppearance {
+            display: report
+        }
+        settings {
+            overline: &OVERLINE.
+            title: &TITLE.
+            description: &BODY_HTML!RAW.
+            miscellaneous: &MISC.
+        }
+
+        column BODY_HTML (
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: BODY_HTML
+                dataType: varchar2
+            }
+        )
+
+        column MISC (
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: MISC
+                dataType: varchar2
+            }
+        )
+
+        column OVERLINE (
+            layout {
+                sequence: 20
+            }
+            source {
+                databaseColumn: OVERLINE
+                dataType: varchar2
+            }
+        )
+
+        column STOP_NO (
+            layout {
+                sequence: 10
+            }
+            source {
+                databaseColumn: STOP_NO
+                dataType: number
+                primaryKey: true
+            }
+        )
+
+        column TITLE (
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: TITLE
+                dataType: varchar2
+            }
+        )
+
+    )
+
+    region routes (
+        name: All pickup routes
+        type: themeTemplateComponent/contentRow
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select r.DEMAND_ID as DEMAND_ID
+                     , 'HL-D-' || lpad(r.DEMAND_ID, 4, '0') || ' · '
+                       || case r.VEHICLE_TYPE when 'DIRECT' then 'Direct delivery' else initcap(r.VEHICLE_TYPE) end as OVERLINE
+                     , to_char(f.TARGET_KG, 'FM999G999G990') || ' kg of ' || f.CROP_NAME as TITLE
+                     , 'Saves ' || to_char(r.KM_SAVED, 'FM999G999G990') || ' km and '
+                       || to_char(r.CO2_SAVED_KG, 'FM999G999G990') || ' kg CO₂ · deliver ' || to_char(f.NEED_BY_DATE, 'Dy DD Mon') as MISC
+                from HL_ROUTE_LINE_V r
+                join HL_FULFIL_V f on f.DEMAND_ID = r.DEMAND_ID
+                where (hl_auth.buyer_id is null or f.BUYER_ID = hl_auth.buyer_id)
+                order by f.NEED_BY_DATE
+                ```
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+        accessibility {
+            landmarkType: region
+        }
+        componentAppearance {
+            display: report
+        }
+        settings {
+            overline: &OVERLINE.
+            title: &TITLE.
+            miscellaneous: &MISC.
+        }
+
+        column DEMAND_ID (
+            layout {
+                sequence: 10
+            }
+            source {
+                databaseColumn: DEMAND_ID
+                dataType: number
+                primaryKey: true
+            }
+        )
+
+        column MISC (
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: MISC
+                dataType: varchar2
+            }
+        )
+
+        column OVERLINE (
+            layout {
+                sequence: 20
+            }
+            source {
+                databaseColumn: OVERLINE
+                dataType: varchar2
+            }
+        )
+
+        column TITLE (
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: TITLE
+                dataType: varchar2
+            }
+        )
+
+        action open-route (
+            position: fullRowLink
+            layout {
+                sequence: 10
+            }
+            behavior {
+                target: {
+                    page: 41
+                    items: {
+                        P41_DEMAND_ID: \&DEMAND_ID.\
+                    }
+                }
+            }
+        )
+
+    )
+
+    pageItem P41_DEMAND_ID (
+        type: hidden
+        layout {
+            sequence: 10
+            region: @route-summary
+            slot: regionBody
+        }
+    )
+
+    process default-route (
+        name: Default to the featured demand's route
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                if :P41_DEMAND_ID is null then
+                  select max(r.DEMAND_ID) keep (dense_rank first
+                           order by case when r.DEMAND_ID = hl_demo.featured_demand_id then 0 else 1 end,
+                                    f.NEED_BY_DATE)
+                    into :P41_DEMAND_ID
+                    from HL_ROUTE_LINE_V r
+                    join HL_FULFIL_V f on f.DEMAND_ID = r.DEMAND_ID
+                   where (hl_auth.buyer_id is null or f.BUYER_ID = hl_auth.buyer_id);
+                end if;
+                ```
+        }
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+    )
+
+)

@@ -6,7 +6,7 @@ app HARVESTLINK (
     }
     navigation {
         homeUrl: {
-            page: 1
+            page: 50
         }
         loginUrl: {
             page: LOGIN
@@ -35,9 +35,6 @@ app HARVESTLINK (
     }
     authentication {
         scheme: @oracle-apex-accounts
-    }
-    authorization {
-        scheme: mustNotBePublicUser
     }
     
     substitution APP_NAME (
