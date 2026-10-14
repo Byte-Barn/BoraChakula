@@ -1,5 +1,12 @@
 -- HarvestLink: remove all objects (use before a clean re-install).
 -- Triggers are dropped with their tables.
+begin
+  execute immediate 'drop package hl_apex_error';   -- only exists where APEX is installed
+exception
+  when others then
+    if sqlcode != -4043 then raise; end if;
+end;
+/
 drop view hl_route_line_v;
 drop view hl_route_stop_v;
 drop view hl_grade_allocation_v;

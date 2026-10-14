@@ -6,6 +6,7 @@ Pipeline (all through the database, no App Builder session needed):
     -> APEX_GENDEV.PROCESS_BLUEPRINT        (validates, generates APEXlang)
     -> apex/apexlang/                        (generated source, kept in git)
     + apex/theme/harvestlink.css             (HarvestLink styling, added as a static file)
+    + error handling function                (hl_apex_error.handle, db/12_apex_error.sql)
     -> SQLcl "apex validate" + "apex import"  (installs into the workspace)
 
 APEX 26.1 cannot import APEXlang through APEX_APPLICATION_INSTALL, so the
@@ -100,6 +101,22 @@ def apply_theme():
     print(f"Added {THEME_CSS.relative_to(REPO)} and the HarvestLink icons to the app")
 
 
+def apply_error_handling():
+    """Use HL_APEX_ERROR.HANDLE (db/12_apex_error.sql) as the application's error
+    handling function, so backend messages show without ORA- codes."""
+    app = APEXLANG_DIR / "application.apx"
+    text = app.read_text()
+    anchor = "    authentication {"
+    if anchor not in text:
+        sys.exit(f"Unexpected application definition in {app}; cannot add error handling")
+    app.write_text(text.replace(anchor, (
+        "    errorHandling {\n"
+        "        defaultDisplayLocation: inlineInNotification\n"
+        "        errorHandlingFunctionName: hl_apex_error.handle\n"
+        "    }\n" + anchor), 1))
+    print("Set hl_apex_error.handle as the error handling function")
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--wallet", required=True, help="Path to the ADB client wallet zip")
@@ -125,6 +142,7 @@ def main():
             z.extractall(APEXLANG_DIR)
             print(f"Generated {len(z.namelist())} APEXlang files in {APEXLANG_DIR.relative_to(REPO)}")
         apply_theme()
+        apply_error_handling()
 
     if args.check_only:
         return

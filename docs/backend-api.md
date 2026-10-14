@@ -247,7 +247,11 @@ Before a rehearsal or the pitch: `begin hl_demo.reset; end;` (commits). A "Reset
 | -20501 | `hl_auth.register_user` | Role must be BUYER, FARMER or OPS |
 | -20502 | `hl_auth.register_user` | No buyer or farmer with that name |
 
-In APEX, map these to inline errors with an Error Handling Function, or let the default handler show the message.
+The app's error handling function, `hl_apex_error.handle` (`db/12_apex_error.sql`), shows these messages without
+the `ORA-20xxx:` prefix or stack, in the page notification. It is set on every build by `scripts/install_app.py`,
+so pages need no extra code: let the error propagate from the page process. To show a message next to a field,
+raise it from a validation or use `apex_error.add_error` with the item name. Common constraint errors from forms
+(duplicate record, related record missing, record still in use) are reworded too.
 
 ## Planned backend PRs
 

@@ -36,4 +36,5 @@ python scripts/install_app.py --wallet infra/.wallet/wallet.zip --app-id 100   #
 
 Install uses SQLcl 26.x (`apex validate` / `apex import`), because APEX 26.1 cannot import
 APEXlang through `APEX_APPLICATION_INSTALL`. Edit the blueprint and `theme/`, not the generated files: the installer adds the stylesheet
-(as a static application file loaded after the theme CSS) and the icons on every build.
+(as a static application file loaded after the theme CSS), the icons and the error handling function
+(`hl_apex_error.handle`) on every build.
