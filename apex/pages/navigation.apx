@@ -74,13 +74,51 @@
         }
     )
 
+    entry logistics (
+        label: Logistics
+        icon {
+            imageIconCssClasses: fa-truck
+        }
+        layout {
+            sequence: 5
+        }
+        link {
+            target: {
+                page: 41
+            }
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: hl_auth.is_buyer or hl_auth.is_ops
+        }
+    )
+
+    entry route-by-grade (
+        label: Route by grade
+        icon {
+            imageIconCssClasses: fa-random
+        }
+        layout {
+            sequence: 6
+        }
+        link {
+            target: {
+                page: 40
+            }
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: hl_auth.is_ops
+        }
+    )
+
     entry impact (
         label: Impact
         icon {
             imageIconCssClasses: fa-globe
         }
         layout {
-            sequence: 5
+            sequence: 7
         }
         link {
             target: {
