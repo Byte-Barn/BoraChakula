@@ -6,7 +6,7 @@ Tables behind them may change; the names, parameters and columns here will not
 change without a note in this file.
 
 - Database: Oracle Autonomous AI Database 26ai, schema `HARVESTLINK` (APEX parsing schema).
-- Source: `db/02_match_pkg.sql` (matching), `db/06_agreements.sql` (ledger), `db/07_api.sql` (APIs and contract views), `db/08_demo.sql` (demo dataset and reset), `db/09_auth.sql` (roles and "my" views), `db/10_alloc.sql` (grade allocation), `db/11_routes.sql` (route stops and map views).
+- Source: `db/02_match_pkg.sql` (matching), `db/06_agreements.sql` (ledger), `db/07_api.sql` (APIs and contract views), `db/08_demo.sql` (demo dataset and reset), `db/09_auth.sql` (roles and "my" views), `db/10_alloc.sql` (grade allocation), `db/11_routes.sql` (route stops and map views), `db/13_farmer_api.sql` (farmer consent, data export and account deletion).
 - Status of each item: **Ready** (in this PR) or **Planned** (a later backend PR, listed at the end).
 
 ## Conventions
@@ -221,6 +221,40 @@ The four tomato farms also hold 640 kg of Grade B and 310 kg of Grade C, which a
 
 Before a rehearsal or the pitch: `begin hl_demo.reset; end;` (commits). A "Reset demo data" button on an operations page can call the same. The agreement ledger is never cleared, so earlier rehearsal confirmations remain in it.
 
+### Farmer data rights — Ready
+
+Kenya Data Protection Act, 2019: consent at sign-up, a copy of your data, and deletion. Source:
+`db/13_farmer_api.sql`. A farmer may call these for their own account; `OPS` for anyone (`-20603` otherwise).
+
+| Use | Call |
+|---|---|
+| Sign-up consent checkbox | Show the latest `HL_CONSENT_TEXTS.CONSENT_TEXT`. Saving `consent_given = 'Y'` on `HL_FARMERS` (form or insert) stamps `consent_version` and `consent_at` automatically. |
+| Record consent to a specific notice | `hl_farmer_api.record_consent(p_farmer_id, p_consent_version default latest)` |
+| "Download my data" | `hl_farmer_api.export_data(p_farmer_id)` returns a JSON CLOB; the signed-in farmer's copy is `HL_MY_DATA_V.DATA_JSON` |
+| "Delete my account" | `hl_farmer_api.delete_account(p_farmer_id)`; sign the farmer out afterwards (their login no longer maps to a party) |
+| Purge expired ledger rows (operations) | `hl_farmer_api.purge_ledger` returns rows deleted |
+
+`export_data` keys: `exported_at`, `farmer`, `consent` (`given`, `version`, `given_at`, `notice_text`), `logins`,
+`harvests`, `matches`, `allocations`, `agreement_ledger`, `retention`.
+
+What `delete_account` does, in one transaction (nothing is changed if it fails):
+
+1. Logs the request in `HL_ERASURES` (no name or phone: farmer ID, pseudonym `Erased farmer #n`, the harvest IDs
+   that link to ledger rows, and `PURGE_AFTER` = newest ledger row naming the farmer + 16 days).
+2. Replaces the farmer's name and phone with the pseudonym, then declines their confirmed matches, so the ledger
+   records each agreement ending (`REJECTED`) without the real name.
+3. Deletes their harvests (with every match, including delivered ones, allocations and pickup stops), their
+   login mapping in `HL_APP_USERS` and the farmer row. Re-plans the routes they were on (a dispatched route keeps
+   its trip, with the name replaced by the pseudonym in its stop list) and re-matches the freed demand to other farms.
+
+Afterwards the farmer is in no view except `HL_AGREEMENTS_V`: rows written **before** the deletion keep the real
+name and phone, because a blockchain table cannot be updated and `NO DELETE UNTIL 16 DAYS AFTER INSERT`. Once
+`PURGE_AFTER` passes, `purge_ledger` deletes them with `DBMS_BLOCKCHAIN_TABLE.DELETE_EXPIRED_ROWS`. That call can
+only trim the chain by age, so it also deletes **every other** ledger row as old as the newest one being purged;
+run it deliberately (it is not scheduled). It sets `PURGED_AT` on each erasure whose rows are gone.
+
+In the demo, `hl_demo.reset` brings deleted demo farmers back and re-maps `FARMER_DEMO` to Wanjiru Muthoni.
+
 ### Agreement ledger — Ready
 
 `HL_AGREEMENTS_V`: `chain_seq`, `recorded_at`, `event` (`ACCEPTED`, `REJECTED`, `DELIVERED`), `farmer_name`, `buyer_name`, `crop_name`, `grade`, `quantity_kg`, `price_per_kg`, `value_kes`, `recorded_by`, `row_hash`, `row_hash_short`. Read only; rows cannot be changed.
@@ -256,6 +290,11 @@ Before a rehearsal or the pitch: `begin hl_demo.reset; end;` (commits). A "Reset
 | -20406 | `hl_alloc_pkg.remove` | Allocation does not exist |
 | -20501 | `hl_auth.register_user` | Role must be BUYER, FARMER or OPS |
 | -20502 | `hl_auth.register_user` | No buyer or farmer with that name |
+| -20601 | `hl_farmer_api` | Farmer does not exist |
+| -20602 | `record_consent` | Consent notice does not exist |
+| -20603 | `hl_farmer_api` | You can only see or delete your own farmer account |
+| -20604 | Saving consent on `HL_FARMERS` | No consent notice has been published |
+| -20605 | `purge_ledger` | Only operations can purge the agreement ledger |
 
 The app's error handling function, `hl_apex_error.handle` (`db/12_apex_error.sql`), shows these messages without
 the `ORA-20xxx:` prefix or stack, in the page notification. It is set on every build by `scripts/install_app.py`,
