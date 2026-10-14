@@ -19,6 +19,7 @@ Oracle Autonomous Database / Oracle Database 23ai schema, matching engine and de
 | `11_routes.sql` | `HL_ROUTE_STOP_V` (pins, stop table, separate-trip lines) and `HL_ROUTE_LINE_V` (GeoJSON route line and totals) |
 | `12_apex_error.sql` | `HL_APEX_ERROR.HANDLE`: the APEX error handling function (APEX databases only; skipped elsewhere) |
 | `13_farmer_api.sql` | `HL_FARMER_API` (consent, data export, account deletion, ledger purge), `HL_ERASURES`, `HL_MY_DATA_V` |
+| `tests/` | `run.sh` and the backend tests (see below) |
 | `install.sql` / `uninstall.sql` | Install everything / drop everything |
 
 ## Install
@@ -40,6 +41,17 @@ docker run -d --name harvestlink-oracle -p 127.0.0.1:1521:1521 \
 docker cp . harvestlink-oracle:/tmp/db
 docker exec -w /tmp/db harvestlink-oracle sqlplus harvestlink/<pw>@localhost/FREEPDB1 @install.sql
 ```
+
+## Tests
+
+```bash
+db/tests/run.sh                                   # starts or reuses the hl-test-oracle container
+HL_TEST_CONTAINER=harvestlink-oracle db/tests/run.sh   # reuse an existing Oracle Free container
+```
+
+The script installs everything into a throwaway user, runs each `tests/test_*.sql` (assertions use the `hlt`
+helper in `tests/assert.sql`: `hlt.ok`, `hlt.eq`, `hlt.raises`), checks that `uninstall.sql` removes every
+object, and exits non-zero on any failure. GitHub Actions runs it on pull requests that touch `db/`.
 
 ## How matching works
 

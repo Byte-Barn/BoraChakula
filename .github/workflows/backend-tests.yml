@@ -1,0 +1,20 @@
+name: Backend tests
+
+on:
+  pull_request:
+    paths:
+      - "db/**"
+      - ".github/workflows/backend-tests.yml"
+  push:
+    branches: [main]
+    paths:
+      - "db/**"
+
+jobs:
+  oracle-free:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run db/tests on Oracle Database 23ai Free
+        run: db/tests/run.sh
