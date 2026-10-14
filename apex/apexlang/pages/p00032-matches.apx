@@ -1,0 +1,513 @@
+page 32 (
+    name: Matches
+    alias: MATCHES
+    title: Matches
+    pageGroup: @matching-and-logistics
+    appearance {
+        pageTemplate: @/standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        authorizationScheme: mustNotBePublicUser
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+    advanced {
+        enableDuplicatePageSubmissions: false
+    }
+    comments {
+        comments: Canvas screen 5. Fulfilment bar, ranked farmers with the four reasons, confirm and decline (HL_MATCH_PKG), and the farms that were ruled out.
+    }
+
+    region summary (
+        name: Demand
+        type: themeTemplateComponent/contentRow
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select f.DEMAND_ID as DEMAND_ID
+                     , 'HL-D-' || lpad(f.DEMAND_ID, 4, '0') || ' · ' || f.BUYER_NAME as OVERLINE
+                     , case when f.TARGET_KG >= 1000
+                            then to_char(f.TARGET_KG / 1000, 'FM999G990D0') || ' t'
+                            else to_char(f.TARGET_KG, 'FM999G990') || ' kg' end
+                       || ' of Grade ' || f.GRADE_REQUIRED || ' ' || f.CROP_NAME as TITLE
+                     , 'Deliver ' || to_char(f.NEED_BY_DATE, 'Dy DD Mon')
+                       || ' · KES ' || to_char(f.PRICE_PER_KG, 'FM999G990') || '/kg · ' || f.STATUS as MISC
+                     , '<div class="hl-fulfil">'
+                       || '<div class="hl-fulfil__track" role="img" aria-label="'
+                       || f.FILL_PCT || '% of the order sourced">'
+                       || '<span class="hl-fulfil__seg hl-fulfil__seg--matched" style="width:'
+                       || to_char(least(100 * f.MATCHED_KG / f.TARGET_KG, 100), 'FM990D0', 'NLS_NUMERIC_CHARACTERS=''.,''') || '%"></span>'
+                       || '<span class="hl-fulfil__seg hl-fulfil__seg--pending" style="width:'
+                       || to_char(least(100 * f.PENDING_KG / f.TARGET_KG, 100), 'FM990D0', 'NLS_NUMERIC_CHARACTERS=''.,''') || '%"></span>'
+                       || '</div>'
+                       || '<ul class="hl-fulfil__legend">'
+                       || '<li><i class="hl-dot hl-dot--matched"></i>Confirmed <b>'
+                       || to_char(f.MATCHED_KG, 'FM999G999G990') || ' kg</b> · ' || f.MATCHED_FARMERS || ' farmers</li>'
+                       || '<li><i class="hl-dot hl-dot--pending"></i>Awaiting farmers <b>'
+                       || to_char(f.PENDING_KG, 'FM999G999G990') || ' kg</b> · ' || f.PENDING_FARMERS || ' farmers</li>'
+                       || '<li><i class="hl-dot hl-dot--open"></i>Still open <b>'
+                       || to_char(f.UNMATCHED_KG, 'FM999G999G990') || ' kg</b></li>'
+                       || '</ul></div>' as BODY_HTML
+                from HL_FULFIL_V f
+                where f.DEMAND_ID = :P32_DEMAND_ID
+                ```
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+        accessibility {
+            landmarkType: region
+        }
+        componentAppearance {
+            display: report
+        }
+        settings {
+            overline: &OVERLINE.
+            title: &TITLE.
+            description: &BODY_HTML!RAW.
+            miscellaneous: &MISC.
+        }
+
+        column BODY_HTML (
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: BODY_HTML
+                dataType: varchar2
+            }
+        )
+
+        column DEMAND_ID (
+            layout {
+                sequence: 10
+            }
+            source {
+                databaseColumn: DEMAND_ID
+                dataType: number
+                primaryKey: true
+            }
+        )
+
+        column MISC (
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: MISC
+                dataType: varchar2
+            }
+        )
+
+        column OVERLINE (
+            layout {
+                sequence: 20
+            }
+            source {
+                databaseColumn: OVERLINE
+                dataType: varchar2
+            }
+        )
+
+        column TITLE (
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: TITLE
+                dataType: varchar2
+            }
+        )
+
+    )
+
+    region ranked-farmers (
+        name: Ranked farmers
+        type: themeTemplateComponent/contentRow
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select m.MATCH_ID as MATCH_ID
+                     , m.RANK_NO as RANK_NO
+                     , '#' || m.RANK_NO || ' · ' || m.FARMER_LOCATION as OVERLINE
+                     , m.FARMER_NAME as TITLE
+                     , to_char(m.ALLOCATED_KG, 'FM999G999G990') || ' of ' || to_char(m.AVAILABLE_KG, 'FM999G999G990')
+                       || ' kg · Grade ' || m.GRADE || ' · ' || m.DISTANCE_KM || ' km · ' || m.FARMER_PHONE as MISC
+                     , '<span class="hl-badge hl-badge--' || lower(m.UI_STATUS) || '">'
+                       || case m.UI_STATUS when 'MATCHED' then 'Confirmed' else 'Awaiting farmer' end
+                       || '</span>'
+                       -- Select AI sentence beside the reasons, only when AI wrote it
+                       -- (explain_match first: it generates and stores the sentence)
+                       || case when hl_ai.explain_match(m.MATCH_ID, 'en') is not null
+                                 and hl_ai.explained_by(m.MATCH_ID, 'en') = 'AI'
+                               then '<p class="hl-why"><span class="hl-ai" title="Written by Select AI from the four reasons">AI</span> '
+                                    || apex_escape.html(hl_ai.explain_match(m.MATCH_ID, 'en')) || '</p>' end
+                       || '<ul class="hl-reasons">'
+                       || '<li class="hl-reason hl-reason--' || m.REASON_QTY_STATE || '"><b>Quantity</b> '
+                       || apex_escape.html(m.REASON_QTY) || '</li>'
+                       || '<li class="hl-reason hl-reason--' || m.REASON_GRADE_STATE || '"><b>Grade</b> '
+                       || apex_escape.html(m.REASON_GRADE) || '</li>'
+                       || '<li class="hl-reason hl-reason--' || m.REASON_WINDOW_STATE || '"><b>Harvest window</b> '
+                       || apex_escape.html(m.REASON_WINDOW) || '</li>'
+                       || '<li class="hl-reason hl-reason--' || m.REASON_DIST_STATE || '"><b>Distance</b> '
+                       || apex_escape.html(m.REASON_DIST) || '</li>'
+                       || '</ul>'
+                       || case when m.AGREEMENT_HASH is not null
+                               then '<p class="hl-hash">Agreement recorded on the ledger · <code>'
+                                    || m.AGREEMENT_HASH || '</code></p>' end
+                       || case when m.UI_STATUS = 'PENDING'
+                               then '<div class="hl-actions">'
+                                    || '<button type="button" class="t-Button t-Button--hot t-Button--small" '
+                                    || 'onclick="apex.submit({request:''CONFIRM'',set:{P32_MATCH_ID:''' || m.MATCH_ID || '''}});">'
+                                    || 'Confirm ' || to_char(m.ALLOCATED_KG, 'FM999G999G990') || ' kg for '
+                                    || apex_escape.html(regexp_substr(m.FARMER_NAME, '^\S+')) || '</button>'
+                                    || '<button type="button" class="t-Button t-Button--small" '
+                                    || 'onclick="apex.submit({request:''DECLINE'',set:{P32_MATCH_ID:''' || m.MATCH_ID || '''}});">'
+                                    || 'Farmer declined</button>'
+                                    || '</div>' end as BODY_HTML
+                from HL_MATCH_V m
+                where m.DEMAND_ID = :P32_DEMAND_ID
+                  and m.UI_STATUS <> 'DECLINED'
+                order by m.RANK_NO
+                ```
+        }
+        layout {
+            sequence: 20
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+        accessibility {
+            landmarkType: region
+        }
+        componentAppearance {
+            display: report
+        }
+        settings {
+            overline: &OVERLINE.
+            title: &TITLE.
+            description: &BODY_HTML!RAW.
+            miscellaneous: &MISC.
+        }
+
+        column BODY_HTML (
+            layout {
+                sequence: 60
+            }
+            source {
+                databaseColumn: BODY_HTML
+                dataType: varchar2
+            }
+        )
+
+        column MATCH_ID (
+            layout {
+                sequence: 10
+            }
+            source {
+                databaseColumn: MATCH_ID
+                dataType: number
+                primaryKey: true
+            }
+        )
+
+        column MISC (
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: MISC
+                dataType: varchar2
+            }
+        )
+
+        column OVERLINE (
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: OVERLINE
+                dataType: varchar2
+            }
+        )
+
+        column RANK_NO (
+            layout {
+                sequence: 20
+            }
+            source {
+                databaseColumn: RANK_NO
+                dataType: number
+            }
+        )
+
+        column TITLE (
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: TITLE
+                dataType: varchar2
+            }
+        )
+
+    )
+
+    region not-matched (
+        name: Not matched
+        type: themeTemplateComponent/contentRow
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select n.HARVEST_ID as HARVEST_ID
+                     , n.FARMER_LOCATION as OVERLINE
+                     , n.FARMER_NAME as TITLE
+                     , to_char(n.AVAILABLE_KG, 'FM999G999G990') || ' kg · Grade ' || n.GRADE
+                       || ' · ' || n.DISTANCE_KM || ' km' as MISC
+                     , '<span class="hl-badge hl-badge--unmatched">Not matched</span>'
+                       || '<ul class="hl-reasons">'
+                       || '<li class="hl-reason hl-reason--' || n.REASON_QTY_STATE || '"><b>Quantity</b> '
+                       || apex_escape.html(n.REASON_QTY) || '</li>'
+                       || '<li class="hl-reason hl-reason--' || n.REASON_GRADE_STATE || '"><b>Grade</b> '
+                       || apex_escape.html(n.REASON_GRADE) || '</li>'
+                       || '<li class="hl-reason hl-reason--' || n.REASON_WINDOW_STATE || '"><b>Harvest window</b> '
+                       || apex_escape.html(n.REASON_WINDOW) || '</li>'
+                       || '<li class="hl-reason hl-reason--' || n.REASON_DIST_STATE || '"><b>Distance</b> '
+                       || apex_escape.html(n.REASON_DIST) || '</li>'
+                       || '</ul>' as BODY_HTML
+                from HL_NEAR_MISS_V n
+                where n.DEMAND_ID = :P32_DEMAND_ID
+                order by n.DISTANCE_KM
+                ```
+        }
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+        accessibility {
+            landmarkType: region
+        }
+        componentAppearance {
+            display: report
+        }
+        settings {
+            overline: &OVERLINE.
+            title: &TITLE.
+            description: &BODY_HTML!RAW.
+            miscellaneous: &MISC.
+        }
+
+        column BODY_HTML (
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: BODY_HTML
+                dataType: varchar2
+            }
+        )
+
+        column HARVEST_ID (
+            layout {
+                sequence: 10
+            }
+            source {
+                databaseColumn: HARVEST_ID
+                dataType: number
+                primaryKey: true
+            }
+        )
+
+        column MISC (
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: MISC
+                dataType: varchar2
+            }
+        )
+
+        column OVERLINE (
+            layout {
+                sequence: 20
+            }
+            source {
+                databaseColumn: OVERLINE
+                dataType: varchar2
+            }
+        )
+
+        column TITLE (
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: TITLE
+                dataType: varchar2
+            }
+        )
+
+    )
+
+    pageItem P32_DEMAND_ID (
+        type: hidden
+        layout {
+            sequence: 10
+            region: @summary
+            slot: regionBody
+        }
+    )
+
+    pageItem P32_MATCH_ID (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 20
+            region: @summary
+            slot: regionBody
+        }
+        security {
+            sessionStateProtection: unrestricted
+        }
+    )
+
+    button run-matching (
+        buttonName: RUN
+        label: Run matching again
+        layout {
+            sequence: 10
+            region: @summary
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @/text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button my-demands (
+        buttonName: MY_DEMANDS
+        label: Back to my demands
+        layout {
+            sequence: 20
+            region: @summary
+            slot: previous
+        }
+        appearance {
+            buttonTemplate: @/text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 30
+            }
+        }
+    )
+
+    process default-demand (
+        name: Default to the featured demand
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                :P32_DEMAND_ID := coalesce(:P32_DEMAND_ID, hl_demo.featured_demand_id);
+                ```
+        }
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+    )
+
+    process confirm-match (
+        name: Farmer confirmed
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                hl_match_pkg.confirm(p_match_id => to_number(:P32_MATCH_ID));
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :REQUEST = 'CONFIRM'
+        }
+    )
+
+    process decline-match (
+        name: Farmer declined
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                hl_match_pkg.decline(p_match_id => to_number(:P32_MATCH_ID));
+                ```
+        }
+        execution {
+            sequence: 20
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :REQUEST = 'DECLINE'
+        }
+    )
+
+    process run-matching (
+        name: Run matching again
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                hl_match_pkg.run(p_demand_id => to_number(:P32_DEMAND_ID));
+                ```
+        }
+        execution {
+            sequence: 30
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :REQUEST = 'RUN'
+        }
+    )
+
+)

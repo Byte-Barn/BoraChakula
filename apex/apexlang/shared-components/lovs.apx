@@ -238,3 +238,30 @@ lov lov-yes-no (
     
 )
 
+
+lov lov-receiving-windows (
+    name: LOV_RECEIVING_WINDOWS
+    source {
+        location: staticValues
+    }
+
+    entry morning (
+        sequence: 1
+        display: 06:00–10:00
+        return: 06-10
+    )
+
+    entry midday (
+        sequence: 2
+        display: 10:00–14:00
+        return: 10-14
+    )
+
+    entry afternoon (
+        sequence: 3
+        display: 14:00–18:00
+        return: 14-18
+    )
+
+
+)
