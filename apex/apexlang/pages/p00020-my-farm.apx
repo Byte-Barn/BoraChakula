@@ -2,10 +2,11 @@ page 20 (
     name: My Farm
     alias: MY-FARM
     title: My farm
-    pageGroup: @marketplace
+    pageGroup: @dashboard
     appearance {
-        pageTemplate: @/standard
+        pageTemplate: @/blank
         templateOptions: #DEFAULT#
+        cssClasses: hlc-phone
     }
     navigation {
         cursorFocus: doNotFocusCursor
@@ -17,12 +18,46 @@ page 20 (
     }
     advanced {
         enableDuplicatePageSubmissions: false
-        reloadOnSubmit: always
     }
     comments {
-        comments: Canvas screen 2, phone first. Offers to the signed-in farmer (accept or decline), registering a harvest (HL_HARVEST_API.register) and the farmer's harvests.
+        comments: Canvas screen 2 (Farmer, phone first). Offers to accept or decline, harvest registration with crop tiles, my harvests and data rights; processes call HL_MATCH_PKG, HL_HARVEST_API and HL_FARMER_API.
     }
 
+    region farmer-header (
+        name: Farmer header
+        type: dynamicContent
+        source {
+            plsqlFunctionBody:
+                ```plsql
+                declare
+                  l_name varchar2(150);
+                  l_place varchar2(200);
+                begin
+                  select max(full_name), max(location_name || ', ' || county) into l_name, l_place from hl_farmers where farmer_id = hl_auth.farmer_id;
+                  return apex_plugin_util.replace_substitutions(p_escape => false, p_value =>
+                       '<header class="hlc-root hlc-on-dark" style="position:relative;height:250px;overflow:hidden;color:#fff;border-radius:0 0 28px 28px;background:var(--forest-deep)">'
+                    || '<img src="#APP_FILES#images/photo-farmer-sunhat.jpg" alt="A farmer holding a basket of vegetables in her field" class="hlc-photo" style="position:absolute;inset:0;object-position:50% 28%">'
+                    || '<div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(3,36,27,.35) 0%,rgba(3,36,27,.88) 100%)"></div>'
+                    || '<div style="position:relative;height:100%;box-sizing:border-box;padding:16px 20px 22px;display:flex;flex-direction:column;justify-content:space-between">'
+                    || '<div style="display:flex;justify-content:space-between;align-items:center"><a class="hl-logo hl-logo-inverse" href="' || apex_page.get_url(p_page => 50) || '" aria-label="HarvestLink home">'
+                    || '<svg width="24" height="24" viewBox="0 0 32 32" fill="none" aria-hidden="true" focusable="false"><path d="M16 29C8 26 3.5 18.5 4.5 8c8 2 12.5 8 11.5 21z" fill="currentColor"></path><path d="M16 29c8-3 12.5-10.5 11.5-21-8 2-12.5 8-11.5 21z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"></path><circle cx="16" cy="4.5" r="2.75" fill="currentColor"></circle></svg>'
+                    || '<span><span class="hl-logo-word" style="font-size:18px;line-height:20px;display:block">HarvestLink</span></span></a>'
+                    || '<a href="' || apex_plugin_util.replace_substitutions('&LOGOUT_URL.', p_escape => false) || '" style="font-size:13px;font-weight:600;color:#fff;text-decoration:none">Sign out</a></div>'
+                    || '<div style="display:flex;flex-direction:column;gap:6px"><p class="hlc-eyebrow">' || apex_escape.html(nvl(l_place, 'Your farm')) || '</p>'
+                    || '<h1 style="margin:0;font:800 28px/34px var(--font-display);letter-spacing:-0.02em;color:#fff">Habari, ' || apex_escape.html(regexp_substr(nvl(l_name, 'farmer'), '^\S+')) || '</h1>'
+                    || '<p style="margin:0;font-size:15px;line-height:22px;color:rgba(255,255,255,.88)">We find buyers before you pick.</p></div></div></header>');
+                end;
+                ```
+        }
+        layout {
+            sequence: 1
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+    )
     region offers (
         name: Offers from buyers
         type: themeTemplateComponent/contentRow
@@ -76,10 +111,8 @@ page 20 (
         }
         appearance {
             template: @/standard
-            templateOptions: [
-                #DEFAULT#
-                t-Region--scrollBody
-            ]
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-phone-card
         }
         accessibility {
             landmarkType: region
@@ -146,7 +179,6 @@ page 20 (
         )
 
     )
-
     region register-harvest (
         name: Register a harvest
         type: staticContent
@@ -157,6 +189,7 @@ page 20 (
         appearance {
             template: @/standard
             templateOptions: #DEFAULT#
+            cssClasses: hlc-phone-card
         }
         settings {
             outputAs: text
@@ -165,189 +198,6 @@ page 20 (
             comments: Tell buyers what you expect to harvest, before you harvest.
         }
     )
-
-    pageItem P20_MATCH_ID (
-        type: hidden
-        settings {
-            valueProtected: false
-        }
-        layout {
-            sequence: 5
-            region: @register-harvest
-            slot: regionBody
-        }
-        security {
-            sessionStateProtection: unrestricted
-        }
-    )
-
-    pageItem P20_FARMER_ID (
-        type: selectList
-        label {
-            label: Farmer
-            alignment: right
-        }
-        lov {
-            type: sharedComponent
-            lov: @lov-farmers
-        }
-        layout {
-            sequence: 10
-            region: @register-harvest
-            slot: regionBody
-            alignment: left
-        }
-        appearance {
-            template: @/required-floating
-            templateOptions: #DEFAULT#
-        }
-        serverSideCondition {
-            type: expression
-            plsqlExpression: hl_auth.farmer_id is null
-        }
-    )
-
-    pageItem P20_CROP_ID (
-        type: selectList
-        label {
-            label: Crop
-            alignment: right
-        }
-        lov {
-            type: sharedComponent
-            lov: @lov-crops
-        }
-        layout {
-            sequence: 20
-            region: @register-harvest
-            slot: regionBody
-            alignment: left
-        }
-        appearance {
-            template: @/required-floating
-            templateOptions: #DEFAULT#
-        }
-    )
-
-    pageItem P20_GRADE (
-        type: radioGroup
-        label {
-            label: Grade
-            alignment: right
-        }
-        settings {
-            noOfCols: 10
-        }
-        lov {
-            type: sharedComponent
-            lov: @lov-grades
-            displayNullValue: false
-        }
-        layout {
-            sequence: 30
-            region: @register-harvest
-            slot: regionBody
-            alignment: left
-        }
-        appearance {
-            template: @/required-floating
-            templateOptions: #DEFAULT#
-        }
-    )
-
-    pageItem P20_QTY_KG (
-        type: numberField
-        label {
-            label: Expected quantity (kg)
-            alignment: right
-        }
-        layout {
-            sequence: 40
-            region: @register-harvest
-            slot: regionBody
-            alignment: left
-        }
-        appearance {
-            template: @/required-floating
-            templateOptions: #DEFAULT#
-            width: 32
-        }
-    )
-
-    pageItem P20_FROM (
-        type: datePicker
-        label {
-            label: Harvest from
-            alignment: right
-        }
-        layout {
-            sequence: 50
-            region: @register-harvest
-            slot: regionBody
-            alignment: left
-        }
-        appearance {
-            template: @/required-floating
-            templateOptions: #DEFAULT#
-            width: 32
-        }
-    )
-
-    pageItem P20_TO (
-        type: datePicker
-        label {
-            label: Harvest to
-            alignment: right
-        }
-        layout {
-            sequence: 60
-            region: @register-harvest
-            slot: regionBody
-            alignment: left
-        }
-        appearance {
-            template: @/required-floating
-            templateOptions: #DEFAULT#
-            width: 32
-        }
-    )
-
-    pageItem P20_NOTES (
-        type: textarea
-        label {
-            label: Notes
-            alignment: right
-        }
-        layout {
-            sequence: 70
-            region: @register-harvest
-            slot: regionBody
-            alignment: left
-        }
-        appearance {
-            template: @/optional-floating
-            templateOptions: #DEFAULT#
-        }
-    )
-
-    button register (
-        buttonName: REGISTER
-        label: Register harvest
-        layout {
-            sequence: 10
-            region: @register-harvest
-            slot: next
-        }
-        appearance {
-            buttonTemplate: @/text
-            hot: true
-            templateOptions: #DEFAULT#
-        }
-        behavior {
-            warnOnUnsavedChanges: doNotCheck
-        }
-    )
-
     region my-harvests (
         name: My harvests
         type: themeTemplateComponent/contentRow
@@ -372,10 +222,8 @@ page 20 (
         }
         appearance {
             template: @/standard
-            templateOptions: [
-                #DEFAULT#
-                t-Region--scrollBody
-            ]
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-phone-card
         }
         accessibility {
             landmarkType: region
@@ -431,7 +279,6 @@ page 20 (
         )
 
     )
-
     region your-data (
         name: Your data
         type: themeTemplateComponent/contentRow
@@ -457,10 +304,8 @@ page 20 (
         }
         appearance {
             template: @/standard
-            templateOptions: [
-                #DEFAULT#
-                t-Region--scrollBody
-            ]
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-phone-card
         }
         accessibility {
             landmarkType: region
@@ -520,7 +365,204 @@ page 20 (
         )
 
     )
-
+    region bottom-nav (
+        name: Bottom navigation
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <nav class="hlc-root hlc-bottom-nav" aria-label="Farmer navigation"><a href="#my-harvests"><svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 14V7.5M8 7.5C8 4.5 5.5 3 2.5 3c0 3 2.5 4.5 5.5 4.5zM8 9.5c0-2.75 2.25-4.25 5.5-4.25 0 2.75-2.25 4.25-5.5 4.25z"></path></svg>My harvests</a><a href="#register-harvest" aria-current="page"><svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 3v10M3 8h10"></path></svg>Register</a><a href="#offers"><svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M1.75 4h7.5v6.5h-7.5zM9.25 6.5h3l2 2.25v1.75h-5M4.5 12.5a1.25 1.25 0 1 0 0-.01M11.5 12.5a1.25 1.25 0 1 0 0-.01"></path></svg>Offers</a></nav>
+                ```
+        }
+        layout {
+            sequence: 99
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+        settings {
+            outputAs: html
+        }
+    )
+    pageItem P20_MATCH_ID (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 5
+            region: @register-harvest
+            slot: regionBody
+        }
+        security {
+            sessionStateProtection: unrestricted
+        }
+    )
+    pageItem P20_FARMER_ID (
+        type: selectList
+        label {
+            label: Farmer
+            alignment: right
+        }
+        lov {
+            type: sharedComponent
+            lov: @lov-farmers
+        }
+        layout {
+            sequence: 10
+            region: @register-harvest
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-above
+            templateOptions: #DEFAULT#
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: hl_auth.farmer_id is null
+        }
+    )
+    pageItem P20_CROP_ID (
+        type: radioGroup
+        label {
+            label: Crop
+            alignment: right
+        }
+        settings {
+            noOfCols: 4
+        }
+        lov {
+            type: sharedComponent
+            lov: @lov-crops
+        }
+        layout {
+            sequence: 20
+            region: @register-harvest
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-above
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-crop-tiles
+        }
+    )
+    pageItem P20_GRADE (
+        type: radioGroup
+        label {
+            label: Grade
+            alignment: right
+        }
+        settings {
+            noOfCols: 10
+        }
+        lov {
+            type: sharedComponent
+            lov: @lov-grades
+            displayNullValue: false
+        }
+        layout {
+            sequence: 30
+            region: @register-harvest
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-above
+            templateOptions: #DEFAULT#
+        }
+    )
+    pageItem P20_QTY_KG (
+        type: numberField
+        label {
+            label: Expected quantity (kg)
+            alignment: right
+        }
+        layout {
+            sequence: 40
+            region: @register-harvest
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-above
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+    )
+    pageItem P20_FROM (
+        type: datePicker
+        label {
+            label: Harvest from
+            alignment: right
+        }
+        layout {
+            sequence: 50
+            region: @register-harvest
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-above
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+    )
+    pageItem P20_TO (
+        type: datePicker
+        label {
+            label: Harvest to
+            alignment: right
+        }
+        layout {
+            sequence: 60
+            region: @register-harvest
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-above
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+    )
+    pageItem P20_NOTES (
+        type: textarea
+        label {
+            label: Notes
+            alignment: right
+        }
+        layout {
+            sequence: 70
+            region: @register-harvest
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-above
+            templateOptions: #DEFAULT#
+        }
+    )
+    button register (
+        buttonName: REGISTER
+        label: Register harvest
+        layout {
+            sequence: 10
+            region: @register-harvest
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @/text
+            hot: true
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
     button download-data (
         buttonName: DOWNLOAD_DATA
         label: Download my data
@@ -538,7 +580,6 @@ page 20 (
             warnOnUnsavedChanges: doNotCheck
         }
     )
-
     button delete-account (
         buttonName: DELETE_ACCOUNT
         label: Delete my account
@@ -561,7 +602,6 @@ page 20 (
             style: danger
         }
     )
-
     process download-data (
         name: Download my data
         type: executeCode
@@ -588,7 +628,6 @@ page 20 (
             plsqlExpression: :REQUEST = 'DOWNLOAD_DATA' and hl_auth.is_farmer
         }
     )
-
     process delete-account (
         name: Delete my account
         type: executeCode
@@ -608,7 +647,6 @@ page 20 (
             plsqlExpression: :REQUEST = 'DELETE_ACCOUNT' and hl_auth.is_farmer
         }
     )
-
     process accept-offer (
         name: Accept offer
         type: executeCode
@@ -626,7 +664,6 @@ page 20 (
             plsqlExpression: :REQUEST = 'ACCEPT'
         }
     )
-
     process decline-offer (
         name: Decline offer
         type: executeCode
@@ -644,7 +681,6 @@ page 20 (
             plsqlExpression: :REQUEST = 'DECLINE'
         }
     )
-
     process register-harvest (
         name: Register harvest
         type: executeCode
@@ -684,5 +720,4 @@ page 20 (
             plsqlExpression: :REQUEST = 'REGISTER'
         }
     )
-
 )

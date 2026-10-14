@@ -1,11 +1,12 @@
 page 40 (
     name: Grade Outlets
     alias: GRADE-OUTLETS
-    title: Route by grade
-    pageGroup: @matching-and-logistics
+    title: Grade routing
+    pageGroup: @dashboard
     appearance {
-        pageTemplate: @/standard
+        pageTemplate: @/blank
         templateOptions: #DEFAULT#
+        cssClasses: hlc-app
     }
     navigation {
         cursorFocus: doNotFocusCursor
@@ -19,102 +20,122 @@ page 40 (
         enableDuplicatePageSubmissions: false
     }
     comments {
-        comments: Canvas screen 6, operations. Where each grade goes (HL_GRADE_ALLOCATION_V), lots still to place with a suggested outlet (HL_GRADE_ROUTING_V), allocations (HL_ALLOC_PKG) and the demo reset.
+        comments: Canvas screen 6 (Grade routing). Grade cards and the allocation bars from HL_GRADE_ALLOCATION_V; lots, the allocate form and allocations call HL_ALLOC_PKG.
     }
 
-    region grade-split (
-        name: Where each grade goes
-        type: themeTemplateComponent/contentRow
+    region header (
+        name: Header
+        type: dynamicContent
         source {
-            location: localDatabase
-            type: sqlQuery
-            sqlQuery:
-                ```sql
-                select g.CROP_ID || '-' || g.GRADE as ROW_KEY
-                     , g.CROP_NAME as OVERLINE
-                     , 'Grade ' || g.GRADE || ' · ' || to_char(max(g.GRADE_TOTAL_KG), 'FM999G999G990') || ' kg' as TITLE
-                     , '<div class="hl-split" role="img" aria-label="Where Grade ' || g.GRADE || ' '
-                       || apex_escape.html(g.CROP_NAME) || ' goes">'
-                       || listagg('<span class="hl-split__seg hl-split__seg--' || lower(g.DESTINATION_TYPE)
-                                  || '" style="width:' || to_char(g.SHARE_PCT, 'FM990D0', 'NLS_NUMERIC_CHARACTERS=''.,''')
-                                  || '%"></span>', '')
-                            within group (order by decode(g.DESTINATION_TYPE, 'MATCHED', 1, 'ALLOCATED', 2, 3), g.KG desc)
-                       || '</div><ul class="hl-fulfil__legend">'
-                       || listagg('<li><i class="hl-dot hl-dot--' || lower(g.DESTINATION_TYPE) || '"></i>'
-                                  || apex_escape.html(g.DESTINATION) || ' <b>' || to_char(g.KG, 'FM999G999G990') || ' kg</b></li>', '')
-                            within group (order by decode(g.DESTINATION_TYPE, 'MATCHED', 1, 'ALLOCATED', 2, 3), g.KG desc)
-                       || '</ul>' as BODY_HTML
-                from HL_GRADE_ALLOCATION_V g
-                group by g.CROP_ID, g.CROP_NAME, g.GRADE
-                order by g.CROP_NAME, g.GRADE
+            plsqlFunctionBody:
+                ```plsql
+                declare
+                  l_f hl_fulfil_v%rowtype;
+                  l_a number; l_b number; l_c number; l_n number;
+                begin
+                  select * into l_f from hl_fulfil_v where demand_id = hl_demo.featured_demand_id;
+                  select nvl(sum(case when grade = 'A' then kg end), 0), nvl(sum(case when grade = 'B' then kg end), 0), nvl(sum(case when grade = 'C' then kg end), 0)
+                    into l_a, l_b, l_c from hl_grade_allocation_v where crop_id = l_f.crop_id;
+                  return '<div class="hlc-root"><header class="hl-ph"><a class="hl-ph-back hl-link" href="' || apex_page.get_url(p_page => 32) || '" style="text-decoration:none"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M13 8H3M7 4L3 8l4 4"></path></svg>Back to matches</a>'
+                    || '<span class="hl-overline">' || apex_escape.html(l_f.crop_name || ' · pickup ' || to_char(l_f.need_by_date - 1, 'Dy DD Mon')) || '</span>'
+                    || '<div class="hl-ph-row"><div class="hl-stack" style="gap:4px"><h1>Grade routing</h1><p>'
+                    || to_char(l_a + l_b + l_c, 'FM999G990') || ' kg of ' || apex_escape.html(lower(l_f.crop_name)) || ' in play: ' || to_char(l_a, 'FM999G990') || ' kg Grade A, '
+                    || to_char(l_b, 'FM999G990') || ' kg Grade B and ' || to_char(l_c, 'FM999G990') || ' kg Grade C. Every grade gets an outlet.</p></div></div></header></div>';
+                end;
                 ```
         }
         layout {
-            sequence: 10
+            sequence: 5
             slot: body
         }
         appearance {
-            template: @/standard
-            templateOptions: [
-                #DEFAULT#
-                t-Region--scrollBody
-            ]
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-full
         }
-        accessibility {
-            landmarkType: region
-        }
-        componentAppearance {
-            display: report
-        }
-        settings {
-            overline: &OVERLINE.
-            title: &TITLE.
-            description: &BODY_HTML!RAW.
-        }
-
-        column BODY_HTML (
-            layout {
-                sequence: 40
-            }
-            source {
-                databaseColumn: BODY_HTML
-                dataType: varchar2
-            }
-        )
-
-        column OVERLINE (
-            layout {
-                sequence: 20
-            }
-            source {
-                databaseColumn: OVERLINE
-                dataType: varchar2
-            }
-        )
-
-        column ROW_KEY (
-            layout {
-                sequence: 10
-            }
-            source {
-                databaseColumn: ROW_KEY
-                dataType: varchar2
-                primaryKey: true
-            }
-        )
-
-        column TITLE (
-            layout {
-                sequence: 30
-            }
-            source {
-                databaseColumn: TITLE
-                dataType: varchar2
-            }
-        )
-
     )
-
+    region grade-cards (
+        name: Grade cards
+        type: dynamicContent
+        source {
+            plsqlFunctionBody:
+                ```plsql
+                declare
+                  l_crop number;
+                  l_html varchar2(32767) := '<div class="hlc-root" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:24px">';
+                begin
+                  select crop_id into l_crop from hl_fulfil_v where demand_id = hl_demo.featured_demand_id;
+                  for g in (select t.grade, t.cls, t.txt,
+                                   (select nvl(sum(a.kg), 0) from hl_grade_allocation_v a where a.crop_id = l_crop and a.grade = t.grade) as kg
+                              from (select 'A' grade, 'Premium' cls, 'Firm, even colour, no marks. Goes to the premium buyer who posted the demand.' txt from dual union all
+                                    select 'B', 'Market', 'Small marks or uneven size. Sold at wholesale and local markets, and to schools.' from dual union all
+                                    select 'C', 'Processing', 'Overripe or damaged. Goes to processors for paste and sauce instead of being thrown away.' from dual) t
+                             order by t.grade) loop
+                    l_html := l_html || '<section class="hlc-card" style="padding:24px;display:flex;flex-direction:column;gap:12px">'
+                      || '<span class="hl-grade hl-grade-' || lower(g.grade) || '" title="Grade ' || g.grade || '" style="width:fit-content"><b aria-hidden="true">' || g.grade || '</b><span>Grade ' || g.grade || ' · ' || g.cls || '</span></span>'
+                      || '<p style="margin:0;font:500 40px/44px var(--font-display);font-variant-numeric:tabular-nums">'
+                      || to_char(g.kg, 'FM999G990')
+                      || '<span style="font:400 15px/24px var(--font-sans);color:var(--ink-muted)"> kg</span></p>'
+                      || '<p style="margin:0;font-size:13px;line-height:20px;color:var(--ink-muted)">' || g.txt || '</p></section>';
+                  end loop;
+                  return l_html || '</div>';
+                end;
+                ```
+        }
+        layout {
+            sequence: 6
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-full
+        }
+    )
+    region where-grades-go (
+        name: Where each grade goes
+        type: dynamicContent
+        source {
+            plsqlFunctionBody:
+                ```plsql
+                declare
+                  l_crop number;
+                  l_html varchar2(32767);
+                  l_total number := 0; l_placed number := 0;
+                begin
+                  select crop_id into l_crop from hl_fulfil_v where demand_id = hl_demo.featured_demand_id;
+                  select nvl(sum(kg), 0), nvl(sum(case when destination_type <> 'UNALLOCATED' then kg end), 0) into l_total, l_placed from hl_grade_allocation_v where crop_id = l_crop;
+                  l_html := '<section class="hlc-root hlc-card" style="padding:24px;display:flex;flex-direction:column;gap:20px">'
+                    || '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><h2 style="margin:0;font:700 20px/28px var(--font-display)">Where each grade goes</h2>'
+                    || '<span class="hl-prov hl-prov-live">Live data</span></div><div class="hl-alloc"><div class="hl-alloc-head"><h3 class="hl-match-name">Allocation by grade</h3>'
+                    || '<span class="hl-help hl-num">' || to_char(l_placed, 'FM999G990') || ' of ' || to_char(l_total, 'FM999G990') || ' kg placed</span></div>';
+                  for g in (select grade, sum(kg) total, sum(case when destination_type <> 'UNALLOCATED' then kg end) placed
+                              from hl_grade_allocation_v where crop_id = l_crop group by grade order by grade) loop
+                    l_html := l_html || '<div class="hl-alloc-row"><span class="hl-grade hl-grade-' || lower(g.grade) || '" title="Grade ' || g.grade || '"><b aria-hidden="true">' || g.grade
+                      || '</b><span>Grade ' || g.grade || ' · ' || case g.grade when 'A' then 'Premium' when 'B' then 'Market' else 'Processing' end || '</span></span>'
+                      || '<div class="hl-alloc-track" role="img" aria-label="Grade ' || g.grade || ' split">';
+                    for o in (select destination, destination_type, kg from hl_grade_allocation_v where crop_id = l_crop and grade = g.grade
+                               order by case destination_type when 'UNALLOCATED' then 1 else 0 end, kg desc) loop
+                      l_html := l_html || '<span class="hl-alloc-seg ' || case when o.destination_type = 'UNALLOCATED' then 'hlc-alloc-open' else 'hl-alloc-' || lower(g.grade) end
+                        || '" style="width:' || to_char(round(o.kg / g.total * 100, 2), 'FM990D00', 'NLS_NUMERIC_CHARACTERS=''.,''') || '%" title="'
+                        || apex_escape.html(o.destination || ' · ' || to_char(o.kg, 'FM999G990') || ' kg') || '">' || apex_escape.html(o.destination) || '</span>';
+                    end loop;
+                    l_html := l_html || '</div><div class="hl-alloc-kg">' || to_char(nvl(g.placed, 0), 'FM999G990') || ' / ' || to_char(g.total, 'FM999G990') || '<span>kg placed</span></div></div>';
+                  end loop;
+                  return l_html || '<div class="hl-alloc-check hl-alloc-ok"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 1.75a6.25 6.25 0 1 0 0 12.5A6.25 6.25 0 0 0 8 1.75zM5.25 8.25l2 2 3.5-4"></path></svg>No double-counting: every kilogram is assigned to at most one outlet.</div></div></section>';
+                end;
+                ```
+        }
+        layout {
+            sequence: 7
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-full
+        }
+    )
     region lots (
         name: Lots still to place
         type: themeTemplateComponent/contentRow
@@ -150,10 +171,8 @@ page 40 (
         }
         appearance {
             template: @/standard
-            templateOptions: [
-                #DEFAULT#
-                t-Region--scrollBody
-            ]
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-left
         }
         accessibility {
             landmarkType: region
@@ -220,7 +239,6 @@ page 40 (
         )
 
     )
-
     region allocate (
         name: Allocate a lot to an outlet
         type: staticContent
@@ -231,112 +249,12 @@ page 40 (
         appearance {
             template: @/standard
             templateOptions: #DEFAULT#
+            cssClasses: hlc-right hlc-rows-1
         }
         settings {
             outputAs: text
         }
     )
-
-    pageItem P40_HARVEST_ID (
-        type: selectList
-        label {
-            label: Lot
-            alignment: right
-        }
-        lov {
-            type: sqlQuery
-            sqlQuery:
-                ```sql
-                select g.FARMER_NAME || ' · Grade ' || g.GRADE || ' ' || g.CROP_NAME || ' · '
-                       || to_char(g.AVAILABLE_KG, 'FM999G999G990') || ' kg left' as d
-                     , g.HARVEST_ID as r
-                from HL_GRADE_ROUTING_V g
-                order by 1
-                ```
-        }
-        layout {
-            sequence: 10
-            region: @allocate
-            slot: regionBody
-            alignment: left
-        }
-        appearance {
-            template: @/required-floating
-            templateOptions: #DEFAULT#
-        }
-    )
-
-    pageItem P40_BUYER_ID (
-        type: selectList
-        label {
-            label: Outlet
-            alignment: right
-        }
-        lov {
-            type: sharedComponent
-            lov: @lov-buyers
-        }
-        layout {
-            sequence: 20
-            region: @allocate
-            slot: regionBody
-            alignment: left
-        }
-        appearance {
-            template: @/required-floating
-            templateOptions: #DEFAULT#
-        }
-    )
-
-    pageItem P40_KG (
-        type: numberField
-        label {
-            label: Quantity (kg)
-            alignment: right
-        }
-        layout {
-            sequence: 30
-            region: @allocate
-            slot: regionBody
-            alignment: left
-        }
-        appearance {
-            template: @/required-floating
-            templateOptions: #DEFAULT#
-            width: 32
-        }
-    )
-
-    pageItem P40_ALLOCATION_ID (
-        type: hidden
-        settings {
-            valueProtected: false
-        }
-        layout {
-            sequence: 40
-            region: @allocate
-            slot: regionBody
-        }
-    )
-
-    button allocate (
-        buttonName: ALLOCATE
-        label: Allocate
-        layout {
-            sequence: 10
-            region: @allocate
-            slot: next
-        }
-        appearance {
-            buttonTemplate: @/text
-            hot: true
-            templateOptions: #DEFAULT#
-        }
-        behavior {
-            warnOnUnsavedChanges: doNotCheck
-        }
-    )
-
     region allocations (
         name: Sent to outlets
         type: themeTemplateComponent/contentRow
@@ -363,10 +281,8 @@ page 40 (
         }
         appearance {
             template: @/standard
-            templateOptions: [
-                #DEFAULT#
-                t-Region--scrollBody
-            ]
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-left
         }
         accessibility {
             landmarkType: region
@@ -433,7 +349,6 @@ page 40 (
         )
 
     )
-
     region demo-data (
         name: Demo data
         type: staticContent
@@ -450,12 +365,107 @@ page 40 (
         appearance {
             template: @/standard
             templateOptions: #DEFAULT#
+            cssClasses: hlc-right hlc-rows-1
         }
         settings {
             outputAs: html
         }
     )
-
+    pageItem P40_HARVEST_ID (
+        type: selectList
+        label {
+            label: Lot
+            alignment: right
+        }
+        lov {
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select g.FARMER_NAME || ' · Grade ' || g.GRADE || ' ' || g.CROP_NAME || ' · '
+                       || to_char(g.AVAILABLE_KG, 'FM999G999G990') || ' kg left' as d
+                     , g.HARVEST_ID as r
+                from HL_GRADE_ROUTING_V g
+                order by 1
+                ```
+        }
+        layout {
+            sequence: 10
+            region: @allocate
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+        }
+    )
+    pageItem P40_BUYER_ID (
+        type: selectList
+        label {
+            label: Outlet
+            alignment: right
+        }
+        lov {
+            type: sharedComponent
+            lov: @lov-buyers
+        }
+        layout {
+            sequence: 20
+            region: @allocate
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+        }
+    )
+    pageItem P40_KG (
+        type: numberField
+        label {
+            label: Quantity (kg)
+            alignment: right
+        }
+        layout {
+            sequence: 30
+            region: @allocate
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+    )
+    pageItem P40_ALLOCATION_ID (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 40
+            region: @allocate
+            slot: regionBody
+        }
+    )
+    button allocate (
+        buttonName: ALLOCATE
+        label: Allocate
+        layout {
+            sequence: 10
+            region: @allocate
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @/text
+            hot: true
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
     button reset-demo (
         buttonName: RESET_DEMO
         label: Reset demo data
@@ -478,7 +488,6 @@ page 40 (
             style: danger
         }
     )
-
     process allocate (
         name: Allocate a lot to an outlet
         type: executeCode
@@ -512,7 +521,6 @@ page 40 (
             plsqlExpression: :REQUEST = 'ALLOCATE'
         }
     )
-
     process remove-allocation (
         name: Remove an allocation
         type: executeCode
@@ -533,7 +541,6 @@ page 40 (
             plsqlExpression: :REQUEST = 'REMOVE'
         }
     )
-
     process reset-demo (
         name: Reset demo data
         type: executeCode
@@ -554,5 +561,4 @@ page 40 (
             plsqlExpression: :REQUEST = 'RESET_DEMO'
         }
     )
-
 )

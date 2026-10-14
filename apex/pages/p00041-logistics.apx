@@ -2,10 +2,11 @@ page 41 (
     name: Logistics
     alias: LOGISTICS
     title: Logistics and pickup route
-    pageGroup: @matching-and-logistics
+    pageGroup: @dashboard
     appearance {
-        pageTemplate: @/standard
+        pageTemplate: @/blank
         templateOptions: #DEFAULT#
+        cssClasses: hlc-app
     }
     navigation {
         cursorFocus: doNotFocusCursor
@@ -19,41 +20,32 @@ page 41 (
         enableDuplicatePageSubmissions: false
     }
     comments {
-        comments: Canvas screen 7. Shared pickup routes (HL_ROUTE_LINE_V), the selected route on a map and its stops in order (HL_ROUTE_STOP_V). Distances and times are simulated.
+        comments: Canvas screen 7 (Logistics). APEX Map region over HL_ROUTE_STOP_V and HL_ROUTE_LINE_V, with the RouteSummary and vehicle card.
     }
 
-    region route-summary (
-        name: Pickup route
-        type: themeTemplateComponent/contentRow
+    region header (
+        name: Header
+        type: dynamicContent
         source {
-            location: localDatabase
-            type: sqlQuery
-            sqlQuery:
-                ```sql
-                select r.ROUTE_ID as ROUTE_ID
-                     , 'HL-D-' || lpad(r.DEMAND_ID, 4, '0') || ' · ' || f.BUYER_NAME as OVERLINE
-                     , case r.VEHICLE_TYPE
-                         when 'DIRECT' then 'Direct delivery: pooling would not save distance'
-                         else initcap(r.VEHICLE_TYPE) || ' · ' || r.TRIPS || case r.TRIPS when 1 then ' trip' else ' trips' end
-                              || ' · ' || r.STOPS || ' farms'
-                       end as TITLE
-                     , to_char(f.TARGET_KG, 'FM999G999G990') || ' kg of Grade ' || f.GRADE_REQUIRED || ' ' || f.CROP_NAME
-                       || ' · deliver ' || to_char(f.NEED_BY_DATE, 'Dy DD Mon') as MISC
-                     , '<div class="hl-compare">'
-                       || '<div><span>Shared route</span><b>' || to_char(r.AGGREGATED_KM, 'FM999G999G990') || ' km</b></div>'
-                       || '<div><span>Each farmer alone</span><b>' || to_char(r.INDIVIDUAL_KM, 'FM999G999G990') || ' km</b></div>'
-                       || '<div><span>Saved</span><b>' || to_char(r.KM_SAVED, 'FM999G999G990') || ' km · '
-                       || to_char(r.CO2_SAVED_KG, 'FM999G999G990') || ' kg CO₂</b></div>'
-                       || '</div>'
-                       || case when r.VEHICLE_TYPE <> 'DIRECT' and r.LAST_PICKUP_AT is not null
-                               then '<p class="hl-method">Last pickup ' || to_char(r.LAST_PICKUP_AT, 'Dy DD Mon HH24:MI')
-                                    || ' · at the buyer ' || to_char(r.DELIVERED_AT, 'Dy DD Mon HH24:MI') || '</p>' end
-                       || '<span class="hl-prov hl-prov--' || r.PROVENANCE || '">' || initcap(r.PROVENANCE) || '</span>'
-                       || '<p class="hl-method">Road distance is straight-line × the road factor; times use an average speed and a stop time per farm.</p>'
-                       as BODY_HTML
-                from HL_ROUTE_LINE_V r
-                join HL_FULFIL_V f on f.DEMAND_ID = r.DEMAND_ID
-                where r.DEMAND_ID = :P41_DEMAND_ID
+            plsqlFunctionBody:
+                ```plsql
+                declare
+                  l_r hl_route_line_v%rowtype;
+                  l_f hl_fulfil_v%rowtype;
+                begin
+                  select * into l_f from hl_fulfil_v where demand_id = :P41_DEMAND_ID;
+                  begin select * into l_r from hl_route_line_v where demand_id = :P41_DEMAND_ID; exception when no_data_found then null; end;
+                  return '<div class="hlc-root" style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:16px"><div style="flex:1 1 480px;min-width:0"><header class="hl-ph">'
+                    || '<a class="hl-ph-back hl-link" href="' || apex_page.get_url(p_page => 40) || '" style="text-decoration:none"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M13 8H3M7 4L3 8l4 4"></path></svg>Back to grade routing</a>'
+                    || '<span class="hl-overline">Route for HL-D-' || lpad(l_f.demand_id, 4, '0') || ' · ' || to_char(l_f.need_by_date - 1, 'Dy DD Mon') || '</span>'
+                    || '<div class="hl-ph-row"><div class="hl-stack" style="gap:4px"><h1>'
+                    || case when l_r.route_id is null then 'Each farmer delivers directly'
+                            else 'One pickup route for ' || l_r.stops || ' farm' || case when l_r.stops <> 1 then 's' end end || '</h1><p>'
+                    || apex_escape.html(to_char(l_f.matched_kg + l_f.pending_kg, 'FM999G990') || ' kg of Grade ' || l_f.grade_required || ' ' || lower(l_f.crop_name) || ' to ' || l_f.buyer_name || '.'
+                       || case when l_r.route_id is not null then ' ' || initcap(l_r.vehicle_type) || ' instead of ' || l_r.stops || ' separate trips.' end)
+                    || '</p></div></div></header></div><div style="display:flex;flex-wrap:wrap;gap:8px;padding-bottom:24px">'
+                    || '<a class="hl-btn hl-btn-primary" href="' || apex_page.get_url(p_page => 42) || '">View impact<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 8h10M9 4l4 4-4 4"></path></svg></a></div></div>';
+                end;
                 ```
         }
         layout {
@@ -61,78 +53,11 @@ page 41 (
             slot: body
         }
         appearance {
-            template: @/standard
-            templateOptions: [
-                #DEFAULT#
-                t-Region--scrollBody
-            ]
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-full
         }
-        accessibility {
-            landmarkType: region
-        }
-        componentAppearance {
-            display: report
-        }
-        settings {
-            overline: &OVERLINE.
-            title: &TITLE.
-            description: &BODY_HTML!RAW.
-            miscellaneous: &MISC.
-        }
-
-        column BODY_HTML (
-            layout {
-                sequence: 50
-            }
-            source {
-                databaseColumn: BODY_HTML
-                dataType: varchar2
-            }
-        )
-
-        column MISC (
-            layout {
-                sequence: 40
-            }
-            source {
-                databaseColumn: MISC
-                dataType: varchar2
-            }
-        )
-
-        column OVERLINE (
-            layout {
-                sequence: 20
-            }
-            source {
-                databaseColumn: OVERLINE
-                dataType: varchar2
-            }
-        )
-
-        column ROUTE_ID (
-            layout {
-                sequence: 10
-            }
-            source {
-                databaseColumn: ROUTE_ID
-                dataType: number
-                primaryKey: true
-            }
-        )
-
-        column TITLE (
-            layout {
-                sequence: 30
-            }
-            source {
-                databaseColumn: TITLE
-                dataType: varchar2
-            }
-        )
-
     )
-
     region route-map (
         name: Route map
         type: map
@@ -159,10 +84,8 @@ page 41 (
         }
         appearance {
             template: @/standard
-            templateOptions: [
-                #DEFAULT#
-                t-Region--scrollBody
-            ]
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-left
         }
         controls {
             options: [
@@ -224,28 +147,45 @@ page 41 (
         )
 
     )
-
-    region stops (
-        name: Pickup order
-        type: themeTemplateComponent/contentRow
+    region route-summary (
+        name: Route summary
+        type: dynamicContent
         source {
-            location: localDatabase
-            type: sqlQuery
-            sqlQuery:
-                ```sql
-                select s.STOP_NO as STOP_NO
-                     , case s.STOP_TYPE when 'DESTINATION' then 'Destination' else 'Stop ' || s.STOP_NO end as OVERLINE
-                     , s.STOP_NAME || ' · ' || s.PLACE as TITLE
-                     , case when s.STOP_TYPE = 'FARM' then to_char(s.LOAD_KG, 'FM999G999G990') || ' kg · ' end
-                       || to_char(s.LEG_KM, 'FM999G990') || ' km leg · ' || to_char(s.CUMULATIVE_KM, 'FM999G990') || ' km so far'
-                       || ' · ' || to_char(s.ARRIVE_AT, 'Dy HH24:MI') as MISC
-                     , case s.UI_STATUS
-                         when 'MATCHED' then '<span class="hl-badge hl-badge--matched">Confirmed</span>'
-                         when 'PENDING' then '<span class="hl-badge hl-badge--pending">Awaiting farmer</span>'
-                       end as BODY_HTML
-                from HL_ROUTE_STOP_V s
-                where s.DEMAND_ID = :P41_DEMAND_ID
-                order by s.STOP_NO
+            plsqlFunctionBody:
+                ```plsql
+                declare
+                  l_r     hl_route_line_v%rowtype;
+                  l_cap   number;
+                  l_load  number;
+                  l_html  varchar2(32767);
+                begin
+                  select * into l_r from hl_route_line_v where demand_id = :P41_DEMAND_ID;
+                  l_cap := hl_match_pkg.get_setting(case l_r.vehicle_type when 'TRUCK' then 'TRUCK_CAPACITY_KG' else 'PICKUP_CAPACITY_KG' end);
+                  select max(load_kg) into l_load from hl_route_stops where route_id = l_r.route_id and stop_type = 'DESTINATION';
+                  l_html := '<div class="hlc-root" style="display:flex;flex-direction:column;gap:24px"><section class="hlc-card" style="padding:24px">'
+                    || '<section class="hl-route" aria-label="Route summary"><div><p class="hl-stat-label">Distance saved</p><div class="hl-route-saved"><strong class="hl-num">'
+                    || to_char(round(l_r.km_saved), 'FM999G990') || ' km</strong><span class="hl-help">' || round(l_r.km_saved / nullif(l_r.individual_km, 0) * 100) || '% fewer kilometres</span></div></div>'
+                    || '<div class="hl-route-cmp"><span>Separate trips</span><span class="hl-bar hl-bar-solo" style="width:100%"></span><span class="hl-km">' || to_char(round(l_r.individual_km), 'FM999G990') || ' km</span>'
+                    || '<span>Consolidated</span><span class="hl-bar hl-bar-route" style="width:' || to_char(round(l_r.aggregated_km / nullif(l_r.individual_km, 0) * 100, 2), 'FM990D00', 'NLS_NUMERIC_CHARACTERS=''.,''')
+                    || '%"></span><span class="hl-km">' || to_char(round(l_r.aggregated_km), 'FM999G990') || ' km</span></div><ol aria-label="Pickup order">';
+                  for s in (select * from hl_route_stop_v where route_id = l_r.route_id order by stop_no) loop
+                    l_html := l_html || '<li' || case when s.stop_type = 'DESTINATION' then ' class="hl-dest"' end || '><i aria-hidden="true">'
+                      || case when s.stop_type = 'DESTINATION' then '■' else to_char(s.stop_no) end || '</i><span>' || apex_escape.html(s.place)
+                      || '<span class="hl-sub">' || apex_escape.html(s.stop_name || ' · ' || to_char(s.load_kg, 'FM999G990') || ' kg') || '</span></span><span class="hl-t">'
+                      || to_char(s.arrive_at, 'Dy HH24:MI') || '</span></li>';
+                  end loop;
+                  l_html := l_html || '</ol></section></section><section class="hlc-card" style="padding:24px;display:flex;flex-direction:column;gap:12px">'
+                    || '<h2 style="margin:0;font-size:17px;line-height:24px">Vehicle</h2><dl style="margin:0;display:grid;grid-template-columns:auto 1fr;gap:8px 16px;font-size:15px">'
+                    || '<dt style="color:var(--ink-muted)">' || initcap(l_r.vehicle_type) || '</dt><dd style="margin:0">' || to_char(l_cap, 'FM999G990') || ' kg, ' || l_r.trips || ' trip' || case when l_r.trips <> 1 then 's' end || '</dd>'
+                    || '<dt style="color:var(--ink-muted)">Load</dt><dd style="margin:0;font-variant-numeric:tabular-nums">' || to_char(l_load, 'FM999G990') || ' kg of ' || to_char(l_cap * l_r.trips, 'FM999G990') || ' kg</dd>'
+                    || '<dt style="color:var(--ink-muted)">Transporter</dt><dd style="margin:0">[Transporter name]</dd></dl>'
+                    || '<div style="display:flex;gap:8px;align-items:center;font-size:13px;color:var(--ink-muted)">Live GPS tracking <span class="hl-prov hl-prov-roadmap">Roadmap</span></div>'
+                    || '<p style="margin:0;font-size:13px;line-height:20px;color:var(--ink-muted)">Distances are straight-line × 1.3 and times assume an average speed; both are simulated.</p></section></div>';
+                  return l_html;
+                exception
+                  when no_data_found then
+                    return '<div class="hlc-root hl-alert hl-alert-info" role="status"><svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 1.75a6.25 6.25 0 1 0 0 12.5A6.25 6.25 0 0 0 8 1.75zM8 7.25v4M8 4.75v.25"></path></svg><div><b>No shared route</b>Pooling would not save distance on this order, so each farmer delivers directly.</div></div>';
+                end;
                 ```
         }
         layout {
@@ -253,188 +193,41 @@ page 41 (
             slot: body
         }
         appearance {
-            template: @/standard
-            templateOptions: [
-                #DEFAULT#
-                t-Region--scrollBody
-            ]
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-right hlc-rows-1
         }
-        accessibility {
-            landmarkType: region
-        }
-        componentAppearance {
-            display: report
-        }
-        settings {
-            overline: &OVERLINE.
-            title: &TITLE.
-            description: &BODY_HTML!RAW.
-            miscellaneous: &MISC.
-        }
-
-        column BODY_HTML (
-            layout {
-                sequence: 50
-            }
-            source {
-                databaseColumn: BODY_HTML
-                dataType: varchar2
-            }
-        )
-
-        column MISC (
-            layout {
-                sequence: 40
-            }
-            source {
-                databaseColumn: MISC
-                dataType: varchar2
-            }
-        )
-
-        column OVERLINE (
-            layout {
-                sequence: 20
-            }
-            source {
-                databaseColumn: OVERLINE
-                dataType: varchar2
-            }
-        )
-
-        column STOP_NO (
-            layout {
-                sequence: 10
-            }
-            source {
-                databaseColumn: STOP_NO
-                dataType: number
-                primaryKey: true
-            }
-        )
-
-        column TITLE (
-            layout {
-                sequence: 30
-            }
-            source {
-                databaseColumn: TITLE
-                dataType: varchar2
-            }
-        )
-
     )
-
-    region routes (
-        name: All pickup routes
-        type: themeTemplateComponent/contentRow
+    region page-state (
+        name: Page state
+        type: staticContent
         source {
-            location: localDatabase
-            type: sqlQuery
-            sqlQuery:
-                ```sql
-                select r.DEMAND_ID as DEMAND_ID
-                     , 'HL-D-' || lpad(r.DEMAND_ID, 4, '0') || ' · '
-                       || case r.VEHICLE_TYPE when 'DIRECT' then 'Direct delivery' else initcap(r.VEHICLE_TYPE) end as OVERLINE
-                     , to_char(f.TARGET_KG, 'FM999G999G990') || ' kg of ' || f.CROP_NAME as TITLE
-                     , 'Saves ' || to_char(r.KM_SAVED, 'FM999G999G990') || ' km and '
-                       || to_char(r.CO2_SAVED_KG, 'FM999G999G990') || ' kg CO₂ · deliver ' || to_char(f.NEED_BY_DATE, 'Dy DD Mon') as MISC
-                from HL_ROUTE_LINE_V r
-                join HL_FULFIL_V f on f.DEMAND_ID = r.DEMAND_ID
-                where (hl_auth.buyer_id is null or f.BUYER_ID = hl_auth.buyer_id)
-                order by f.NEED_BY_DATE
+            htmlCode:
+                ```html
+                <span></span>
                 ```
         }
         layout {
-            sequence: 40
+            sequence: 90
             slot: body
         }
         appearance {
-            template: @/standard
-            templateOptions: [
-                #DEFAULT#
-                t-Region--scrollBody
-            ]
-        }
-        accessibility {
-            landmarkType: region
-        }
-        componentAppearance {
-            display: report
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-full
         }
         settings {
-            overline: &OVERLINE.
-            title: &TITLE.
-            miscellaneous: &MISC.
+            outputAs: html
         }
-
-        column DEMAND_ID (
-            layout {
-                sequence: 10
-            }
-            source {
-                databaseColumn: DEMAND_ID
-                dataType: number
-                primaryKey: true
-            }
-        )
-
-        column MISC (
-            layout {
-                sequence: 40
-            }
-            source {
-                databaseColumn: MISC
-                dataType: varchar2
-            }
-        )
-
-        column OVERLINE (
-            layout {
-                sequence: 20
-            }
-            source {
-                databaseColumn: OVERLINE
-                dataType: varchar2
-            }
-        )
-
-        column TITLE (
-            layout {
-                sequence: 30
-            }
-            source {
-                databaseColumn: TITLE
-                dataType: varchar2
-            }
-        )
-
-        action open-route (
-            position: fullRowLink
-            layout {
-                sequence: 10
-            }
-            behavior {
-                target: {
-                    page: 41
-                    items: {
-                        P41_DEMAND_ID: \&DEMAND_ID.\
-                    }
-                }
-            }
-        )
-
     )
-
     pageItem P41_DEMAND_ID (
         type: hidden
         layout {
             sequence: 10
-            region: @route-summary
+            region: @page-state
             slot: regionBody
         }
     )
-
     process default-route (
         name: Default to the featured demand's route
         type: executeCode
@@ -457,5 +250,4 @@ page 41 (
             point: beforeHeader
         }
     )
-
 )
