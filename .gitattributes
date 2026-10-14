@@ -1,0 +1,2 @@
+# APEXlang is parsed by SQLcl, which rejects CRLF line endings
+apex/**/*.apx text eol=lf
