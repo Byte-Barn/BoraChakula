@@ -194,3 +194,26 @@ create table hl_allocations (
 );
 create index hl_allocations_harvest_ix on hl_allocations (harvest_id);
 create index hl_allocations_buyer_ix on hl_allocations (buyer_id);
+
+-- Stops of one shared pickup trip, in route order: each farm, then the buyer.
+-- Written by HL_MATCH_PKG.PLAN_ROUTE for TRUCK and PICKUP routes (a DIRECT
+-- route has no shared tour). Distances are straight-line x ROAD_FACTOR and
+-- times assume AVG_SPEED_KMH and STOP_MINUTES, so both are simulated.
+create table hl_route_stops (
+  route_id       number         not null,
+  stop_no        number(4)      not null,
+  stop_type      varchar2(12)   not null,
+  match_id       number,                   -- null for the destination
+  stop_name      varchar2(150)  not null,  -- farmer or buyer name
+  place          varchar2(100),
+  latitude       number(9,6)    not null,
+  longitude      number(9,6)    not null,
+  load_kg        number(10,2)   not null,  -- kg collected here (destination: total)
+  leg_km         number(10,2)   not null,  -- km driven to reach this stop
+  cumulative_km  number(10,2)   not null,
+  arrive_at      date           not null,
+  constraint hl_route_stops_pk primary key (route_id, stop_no),
+  constraint hl_route_stops_route_fk foreign key (route_id) references hl_routes on delete cascade,
+  constraint hl_route_stops_match_fk foreign key (match_id) references hl_matches on delete cascade,
+  constraint hl_route_stops_type_ck check (stop_type in ('FARM', 'DESTINATION'))
+);

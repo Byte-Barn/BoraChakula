@@ -6,7 +6,7 @@ Tables behind them may change; the names, parameters and columns here will not
 change without a note in this file.
 
 - Database: Oracle Autonomous AI Database 26ai, schema `HARVESTLINK` (APEX parsing schema).
-- Source: `db/02_match_pkg.sql` (matching), `db/06_agreements.sql` (ledger), `db/07_api.sql` (APIs and contract views), `db/08_demo.sql` (demo dataset and reset), `db/09_auth.sql` (roles and "my" views), `db/10_alloc.sql` (grade allocation).
+- Source: `db/02_match_pkg.sql` (matching), `db/06_agreements.sql` (ledger), `db/07_api.sql` (APIs and contract views), `db/08_demo.sql` (demo dataset and reset), `db/09_auth.sql` (roles and "my" views), `db/10_alloc.sql` (grade allocation), `db/11_routes.sql` (route stops and map views).
 - Status of each item: **Ready** (in this PR) or **Planned** (a later backend PR, listed at the end).
 
 ## Conventions
@@ -166,9 +166,24 @@ The guard: matched + allocated kg on a harvest can never exceed its expected kg.
 row, so two operators allocating the same lot at once cannot double-count; the second waits, then gets `-20401`
 if too little is left. Allocated kg are no longer offered to matching.
 
-### 7 · Logistics and pickup route — Ready (summary), Planned (stops table)
+### 7 · Logistics and pickup route — Ready
 
-`HL_DEMAND_SUMMARY_V` per demand: `vehicle_type` (`TRUCK`, `PICKUP` or `DIRECT`), `trips`, `aggregated_km`, `individual_km`, `km_saved`, `co2_saved_kg`. Pickup pins and order: `HL_MATCH_V` (`farmer_lat`, `farmer_lon`, `stop_order`, `ui_status`); destination: buyer location. A per-stop table with times (`HL_ROUTE_STOP`) is Planned.
+Routes are planned automatically whenever matching runs. A demand gets a shared `TRUCK` or `PICKUP` trip when
+pooling saves distance, otherwise `DIRECT` (each farmer delivers; no stops). All distances and times are
+**simulated**: straight-line × `ROAD_FACTOR`, `AVG_SPEED_KMH` and `STOP_MINUTES` from `HL_SETTINGS`. The vehicle
+leaves the buyer at `ROUTE_START_HOUR` the day before delivery.
+
+| Needs | Source |
+|---|---|
+| Route summary (RouteSummary) | `HL_ROUTE_LINE_V` where `demand_id = :DEMAND_ID`: `vehicle_type`, `trips`, `stops`, `aggregated_km`, `individual_km`, `km_saved`, `co2_saved_kg`, `last_pickup_at`, `delivered_at` |
+| Map: consolidated route line | `HL_ROUTE_LINE_V.ROUTE_GEOJSON`: a GeoJSON LineString, buyer → farms → buyer, for an APEX Map line layer (geometry column type GeoJSON) |
+| Map: pickup pins and destination | `HL_ROUTE_STOP_V`: `latitude`, `longitude`, `stop_type` (`FARM` or `DESTINATION`), `stop_no`, `ui_status` (solid pin for `MATCHED`, hollow for `PENDING`) |
+| Map: separate-trip comparison lines | `HL_ROUTE_STOP_V` farm rows: from (`latitude`, `longitude`) to (`dest_lat`, `dest_lon`), with `direct_km` |
+| Pickup order table | `HL_ROUTE_STOP_V` order by `stop_no`: `stop_name`, `place`, `load_kg`, `leg_km`, `cumulative_km`, `arrive_at` |
+| Vehicle load ("1,900 kg of 3,000 kg") | `HL_ROUTE_LINE_V` total kg (destination row `load_kg`) against `TRUCK_CAPACITY_KG` / `PICKUP_CAPACITY_KG` in `HL_SETTINGS` |
+
+The legs of one trip add up to `aggregated_km / trips`. Older columns in `HL_DEMAND_SUMMARY_V` (`vehicle_type`,
+`trips`, `km_saved`, `co2_saved_kg`) still work.
 
 ### 8 · Sustainability impact — Ready
 
@@ -238,5 +253,4 @@ In APEX, map these to inline errors with an Error Handling Function, or let the 
 
 | PR | Adds | Unblocks |
 |---|---|---|
-| Route stops | `HL_ROUTE_STOP` with order, times and per-leg km; separate-trip lines for the map | Logistics screen table and map |
 | Demand extras | Receiving time window, draft demands | Post-a-demand form fields |

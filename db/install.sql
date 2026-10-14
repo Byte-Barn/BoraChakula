@@ -13,6 +13,7 @@ set define off
 @08_demo.sql
 @09_auth.sql
 @10_alloc.sql
+@11_routes.sql
 -- The seed's ALTER TABLE statements leave dependent views needing recompilation
 exec dbms_utility.compile_schema(schema => user, compile_all => false)
 show errors package body hl_match_pkg
