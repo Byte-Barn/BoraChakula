@@ -1,0 +1,11 @@
+# Terraform state holds the ADMIN password and wallet: never commit it
+infra/.terraform/
+infra/*.tfstate
+infra/*.tfstate.*
+infra/.terraform.lock.hcl.bak
+infra/terraform.tfvars
+infra/.wallet/
+*.pem
+.env
+secrets.env
+__pycache__/

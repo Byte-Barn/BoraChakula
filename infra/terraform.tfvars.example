@@ -1,0 +1,4 @@
+# Copy to terraform.tfvars (git-ignored). Passwords come from environment:
+#   TF_VAR_admin_password, TF_VAR_wallet_password
+tenancy_ocid = "ocid1.tenancy.oc1..xxxxxxxx"
+region       = "eu-frankfurt-1"
