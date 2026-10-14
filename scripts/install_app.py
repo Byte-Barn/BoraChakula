@@ -162,7 +162,24 @@ def apply_frontend_pages():
     block = "    authorization {\n        scheme: mustNotBePublicUser\n    }\n"
     if block not in text:
         sys.exit(f"Unexpected authorization block in {app}; cannot open the public landing page")
-    app.write_text(text.replace(block, "", 1), encoding="utf-8", newline="\n")
+    text = text.replace(block, "", 1)
+
+    # The public landing page (50) is the home page; it sends signed-in users
+    # on to their own screen
+    home = "        homeUrl: {\n            page: 1\n        }\n"
+    if home not in text:
+        sys.exit(f"Unexpected home URL in {app}; cannot make the landing page the home page")
+    app.write_text(text.replace(home, home.replace("page: 1", "page: 50"), 1), encoding="utf-8", newline="\n")
+
+    # Visitors on the landing page should not see a user menu for "nobody"
+    user_entry = "    entry app-user (\n        label: &APP_USER.\n"
+    text = lists.read_text(encoding="utf-8")
+    if user_entry not in text:
+        sys.exit(f"Unexpected navigation bar in {lists}; cannot hide it from visitors")
+    lists.write_text(text.replace(user_entry, user_entry + (
+        "        serverSideCondition {\n"
+        "            type: userIsAuthenticated\n"
+        "        }\n"), 1), encoding="utf-8", newline="\n")
     print(f"Added {len(pages)} canvas screens from {PAGES_DIR.relative_to(REPO)}")
 
 
