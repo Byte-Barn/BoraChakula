@@ -36,9 +36,6 @@ app HARVESTLINK (
     authentication {
         scheme: @oracle-apex-accounts
     }
-    authorization {
-        scheme: mustNotBePublicUser
-    }
     
     substitution APP_NAME (
         value {
