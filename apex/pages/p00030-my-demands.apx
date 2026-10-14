@@ -1,11 +1,12 @@
 page 30 (
     name: My Demands
     alias: MY-DEMANDS
-    title: My demands
-    pageGroup: @marketplace
+    title: Buyer dashboard
+    pageGroup: @dashboard
     appearance {
-        pageTemplate: @/standard
+        pageTemplate: @/blank
         templateOptions: #DEFAULT#
+        cssClasses: hlc-app
     }
     navigation {
         cursorFocus: doNotFocusCursor
@@ -19,37 +20,46 @@ page 30 (
         enableDuplicatePageSubmissions: false
     }
     comments {
-        comments: Canvas screen 3. The signed-in buyer's demands (every demand for operations) with fulfilment, from HL_FULFIL_V.
+        comments: Canvas screen 3 (Buyer dashboard). Hero, StatCards over HL_FULFIL_V, unconfirmed-farmer alert, the buyer's demands and the pickup route preview.
     }
 
-    region stats (
-        name: Your orders at a glance
-        type: themeTemplateComponent/metricCard
+    region hero (
+        name: Hero
+        type: dynamicContent
         source {
-            location: localDatabase
-            type: sqlQuery
-            sqlQuery:
-                ```sql
-                with d as (
-                  select f.*
-                    from HL_FULFIL_V f
-                   where (hl_auth.buyer_id is null or f.BUYER_ID = hl_auth.buyer_id)
-                )
-                select 1 as SORT_ORDER, 'Active demands' as LABEL
-                     , to_char(count(*), 'FM999G990') as METRIC
-                     , 'Open, partly or fully sourced' as META
-                  from d where d.STATUS in ('OPEN', 'PARTIAL', 'FILLED')
-                union all
-                select 2, 'Confirmed supply'
-                     , to_char(nvl(sum(d.MATCHED_KG), 0), 'FM999G999G990') || ' kg'
-                     , 'Farmers have said yes'
-                  from d where d.STATUS in ('OPEN', 'PARTIAL', 'FILLED')
-                union all
-                select 3, 'Awaiting farmers'
-                     , to_char(nvl(sum(d.PENDING_KG), 0), 'FM999G999G990') || ' kg'
-                     , to_char(nvl(sum(d.PENDING_FARMERS), 0)) || ' farmers still to confirm'
-                  from d where d.STATUS in ('OPEN', 'PARTIAL', 'FILLED')
-                order by 1
+            plsqlFunctionBody:
+                ```plsql
+                declare
+                  l_buyer number;
+                  l_name  varchar2(150);
+                  l_active number;
+                  l_next  hl_fulfil_v%rowtype;
+                  l_hour  number := to_number(to_char(sysdate + 3/24, 'HH24'));  -- East Africa Time
+                begin
+                  select coalesce(hl_auth.buyer_id, max(f0.buyer_id)) into l_buyer from hl_fulfil_v f0 where f0.demand_id = hl_demo.featured_demand_id;
+                  select buyer_name into l_name from hl_buyers where buyer_id = l_buyer;
+                  select count(*) into l_active from hl_fulfil_v where buyer_id = l_buyer and status in ('OPEN', 'PARTIAL', 'FILLED');
+                  begin
+                    select * into l_next from hl_fulfil_v
+                     where buyer_id = l_buyer and status in ('OPEN', 'PARTIAL', 'FILLED') and need_by_date >= trunc(sysdate)
+                     order by need_by_date fetch first 1 row only;
+                  exception when no_data_found then null;
+                  end;
+                  return apex_plugin_util.replace_substitutions(p_escape => false, p_value =>
+                       '<section class="hlc-root hlc-on-dark" style="position:relative;overflow:hidden;border-radius:24px;background:var(--forest-deep);color:#fff;min-height:220px">'
+                    || '<img src="#APP_FILES#images/photo-farmer-crate.jpg" alt="A farmer carrying a crate of fresh vegetables" class="hlc-photo" style="position:absolute;inset:0;object-position:75% 35%">'
+                    || '<div style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(3,36,27,.95) 0%,rgba(3,36,27,.82) 48%,rgba(3,36,27,.1) 100%)"></div>'
+                    || '<div style="position:relative;padding:36px 40px;display:flex;flex-direction:column;gap:16px;max-width:560px">'
+                    || '<p class="hlc-eyebrow">' || to_char(sysdate + 3/24, 'Dy DD Mon') || '</p>'
+                    || '<h1 style="margin:0;font:800 34px/40px var(--font-display);letter-spacing:-0.02em;color:#fff">'
+                    || case when l_hour < 12 then 'Good morning' when l_hour < 17 then 'Good afternoon' else 'Good evening' end || ', ' || apex_escape.html(l_name) || '</h1>'
+                    || '<p style="margin:0;font-size:16px;line-height:25px;color:rgba(255,255,255,.88)">' || l_active || ' active demand' || case when l_active <> 1 then 's' end || '.'
+                    || case when l_next.demand_id is not null then ' Your next delivery, ' || to_char(l_next.target_kg, 'FM999G990') || ' kg of '
+                         || apex_escape.html(lower(l_next.crop_name)) || ', is due ' || to_char(l_next.need_by_date, 'Dy DD Mon') || '.' end || '</p>'
+                    || '<div style="display:flex;flex-wrap:wrap;gap:10px">'
+                    || '<a class="hl-btn hl-btn-primary" href="' || apex_page.get_url(p_page => 31) || '"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 3v10M3 8h10"></path></svg>Post a demand</a>'
+                    || '<a class="hl-btn hl-btn-secondary" href="' || apex_page.get_url(p_page => 32) || '">View matches</a></div></div></section>');
+                end;
                 ```
         }
         layout {
@@ -58,111 +68,32 @@ page 30 (
         }
         appearance {
             template: @/blank-with-attributes
-            templateOptions: [
-                #DEFAULT#
-                margin-top-md
-                margin-bottom-md
-            ]
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-full
         }
-        accessibility {
-            landmarkType: region
-        }
-        componentAppearance {
-            display: report
-        }
-        settings {
-            title: &LABEL.
-            metric: &METRIC.
-            metricCssClasses: u-text-subheading-md
-            meta: &META.
-            layout: stacked
-        }
-
-        column LABEL (
-            layout {
-                sequence: 20
-            }
-            source {
-                databaseColumn: LABEL
-                dataType: varchar2
-            }
-        )
-
-        column META (
-            layout {
-                sequence: 40
-            }
-            source {
-                databaseColumn: META
-                dataType: varchar2
-            }
-        )
-
-        column METRIC (
-            layout {
-                sequence: 30
-            }
-            source {
-                databaseColumn: METRIC
-                dataType: varchar2
-            }
-        )
-
-        column SORT_ORDER (
-            layout {
-                sequence: 10
-            }
-            source {
-                databaseColumn: SORT_ORDER
-                dataType: number
-                primaryKey: true
-            }
-        )
-
     )
-
-    region demands (
-        name: Demands
-        type: themeTemplateComponent/contentRow
+    region stats (
+        name: Stats
+        type: appTemplateComponent/hlStatCard
         source {
             location: localDatabase
             type: sqlQuery
             sqlQuery:
                 ```sql
-                select f.DEMAND_ID as DEMAND_ID
-                     , 'HL-D-' || lpad(f.DEMAND_ID, 4, '0')
-                       || case when hl_auth.buyer_id is null then ' · ' || f.BUYER_NAME end as OVERLINE
-                     , case when f.TARGET_KG >= 1000
-                            then to_char(f.TARGET_KG / 1000, 'FM999G990D0') || ' t'
-                            else to_char(f.TARGET_KG, 'FM999G990') || ' kg' end
-                       || ' of Grade ' || f.GRADE_REQUIRED || ' ' || f.CROP_NAME as TITLE
-                     , 'Deliver ' || to_char(f.NEED_BY_DATE, 'Dy DD Mon') || ' · '
-                       || case f.STATUS when 'DRAFT' then 'Draft'
-                                        when 'OPEN' then 'Looking for farmers'
-                                        when 'PARTIAL' then 'Partly sourced'
-                                        when 'FILLED' then 'Fully sourced'
-                                        when 'CLOSED' then 'Delivered'
-                                        else initcap(f.STATUS) end as MISC
-                     , '<div class="hl-fulfil hl-fulfil--compact">'
-                       || '<div class="hl-fulfil__track" role="img" aria-label="'
-                       || f.FILL_PCT || '% of the order sourced">'
-                       || '<span class="hl-fulfil__seg hl-fulfil__seg--matched" style="width:'
-                       || to_char(least(100 * f.MATCHED_KG / f.TARGET_KG, 100), 'FM990D0', 'NLS_NUMERIC_CHARACTERS=''.,''') || '%"></span>'
-                       || '<span class="hl-fulfil__seg hl-fulfil__seg--pending" style="width:'
-                       || to_char(least(100 * f.PENDING_KG / f.TARGET_KG, 100), 'FM990D0', 'NLS_NUMERIC_CHARACTERS=''.,''') || '%"></span>'
-                       || '</div>'
-                       || '<ul class="hl-fulfil__legend">'
-                       || '<li><i class="hl-dot hl-dot--matched"></i>Confirmed <b>'
-                       || to_char(f.MATCHED_KG, 'FM999G999G990') || ' kg</b></li>'
-                       || '<li><i class="hl-dot hl-dot--pending"></i>Awaiting <b>'
-                       || to_char(f.PENDING_KG, 'FM999G999G990') || ' kg</b></li>'
-                       || '<li><i class="hl-dot hl-dot--open"></i>Open <b>'
-                       || to_char(f.UNMATCHED_KG, 'FM999G999G990') || ' kg</b></li>'
-                       || '</ul></div>' as BODY_HTML
-                from HL_FULFIL_V f
-                where (hl_auth.buyer_id is null or f.BUYER_ID = hl_auth.buyer_id)
-                  and f.STATUS <> 'CANCELLED'
-                order by case when f.STATUS = 'CLOSED' then 1 else 0 end, f.NEED_BY_DATE
+                with f as (select * from HL_FULFIL_V where BUYER_ID = coalesce(hl_auth.buyer_id, (select f0.buyer_id from hl_fulfil_v f0 where f0.demand_id = hl_demo.featured_demand_id)) and STATUS in ('OPEN', 'PARTIAL', 'FILLED')),
+                     r as (select nvl(sum(l.KM_SAVED), 0) km from HL_ROUTE_LINE_V l join f on f.DEMAND_ID = l.DEMAND_ID)
+                select 1 as SORT_ORDER, 'Active demands' as LABEL, to_char(count(*)) as VALUE_LABEL, 'demands' as UNIT, 'live' as PROVENANCE,
+                       'Demands not yet delivered or cancelled.' as METHOD from f
+                union all
+                select 2, 'Confirmed supply', to_char(nvl(sum(MATCHED_KG), 0), 'FM999G999G990'), 'kg', 'live',
+                       'Farmer-confirmed allocations across your active demands.' from f
+                union all
+                select 3, 'Awaiting farmers', to_char(nvl(sum(PENDING_KG), 0), 'FM999G999G990'), 'kg', 'live',
+                       'Proposed allocations a farmer has not yet confirmed.' from f
+                union all
+                select 4, 'Truck distance saved', to_char(round(km), 'FM999G999G990'), 'km', 'simulated',
+                       'Separate farm-to-buyer trips minus the shared pickup routes on your demands. Distances are straight-line x 1.3.' from r
+                order by 1
                 ```
         }
         layout {
@@ -170,112 +101,204 @@ page 30 (
             slot: body
         }
         appearance {
-            template: @/standard
-            templateOptions: [
-                #DEFAULT#
-                t-Region--scrollBody
-            ]
-        }
-        accessibility {
-            landmarkType: region
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-full
         }
         componentAppearance {
             display: report
         }
         settings {
-            overline: &OVERLINE.
-            title: &TITLE.
-            description: &BODY_HTML!RAW.
-            miscellaneous: &MISC.
+            label: &LABEL.
+            value: &VALUE_LABEL.
+            unit: &UNIT.
+            provenance: &PROVENANCE.
+            method: &METHOD.
         }
 
-        column BODY_HTML (
-            layout {
-                sequence: 50
-            }
-            source {
-                databaseColumn: BODY_HTML
-                dataType: varchar2
-            }
-        )
-
-        column DEMAND_ID (
+        column LABEL (
             layout {
                 sequence: 10
             }
             source {
-                databaseColumn: DEMAND_ID
-                dataType: number
-                primaryKey: true
-            }
-        )
-
-        column MISC (
-            layout {
-                sequence: 40
-            }
-            source {
-                databaseColumn: MISC
+                databaseColumn: LABEL
                 dataType: varchar2
             }
         )
 
-        column OVERLINE (
+        column VALUE_LABEL (
             layout {
                 sequence: 20
             }
             source {
-                databaseColumn: OVERLINE
+                databaseColumn: VALUE_LABEL
                 dataType: varchar2
             }
         )
 
-        column TITLE (
+        column UNIT (
             layout {
                 sequence: 30
             }
             source {
-                databaseColumn: TITLE
+                databaseColumn: UNIT
                 dataType: varchar2
             }
         )
 
-        action open-matches (
-            position: fullRowLink
+        column PROVENANCE (
             layout {
-                sequence: 10
+                sequence: 40
             }
-            behavior {
-                target: {
-                    page: 32
-                    items: {
-                        P32_DEMAND_ID: \&DEMAND_ID.\
-                    }
-                }
+            source {
+                databaseColumn: PROVENANCE
+                dataType: varchar2
+            }
+        )
+
+        column METHOD (
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: METHOD
+                dataType: varchar2
             }
         )
 
     )
-
-    button post-demand (
-        buttonName: POST_DEMAND
-        label: Post a demand
+    region unconfirmed (
+        name: Farmers not yet confirmed
+        type: dynamicContent
+        source {
+            plsqlFunctionBody:
+                ```plsql
+                declare
+                  l_buyer number;
+                  l_d     number;
+                  l_names varchar2(4000);
+                  l_kg    number;
+                  l_n     number;
+                  l_need  date;
+                begin
+                  select coalesce(hl_auth.buyer_id, max(f0.buyer_id)) into l_buyer from hl_fulfil_v f0 where f0.demand_id = hl_demo.featured_demand_id;
+                  select m.demand_id, listagg(m.farmer_name, ' and ') within group (order by m.rank_no), sum(m.allocated_kg), count(*), max(m.need_by_date)
+                    into l_d, l_names, l_kg, l_n, l_need
+                    from hl_match_v m join hl_demands d on d.demand_id = m.demand_id
+                   where d.buyer_id = l_buyer and m.ui_status = 'PENDING'
+                     and m.demand_id = (select min(m2.demand_id) keep (dense_rank first order by d2.need_by_date)
+                                          from hl_match_v m2 join hl_demands d2 on d2.demand_id = m2.demand_id
+                                         where d2.buyer_id = l_buyer and m2.ui_status = 'PENDING')
+                   group by m.demand_id;
+                  return '<div class="hlc-root hl-alert hl-alert-warning" role="status"><svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 2L1.75 13.25h12.5zM8 6.5v3M8 11.25v.25"></path></svg><div><b>' || l_n || ' farmer' || case when l_n <> 1 then 's have' else ' has' end
+                    || ' not confirmed for HL-D-' || lpad(l_d, 4, '0') || '</b>' || apex_escape.html(l_names) || ' hold ' || to_char(l_kg, 'FM999G990')
+                    || ' kg of this order. Pickup is the day before delivery on ' || to_char(l_need, 'Dy DD Mon') || '.'
+                    || '<div style="margin-top:8px"><a class="hl-btn hl-btn-ghost hl-btn-sm" href="' || apex_page.get_url(p_page => 32, p_items => 'P32_DEMAND_ID', p_values => l_d)
+                    || '">View matches<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 8h10M9 4l4 4-4 4"></path></svg></a></div></div></div>';
+                exception
+                  when no_data_found then return null;
+                end;
+                ```
+        }
         layout {
-            sequence: 10
-            region: @demands
-            slot: next
+            sequence: 30
+            slot: body
         }
         appearance {
-            buttonTemplate: @/text
-            hot: true
+            template: @/blank-with-attributes
             templateOptions: #DEFAULT#
-        }
-        behavior {
-            action: redirectThisApp
-            target: {
-                page: 31
-            }
+            cssClasses: hlc-full
         }
     )
-
+    region demands (
+        name: Your demands
+        type: dynamicContent
+        source {
+            plsqlFunctionBody:
+                ```plsql
+                declare
+                  l_buyer number;
+                  l_html  varchar2(32767);
+                  function img (p_crop varchar2) return varchar2 is
+                  begin
+                    return '#APP_FILES#images/' || case lower(p_crop) when 'onions' then 'crop-onion.jpg' when 'green peppers' then 'crop-pepper.jpg'
+                                                                      when 'carrots' then 'crop-carrot.jpg' else 'crop-tomato.jpg' end;
+                  end;
+                  function badge (p_status varchar2, p_text varchar2) return varchar2 is
+                    l_icon varchar2(400) := case p_status when 'matched' then 'M8 1.75a6.25 6.25 0 1 0 0 12.5A6.25 6.25 0 0 0 8 1.75zM5.25 8.25l2 2 3.5-4' when 'delivered' then 'M3.5 8.5l3 3 6-7' when 'transit' then 'M1.75 4h7.5v6.5h-7.5zM9.25 6.5h3l2 2.25v1.75h-5M4.5 12.5a1.25 1.25 0 1 0 0-.01M11.5 12.5a1.25 1.25 0 1 0 0-.01'
+                                                          when 'scheduled' then 'M2.25 3.5h11.5v10.25H2.25zM2.25 6.5h11.5M5 2v3M11 2v3' when 'pending' then 'M8 1.75a6.25 6.25 0 1 0 0 12.5A6.25 6.25 0 0 0 8 1.75zM8 4.5V8l2.5 1.5' else 'M8 1.75a6.25 6.25 0 1 0 0 12.5A6.25 6.25 0 0 0 8 1.75zM5.25 8h5.5' end;
+                  begin
+                    return '<span class="hl-badge hl-badge-' || p_status || '"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="' || l_icon || '"></path></svg>' || p_text || '</span>';
+                  end;
+                begin
+                  select coalesce(hl_auth.buyer_id, max(f0.buyer_id)) into l_buyer from hl_fulfil_v f0 where f0.demand_id = hl_demo.featured_demand_id;
+                  l_html := '<section class="hlc-root hlc-card" style="padding:24px;display:flex;flex-direction:column;gap:16px">'
+                    || '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><h2 style="margin:0;font:700 20px/28px var(--font-display)">Your demands</h2>'
+                    || '<span class="hl-prov hl-prov-demo">Demo data</span></div><div class="hl-table-wrap"><table class="hl-table"><caption class="hl-sr">Your demands</caption><thead><tr>'
+                    || '<th scope="col">Demand</th><th scope="col">Grade</th><th scope="col" class="hl-r">Requested</th><th scope="col" class="hl-r">Sourced</th><th scope="col">Delivery</th><th scope="col">Status</th></tr></thead><tbody>';
+                  for d in (select f.*, (select max(r.status) from hl_routes r where r.demand_id = f.demand_id) route_status
+                              from hl_fulfil_v f where f.buyer_id = l_buyer and f.status <> 'CANCELLED'
+                             order by case when f.status = 'CLOSED' then 1 else 0 end, f.need_by_date desc) loop
+                    l_html := l_html || '<tr' || case when d.demand_id = hl_demo.featured_demand_id then ' aria-selected="true"' end || '><td><span class="hlc-crop-cell"><img src="'
+                      || img(d.crop_name) || '" alt=""><span><a href="' || apex_page.get_url(p_page => 32, p_items => 'P32_DEMAND_ID', p_values => d.demand_id) || '">'
+                      || apex_escape.html(d.crop_name) || '</a><span class="hl-sub">HL-D-' || lpad(d.demand_id, 4, '0') || '</span></span></span></td>'
+                      || '<td><span class="hl-grade hl-grade-' || lower(d.grade_required) || '" title="Grade ' || d.grade_required || '"><b aria-hidden="true">' || d.grade_required || '</b><span class="hl-sr">Grade ' || d.grade_required || '</span></span></td>'
+                      || '<td class="hl-r">' || to_char(d.target_kg, 'FM999G999G990') || ' kg</td><td class="hl-r">' || to_char(d.matched_kg + d.pending_kg, 'FM999G999G990') || ' kg</td>'
+                      || '<td>' || to_char(d.need_by_date, 'Dy DD Mon') || '</td><td>'
+                      || case when d.status = 'CLOSED' then badge('delivered', 'Delivered')
+                              when d.route_status = 'DISPATCHED' then badge('transit', 'In transit')
+                              when d.status = 'DRAFT' then badge('draft', 'Draft')
+                              when d.pending_farmers > 0 then badge('pending', 'Pending · ' || d.pending_farmers)
+                              when d.unmatched_kg > 0 then badge('unmatched', 'Short ' || to_char(d.unmatched_kg, 'FM999G990') || ' kg')
+                              else badge('matched', 'Matched') end || '</td></tr>';
+                  end loop;
+                  return apex_plugin_util.replace_substitutions(p_escape => false, p_value => l_html || '</tbody></table></div></section>');
+                end;
+                ```
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-left
+        }
+    )
+    region route (
+        name: Pickup route
+        type: dynamicContent
+        source {
+            plsqlFunctionBody:
+                ```plsql
+                declare
+                  l_d   number := hl_demo.featured_demand_id;
+                  l_f   hl_fulfil_v%rowtype;
+                  l_n   number;
+                  l_county varchar2(60);
+                begin
+                  select * into l_f from hl_fulfil_v where demand_id = l_d;
+                  select count(*), max(trim(regexp_substr(farmer_location, '[^,]+$'))) into l_n, l_county from hl_match_v where demand_id = l_d and ui_status <> 'DECLINED';
+                  return apex_plugin_util.replace_substitutions(p_escape => false, p_value =>
+                       '<aside class="hlc-root hlc-card" style="padding:24px;display:flex;flex-direction:column;gap:16px"><div style="display:flex;flex-direction:column;gap:2px">'
+                    || '<h2 style="margin:0;font:700 20px/28px var(--font-display)">' || apex_escape.html(initcap(regexp_substr(l_f.crop_name, '\S+$'))) || ' pickup route</h2>'
+                    || '<p style="margin:0;font-size:13px;line-height:20px;color:var(--ink-muted)">HL-D-' || lpad(l_d, 4, '0') || ' · ' || to_char(l_f.need_by_date - 1, 'Dy DD Mon')
+                    || ' · ' || l_n || ' farms in ' || apex_escape.html(l_county) || '</p></div>'
+                    || '<div class="hl-map" style="border-radius:16px;overflow:hidden;border:1px solid var(--line)"><img src="#APP_FILES#images/map-kirinyaga-nairobi.svg" alt="Schematic map of the pickup cluster in Kirinyaga and the drop-off in Westlands, Nairobi" style="display:block;width:100%;height:auto"></div>'
+                    || '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="hl-prov hl-prov-simulated">Simulated</span>'
+                    || '<a class="hl-btn hl-btn-ghost hl-btn-sm" href="' || apex_page.get_url(p_page => 41) || '">View route<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 8h10M9 4l4 4-4 4"></path></svg></a></div></aside>');
+                end;
+                ```
+        }
+        layout {
+            sequence: 50
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-right hlc-rows-1
+        }
+    )
 )

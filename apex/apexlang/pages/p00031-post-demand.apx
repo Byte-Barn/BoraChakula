@@ -2,10 +2,11 @@ page 31 (
     name: Post a Demand
     alias: POST-DEMAND
     title: Post a demand
-    pageGroup: @marketplace
+    pageGroup: @dashboard
     appearance {
-        pageTemplate: @/standard
+        pageTemplate: @/blank
         templateOptions: #DEFAULT#
+        cssClasses: hlc-app
     }
     navigation {
         cursorFocus: doNotFocusCursor
@@ -19,37 +20,146 @@ page 31 (
         enableDuplicatePageSubmissions: false
     }
     comments {
-        comments: Canvas screen 4. Buyers post a demand (HL_DEMAND_API.create_demand) or save a draft, then go straight to the ranked farmers.
+        comments: Canvas screen 4 (Post a demand). The form items and processes call HL_DEMAND_API.create_demand / save_draft / publish.
     }
 
-    region post-demand (
-        name: Post a demand
-        type: staticContent
+    region header (
+        name: Header
+        type: dynamicContent
+        source {
+            plsqlFunctionBody:
+                ```plsql
+                return '<div class="hlc-root"><header class="hl-ph"><a class="hl-ph-back hl-link" href="' || apex_page.get_url(p_page => 30) || '" style="text-decoration:none"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M13 8H3M7 4L3 8l4 4"></path></svg>Back to dashboard</a>'
+                  || '<div class="hl-ph-row"><div class="hl-stack" style="gap:4px"><h1>Post a demand</h1><p>Tell farmers what you need before they harvest. Matching starts as soon as you post.</p></div></div></header></div>';
+                ```
+        }
         layout {
             sequence: 10
             slot: body
         }
         appearance {
-            template: @/standard
+            template: @/blank-with-attributes
             templateOptions: #DEFAULT#
-        }
-        settings {
-            outputAs: text
-        }
-        comments {
-            comments: Tell farmers what you need before they harvest. Matching starts as soon as you post.
+            cssClasses: hlc-full
         }
     )
-
+    region produce (
+        name: Produce
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div class="hlc-root" style="display:flex;gap:12px;align-items:baseline;margin-bottom:8px"><span style="font:500 21px/28px var(--font-display);color:var(--forest)">1</span><h2 style="margin:0;font-size:17px;line-height:24px">Produce</h2></div>
+                ```
+        }
+        layout {
+            sequence: 20
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-left hlc-card hlc-form
+        }
+        settings {
+            outputAs: html
+        }
+    )
+    region before-you-post (
+        name: Before you post
+        type: dynamicContent
+        source {
+            plsqlFunctionBody:
+                ```plsql
+                declare
+                  l_buyer number;
+                  l_name  varchar2(150);
+                  l_kra   varchar2(20);
+                begin
+                  select coalesce(hl_auth.buyer_id, max(f0.buyer_id)) into l_buyer from hl_fulfil_v f0 where f0.demand_id = hl_demo.featured_demand_id;
+                  select buyer_name, kra_pin into l_name, l_kra from hl_buyers where buyer_id = l_buyer;
+                  return '<div class="hlc-root" style="display:flex;flex-direction:column;gap:24px">'
+                    || '<section aria-label="Before you post" class="hlc-card" style="border-color:var(--line-strong);padding:24px;display:flex;flex-direction:column;gap:20px">'
+                    || '<p class="hl-overline" style="margin:0">Before you post</p>'
+                    || '<div style="display:flex;flex-direction:column;gap:10px"><h3 style="margin:0;font-size:15px;line-height:24px">What happens next</h3>'
+                    || '<ol style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:13px;line-height:20px;color:var(--ink-muted)">'
+                    || '<li>We rank farmers whose harvest is ready before your delivery date.</li>'
+                    || '<li>Farmers confirm their share. You see each one and why they qualify.</li>'
+                    || '<li>We plan one pickup route for the day before delivery.</li></ol></div>'
+                    || '<div style="display:flex;flex-direction:column;gap:8px">'
+                    || '<button type="button" class="hl-btn hl-btn-primary hl-btn-lg hl-btn-block" onclick="apex.submit(''POST'')">Post demand<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 8h10M9 4l4 4-4 4"></path></svg></button>'
+                    || '<button type="button" class="hl-btn hl-btn-secondary hl-btn-block" onclick="apex.submit(''SAVE_DRAFT'')">Save draft</button></div>'
+                    || '<p style="margin:0;font-size:13px;line-height:20px;color:var(--ink-muted)">Delivery must be at least 7 days away, so farmers can plan. Drafts are not matched until you post them.</p></section>'
+                    || '<section class="hlc-card" style="padding:20px 24px;display:flex;flex-direction:column;gap:8px">'
+                    || '<h3 style="margin:0;font-size:15px;line-height:24px">Posting as ' || apex_escape.html(l_name) || '</h3>'
+                    || '<p style="margin:0;font-size:13px;line-height:20px;color:var(--ink-muted)">' || case when l_kra is not null then 'KRA PIN and business registration on file. ' end
+                    || 'Farmers see your name and order history before they confirm.</p>'
+                    || '<div style="display:flex;gap:8px;align-items:center;font-size:13px;color:var(--ink-muted)">Automated KRA check <span class="hl-prov hl-prov-roadmap">Roadmap</span></div></section></div>';
+                end;
+                ```
+        }
+        layout {
+            sequence: 25
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-right hlc-rows-3
+        }
+    )
+    region delivery (
+        name: Delivery
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div class="hlc-root" style="display:flex;gap:12px;align-items:baseline;margin-bottom:8px"><span style="font:500 21px/28px var(--font-display);color:var(--forest)">2</span><h2 style="margin:0;font-size:17px;line-height:24px">Delivery</h2></div>
+                ```
+        }
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-left hlc-card hlc-form
+        }
+        settings {
+            outputAs: html
+        }
+    )
+    region price-notes (
+        name: Price and notes
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div class="hlc-root" style="display:flex;gap:12px;align-items:baseline;margin-bottom:8px"><span style="font:500 21px/28px var(--font-display);color:var(--forest)">3</span><h2 style="margin:0;font-size:17px;line-height:24px">Price and notes</h2></div>
+                ```
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-left hlc-card hlc-form
+        }
+        settings {
+            outputAs: html
+        }
+    )
     pageItem P31_DEMAND_ID (
         type: hidden
         layout {
             sequence: 5
-            region: @post-demand
+            region: @produce
             slot: regionBody
         }
     )
-
     pageItem P31_BUYER_ID (
         type: selectList
         label {
@@ -62,12 +172,12 @@ page 31 (
         }
         layout {
             sequence: 10
-            region: @post-demand
+            region: @produce
             slot: regionBody
             alignment: left
         }
         appearance {
-            template: @/required-floating
+            template: @/required-above
             templateOptions: #DEFAULT#
         }
         serverSideCondition {
@@ -75,12 +185,14 @@ page 31 (
             plsqlExpression: hl_auth.buyer_id is null
         }
     )
-
     pageItem P31_CROP_ID (
-        type: selectList
+        type: radioGroup
         label {
             label: Crop
             alignment: right
+        }
+        settings {
+            noOfCols: 4
         }
         lov {
             type: sharedComponent
@@ -88,19 +200,40 @@ page 31 (
         }
         layout {
             sequence: 20
-            region: @post-demand
+            region: @produce
             slot: regionBody
             alignment: left
         }
         appearance {
-            template: @/required-floating
+            template: @/required-above
             templateOptions: #DEFAULT#
+            cssClasses: hlc-crop-tiles
         }
         validation {
             valueRequired: true
         }
     )
-
+    pageItem P31_QTY_KG (
+        type: numberField
+        label {
+            label: Quantity (kg)
+            alignment: right
+        }
+        layout {
+            sequence: 40
+            region: @produce
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-above
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            valueRequired: true
+        }
+    )
     pageItem P31_GRADE (
         type: radioGroup
         label {
@@ -117,63 +250,18 @@ page 31 (
         }
         layout {
             sequence: 30
-            region: @post-demand
+            region: @produce
             slot: regionBody
             alignment: left
         }
         appearance {
-            template: @/required-floating
+            template: @/required-above
             templateOptions: #DEFAULT#
         }
         validation {
             valueRequired: true
         }
     )
-
-    pageItem P31_QTY_KG (
-        type: numberField
-        label {
-            label: Quantity (kg)
-            alignment: right
-        }
-        layout {
-            sequence: 40
-            region: @post-demand
-            slot: regionBody
-            alignment: left
-        }
-        appearance {
-            template: @/required-floating
-            templateOptions: #DEFAULT#
-            width: 32
-        }
-        validation {
-            valueRequired: true
-        }
-    )
-
-    pageItem P31_PRICE_PER_KG (
-        type: numberField
-        label {
-            label: Price (KES/kg)
-            alignment: right
-        }
-        layout {
-            sequence: 50
-            region: @post-demand
-            slot: regionBody
-            alignment: left
-        }
-        appearance {
-            template: @/required-floating
-            templateOptions: #DEFAULT#
-            width: 32
-        }
-        validation {
-            valueRequired: true
-        }
-    )
-
     pageItem P31_NEED_BY (
         type: datePicker
         label {
@@ -182,12 +270,12 @@ page 31 (
         }
         layout {
             sequence: 60
-            region: @post-demand
+            region: @delivery
             slot: regionBody
             alignment: left
         }
         appearance {
-            template: @/required-floating
+            template: @/required-above
             templateOptions: #DEFAULT#
             width: 32
         }
@@ -195,7 +283,6 @@ page 31 (
             valueRequired: true
         }
     )
-
     pageItem P31_WINDOW (
         type: selectList
         label {
@@ -208,16 +295,36 @@ page 31 (
         }
         layout {
             sequence: 70
-            region: @post-demand
+            region: @delivery
             slot: regionBody
             alignment: left
         }
         appearance {
-            template: @/optional-floating
+            template: @/optional-above
             templateOptions: #DEFAULT#
         }
     )
-
+    pageItem P31_PRICE_PER_KG (
+        type: numberField
+        label {
+            label: Price (KES/kg)
+            alignment: right
+        }
+        layout {
+            sequence: 50
+            region: @price-notes
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-above
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            valueRequired: true
+        }
+    )
     pageItem P31_NOTES (
         type: textarea
         label {
@@ -226,51 +333,15 @@ page 31 (
         }
         layout {
             sequence: 80
-            region: @post-demand
+            region: @price-notes
             slot: regionBody
             alignment: left
         }
         appearance {
-            template: @/optional-floating
+            template: @/optional-above
             templateOptions: #DEFAULT#
         }
     )
-
-    button post (
-        buttonName: POST
-        label: Post demand
-        layout {
-            sequence: 10
-            region: @post-demand
-            slot: next
-        }
-        appearance {
-            buttonTemplate: @/text
-            hot: true
-            templateOptions: #DEFAULT#
-        }
-        behavior {
-            warnOnUnsavedChanges: doNotCheck
-        }
-    )
-
-    button save-draft (
-        buttonName: SAVE_DRAFT
-        label: Save draft
-        layout {
-            sequence: 20
-            region: @post-demand
-            slot: next
-        }
-        appearance {
-            buttonTemplate: @/text
-            templateOptions: #DEFAULT#
-        }
-        behavior {
-            warnOnUnsavedChanges: doNotCheck
-        }
-    )
-
     process defaults (
         name: Suggest values for a new demand
         type: executeCode
@@ -289,7 +360,6 @@ page 31 (
             point: beforeHeader
         }
     )
-
     process save-draft (
         name: Save draft
         type: executeCode
@@ -316,7 +386,6 @@ page 31 (
             plsqlExpression: :REQUEST = 'SAVE_DRAFT'
         }
     )
-
     process post-demand (
         name: Post demand and show the matches
         type: executeCode
@@ -367,5 +436,4 @@ page 31 (
             plsqlExpression: :REQUEST = 'POST'
         }
     )
-
 )

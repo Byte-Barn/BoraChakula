@@ -149,7 +149,11 @@ body.hlc-app .t-Body-contentInner { margin-left: 248px; width: auto; min-width: 
 body.hlc-app .t-Body-contentInner > .apex-page-success, body.hlc-app .t-Body-contentInner > .apex-page-error,
 body.hlc-app .t-Body-contentInner > .hlc-full { grid-column: 1 / -1; }
 body.hlc-app .t-Body-contentInner > .hlc-left { grid-column: 1; }
-body.hlc-app .t-Body-contentInner > .hlc-right { grid-column: 2; grid-row: span 8; }
+body.hlc-app .t-Body-contentInner > .hlc-right { grid-column: 2; grid-row: span 4; }
+body.hlc-app .t-Body-contentInner > .hlc-rows-1 { grid-row: span 1; }
+body.hlc-app .t-Body-contentInner > .hlc-rows-2 { grid-row: span 2; }
+body.hlc-app .t-Body-contentInner > .hlc-rows-3 { grid-row: span 3; }
+body.hlc-app .t-Body-contentInner > .hlc-rows-4 { grid-row: span 4; }
 .hlc-appnav { position: fixed; left: 0; top: 0; bottom: 0; width: 248px; background: var(--forest-deep); overflow-y: auto; z-index: 10; }
 .hlc-appnav .hl-nav { min-height: 100%; box-sizing: border-box; }
 .hlc-appnav .hl-nav-foot a { color: rgba(255,255,255,.85); }
@@ -160,3 +164,48 @@ body.hlc-app .t-Body-contentInner > .hlc-right { grid-column: 2; grid-row: span 
   body.hlc-app .t-Body-contentInner { margin-left: 0; padding: 20px 16px 48px; grid-template-columns: minmax(0, 1fr); }
   body.hlc-app .t-Body-contentInner > .hlc-right { grid-column: 1; grid-row: auto; }
 }
+
+/* Buyer demands table: crop thumbnail and link */
+.hlc-crop-cell { display: flex; align-items: center; gap: 12px; }
+.hlc-crop-cell img { width: 44px; height: 44px; border-radius: 10px; object-fit: contain; background: #fff; border: 1px solid var(--line); flex: none; }
+.hlc-crop-cell a { font-weight: 600; color: var(--ink) !important; text-decoration: none; }
+.hlc-crop-cell a:hover { color: var(--forest) !important; text-decoration: underline; }
+.hlc-crop-cell .hl-sub { display: block; }
+/* Grade allocation: unplaced kilograms */
+.hlc-alloc-open { background: repeating-linear-gradient(45deg, var(--surface-sunken) 0 6px, #fff 6px 12px); color: var(--ink-muted); }
+
+/* Forms on canvas pages: card sections with labels above the fields */
+.hlc-form { background: var(--surface-raised); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow-card); padding: 24px; }
+.hlc-form .t-Form-label { font: 600 13px/16px var(--font-sans); color: var(--ink); }
+.hlc-form .apex-item-text, .hlc-form .apex-item-select, .hlc-form .apex-item-textarea, .hlc-form .apex-item-datepicker input {
+  border-radius: 10px; border-color: #c9d1c6; background: #fff; min-height: 44px; font-size: 15px; }
+.hlc-form .t-Form-fieldContainer { margin-bottom: 8px; }
+/* Crop picker: a radio group shown as photo tiles (crop IDs are fixed reference data) */
+.hlc-crop-tiles .apex-item-grid-row, .hlc-crop-tiles .apex-item-group--rc { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 12px; }
+.hlc-crop-tiles .apex-item-option { margin: 0; }
+.hlc-crop-tiles .apex-item-option input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.hlc-crop-tiles .apex-item-option label { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 8px 12px; border-radius: 14px;
+  border: 1.5px solid var(--line); background: #fff; font-size: 13px; font-weight: 600; color: var(--ink); cursor: pointer; min-height: 44px; text-align: center; }
+.hlc-crop-tiles .apex-item-option label::before { content: ""; display: block; width: 100%; aspect-ratio: 1; border-radius: 10px;
+  background: var(--soil-soft) center / contain no-repeat; }
+.hlc-crop-tiles .apex-item-option input[value="1"] + label::before { background-image: url("../images/crop-tomato.jpg"); background-color: #fff; }
+.hlc-crop-tiles .apex-item-option input[value="2"] + label::before { background-image: url("../images/crop-onion.jpg"); background-color: #fff; }
+.hlc-crop-tiles .apex-item-option input[value="3"] + label::before { background-image: url("../images/crop-pepper.jpg"); background-color: #fff; }
+.hlc-crop-tiles .apex-item-option input[value="4"] + label::before { background-image: url("../images/crop-carrot.jpg"); background-color: #fff; }
+.hlc-crop-tiles .apex-item-option label:hover { border-color: var(--forest); }
+.hlc-crop-tiles .apex-item-option input:checked + label { border-color: var(--forest); background: var(--forest-soft); box-shadow: inset 0 0 0 1px var(--forest); color: var(--forest); }
+.hlc-crop-tiles .apex-item-option input:focus-visible + label { outline: 2px solid var(--focus); outline-offset: 2px; }
+/* APEX regions kept on canvas pages (reports, the map) sit in canvas cards */
+body.hlc-app .t-Region { border-radius: 16px; box-shadow: var(--shadow-card); border-color: var(--line); }
+
+/* Farmer screens: phone first, one narrow column, bottom navigation */
+body.hlc-phone { margin: 0; background: var(--surface); color: var(--ink); font-family: var(--font-sans); }
+body.hlc-phone .t-Body-contentInner { max-width: 480px; margin: 0 auto; padding: 0 0 96px; display: flex; flex-direction: column; gap: 20px; }
+body.hlc-phone .t-Body-contentInner > .hlc-phone-card { margin: 0 16px; border-radius: 16px; box-shadow: var(--shadow-card); border-color: var(--line); }
+.hlc-bottom-nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; max-width: 480px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  background: #fff; border-top: 1px solid var(--line); padding: 6px 8px 10px; box-sizing: border-box; }
+.hlc-bottom-nav a { min-height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 12px; font-weight: 500;
+  color: var(--ink-muted) !important; text-decoration: none; border-radius: 12px; }
+.hlc-bottom-nav a[aria-current="page"] { font-weight: 700; color: var(--forest) !important; background: var(--forest-soft); }
+body.hlc-phone .hlc-phone-card .t-Form-label { font: 600 13px/16px var(--font-sans); }
+body.hlc-phone .hlc-phone-card .apex-item-text, body.hlc-phone .hlc-phone-card .apex-item-select, body.hlc-phone .hlc-phone-card .apex-item-datepicker input { border-radius: 10px; min-height: 48px; }
