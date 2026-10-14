@@ -26,8 +26,29 @@ create or replace package hl_demand_api as
     p_need_by_date in date,
     p_delivery_lat in number   default null,  -- default: buyer location
     p_delivery_lon in number   default null,
-    p_notes        in varchar2 default null
+    p_notes        in varchar2 default null,
+    p_receiving_window in varchar2 default null   -- '06-10' | '10-14' | '14-18'
   ) return number;
+
+  -- Saves a demand as DRAFT (matching ignores it). Pass p_demand_id to update
+  -- an existing draft. Only basic checks; the full rules run on publish.
+  -- Returns the DEMAND_ID.
+  function save_draft (
+    p_demand_id    in number   default null,
+    p_buyer_id     in number,
+    p_crop_id      in number,
+    p_grade        in varchar2,
+    p_quantity_kg  in number,
+    p_price_per_kg in number,
+    p_need_by_date in date,
+    p_delivery_lat in number   default null,
+    p_delivery_lon in number   default null,
+    p_notes        in varchar2 default null,
+    p_receiving_window in varchar2 default null
+  ) return number;
+
+  -- Applies the create_demand rules to a draft, opens it and runs matching
+  procedure publish (p_demand_id in number);
 
   -- Releases proposed farmers, records confirmed ones as REJECTED in the
   -- ledger, and re-matches the freed supply to other demands
@@ -42,18 +63,19 @@ end hl_demand_api;
 
 create or replace package body hl_demand_api as
 
-  function create_demand (
-    p_buyer_id     in number,
-    p_crop_id      in number,
-    p_grade        in varchar2,
-    p_quantity_kg  in number,
-    p_price_per_kg in number,
-    p_need_by_date in date,
-    p_delivery_lat in number   default null,
-    p_delivery_lon in number   default null,
-    p_notes        in varchar2 default null
-  ) return number is
-    l_id hl_demands.demand_id%type;
+  procedure check_window (p_receiving_window in varchar2) is
+  begin
+    if p_receiving_window is not null and p_receiving_window not in ('06-10', '10-14', '14-18') then
+      raise_application_error(-20208, 'Receiving time must be 06:00–10:00, 10:00–14:00 or 14:00–18:00');
+    end if;
+  end check_window;
+
+  -- The rules a demand must meet before farmers see it
+  procedure check_demand (
+    p_grade in varchar2, p_quantity_kg in number, p_price_per_kg in number,
+    p_need_by_date in date, p_delivery_lat in number, p_delivery_lon in number,
+    p_receiving_window in varchar2
+  ) is
   begin
     if p_quantity_kg is null or p_quantity_kg <= 0 or p_quantity_kg > c_max_qty_kg then
       raise_application_error(-20201, 'Quantity must be more than 0 kg and at most '
@@ -72,16 +94,90 @@ create or replace package body hl_demand_api as
     if (p_delivery_lat is null) <> (p_delivery_lon is null) then
       raise_application_error(-20205, 'Give both delivery latitude and longitude, or neither');
     end if;
+    check_window(p_receiving_window);
+  end check_demand;
+
+  function create_demand (
+    p_buyer_id     in number,
+    p_crop_id      in number,
+    p_grade        in varchar2,
+    p_quantity_kg  in number,
+    p_price_per_kg in number,
+    p_need_by_date in date,
+    p_delivery_lat in number   default null,
+    p_delivery_lon in number   default null,
+    p_notes        in varchar2 default null,
+    p_receiving_window in varchar2 default null
+  ) return number is
+    l_id hl_demands.demand_id%type;
+  begin
+    check_demand(p_grade, p_quantity_kg, p_price_per_kg, p_need_by_date,
+                 p_delivery_lat, p_delivery_lon, p_receiving_window);
 
     insert into hl_demands (
       buyer_id, crop_id, grade_required, quantity_kg, price_per_kg,
-      need_by_date, delivery_lat, delivery_lon, notes)
+      need_by_date, delivery_lat, delivery_lon, notes, receiving_window)
     values (
       p_buyer_id, p_crop_id, p_grade, p_quantity_kg, p_price_per_kg,
-      trunc(p_need_by_date), p_delivery_lat, p_delivery_lon, p_notes)
+      trunc(p_need_by_date), p_delivery_lat, p_delivery_lon, p_notes, p_receiving_window)
     returning demand_id into l_id;
     return l_id;
   end create_demand;
+
+  function save_draft (
+    p_demand_id    in number   default null,
+    p_buyer_id     in number,
+    p_crop_id      in number,
+    p_grade        in varchar2,
+    p_quantity_kg  in number,
+    p_price_per_kg in number,
+    p_need_by_date in date,
+    p_delivery_lat in number   default null,
+    p_delivery_lon in number   default null,
+    p_notes        in varchar2 default null,
+    p_receiving_window in varchar2 default null
+  ) return number is
+    l_id hl_demands.demand_id%type := p_demand_id;
+  begin
+    check_window(p_receiving_window);
+    if l_id is null then
+      insert into hl_demands (
+        buyer_id, crop_id, grade_required, quantity_kg, price_per_kg,
+        need_by_date, delivery_lat, delivery_lon, notes, receiving_window, status)
+      values (
+        p_buyer_id, p_crop_id, p_grade, p_quantity_kg, p_price_per_kg,
+        trunc(p_need_by_date), p_delivery_lat, p_delivery_lon, p_notes, p_receiving_window, 'DRAFT')
+      returning demand_id into l_id;
+    else
+      update hl_demands
+         set buyer_id = p_buyer_id, crop_id = p_crop_id, grade_required = p_grade,
+             quantity_kg = p_quantity_kg, price_per_kg = p_price_per_kg,
+             need_by_date = trunc(p_need_by_date), delivery_lat = p_delivery_lat,
+             delivery_lon = p_delivery_lon, notes = p_notes, receiving_window = p_receiving_window
+       where demand_id = l_id and status = 'DRAFT';
+      if sql%rowcount = 0 then
+        raise_application_error(-20209, 'Demand ' || l_id || ' is not a draft');
+      end if;
+    end if;
+    return l_id;
+  end save_draft;
+
+  procedure publish (p_demand_id in number) is
+    l_d hl_demands%rowtype;
+  begin
+    select * into l_d from hl_demands where demand_id = p_demand_id for update;
+    if l_d.status <> 'DRAFT' then
+      raise_application_error(-20209, 'Demand ' || p_demand_id || ' is not a draft');
+    end if;
+    check_demand(l_d.grade_required, l_d.quantity_kg, l_d.price_per_kg, l_d.need_by_date,
+                 l_d.delivery_lat, l_d.delivery_lon, l_d.receiving_window);
+    update hl_demands set status = 'OPEN', created_at = systimestamp where demand_id = p_demand_id;
+    -- Status changes do not fire the auto-match trigger, so match now
+    hl_match_pkg.rematch_all;
+  exception
+    when no_data_found then
+      raise_application_error(-20207, 'Demand ' || p_demand_id || ' does not exist');
+  end publish;
 
   procedure cancel (p_demand_id in number) is
     l_status hl_demands.status%type;
@@ -397,6 +493,7 @@ select d.demand_id,
        d.price_per_kg,
        d.quantity_kg * d.price_per_kg                         as order_value_kes,
        d.need_by_date,
+       d.receiving_window,
        d.status
   from hl_demands d
   join hl_buyers b on b.buyer_id = d.buyer_id
