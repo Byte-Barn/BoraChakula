@@ -1,0 +1,207 @@
+lov lov-buyer-types (
+    name: LOV_BUYER_TYPES
+    source {
+        location: staticValues
+    }
+    
+    entry exporter (
+        sequence: 2
+        display: EXPORTER
+        return: EXPORTER
+    )
+    
+    entry hotel (
+        sequence: 5
+        display: HOTEL
+        return: HOTEL
+    )
+    
+    entry processor (
+        sequence: 3
+        display: PROCESSOR
+        return: PROCESSOR
+    )
+    
+    entry retailer (
+        sequence: 1
+        display: RETAILER
+        return: RETAILER
+    )
+    
+    entry school (
+        sequence: 4
+        display: SCHOOL
+        return: SCHOOL
+    )
+    
+    entry wholesale-market (
+        sequence: 6
+        display: WHOLESALE_MARKET
+        return: WHOLESALE_MARKET
+    )
+    
+    
+)
+
+lov lov-buyers (
+    name: LOV_BUYERS
+    source {
+        tableName: HL_BUYERS
+    }
+    columnMapping {
+        return: BUYER_ID
+        display: BUYER_NAME
+    }
+    
+)
+
+lov lov-crops (
+    name: LOV_CROPS
+    source {
+        tableName: HL_CROPS
+    }
+    columnMapping {
+        return: CROP_ID
+        display: CROP_NAME
+    }
+    
+)
+
+lov lov-demand-status (
+    name: LOV_DEMAND_STATUS
+    source {
+        location: staticValues
+    }
+    
+    entry cancelled (
+        sequence: 5
+        display: CANCELLED
+        return: CANCELLED
+    )
+    
+    entry closed (
+        sequence: 4
+        display: CLOSED
+        return: CLOSED
+    )
+    
+    entry filled (
+        sequence: 3
+        display: FILLED
+        return: FILLED
+    )
+    
+    entry open (
+        sequence: 1
+        display: OPEN
+        return: OPEN
+    )
+    
+    entry partial (
+        sequence: 2
+        display: PARTIAL
+        return: PARTIAL
+    )
+    
+    
+)
+
+lov lov-farmers (
+    name: LOV_FARMERS
+    source {
+        tableName: HL_FARMERS
+    }
+    columnMapping {
+        return: FARMER_ID
+        display: FULL_NAME
+    }
+    
+)
+
+lov lov-grades (
+    name: LOV_GRADES
+    source {
+        location: staticValues
+    }
+    
+    entry a (
+        sequence: 1
+        display: A
+        return: A
+    )
+    
+    entry b (
+        sequence: 2
+        display: B
+        return: B
+    )
+    
+    entry c (
+        sequence: 3
+        display: C
+        return: C
+    )
+    
+    
+)
+
+lov lov-harvest-status (
+    name: LOV_HARVEST_STATUS
+    source {
+        location: staticValues
+    }
+    
+    entry cancelled (
+        sequence: 5
+        display: CANCELLED
+        return: CANCELLED
+    )
+    
+    entry committed (
+        sequence: 3
+        display: COMMITTED
+        return: COMMITTED
+    )
+    
+    entry harvested (
+        sequence: 4
+        display: HARVESTED
+        return: HARVESTED
+    )
+    
+    entry open (
+        sequence: 1
+        display: OPEN
+        return: OPEN
+    )
+    
+    entry partial (
+        sequence: 2
+        display: PARTIAL
+        return: PARTIAL
+    )
+    
+    
+)
+
+lov lov-yes-no (
+    name: LOV_YES_NO
+    source {
+        location: staticValues
+    }
+    
+    entry n (
+        sequence: 2
+        display: No
+        return: N
+    )
+    
+    entry y (
+        sequence: 1
+        display: Yes
+        return: Y
+    )
+    
+    
+)
+

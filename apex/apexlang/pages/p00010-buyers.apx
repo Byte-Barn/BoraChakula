@@ -1,0 +1,384 @@
+page 10 (
+    name: Buyers
+    alias: BUYERS
+    title: Buyers
+    pageGroup: @participants
+    appearance {
+        pageTemplate: @/standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        authorizationScheme: mustNotBePublicUser
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+    advanced {
+        enableDuplicatePageSubmissions: false
+    }
+    comments {
+        comments: Buyer directory used to verify buyers and maintain delivery locations for routing.
+    }
+    
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @breadcrumb
+        }
+        layout {
+            sequence: 5
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @/title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @/breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+    
+    region buyers-report (
+        name: Buyers Report
+        type: interactiveReport
+        source {
+            location: localDatabase
+            tableName: HL_BUYERS
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @/interactive-report
+            templateOptions: [
+                #DEFAULT#
+                t-IRR-region--hideHeader js-addHiddenHeadingRoleDesc
+            ]
+        }
+        advanced {
+            htmlDomId: buyers-report
+        }
+        comments {
+            comments: Lists buyers and opens the buyer form for editing.
+        }
+        link {
+            linkColumn: customTarget
+            target: {
+                page: 11
+                items: {
+                    P11_BUYER_ID: \#BUYER_ID#\
+                }
+            }
+            linkIcon: <span role="img" aria-label="Edit" class="fa fa-edit" title="Edit"></span>
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        genAI {
+            naturalLanguageSupport: true
+            reportContext: Buyers posting produce demand with market channel, contact details, location, accepted grades, KRA PIN and verification status.
+        }
+        
+        column ACCEPTED_GRADES (
+            type: plainText
+            heading {
+                heading: Accepted Grades
+            }
+            layout {
+                sequence: 80
+            }
+            source {
+                dataType: STRING
+            }
+            genAI {
+                columnContext: Comma-separated produce grades the buyer accepts such as A or A,B or B,C
+            }
+        )
+        
+        column BUYER_ID (
+            type: plainText
+            heading {
+                heading: Buyer ID
+                alignment: end
+            }
+            layout {
+                sequence: 10
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            genAI {
+                columnContext: Surrogate primary key of the buyer
+            }
+        )
+        
+        column BUYER_NAME (
+            type: plainText
+            heading {
+                heading: Buyer
+            }
+            layout {
+                sequence: 20
+            }
+            source {
+                dataType: STRING
+            }
+            genAI {
+                columnContext: Buyer business name
+            }
+        )
+        
+        column BUYER_TYPE (
+            type: plainText
+            heading {
+                heading: Type
+            }
+            layout {
+                sequence: 30
+            }
+            source {
+                dataType: STRING
+            }
+            genAI {
+                columnContext: Market channel RETAILER, EXPORTER, PROCESSOR, SCHOOL, HOTEL or WHOLESALE_MARKET
+            }
+        )
+        
+        column CONTACT_EMAIL (
+            type: plainText
+            heading {
+                heading: Email
+            }
+            layout {
+                sequence: 50
+            }
+            source {
+                dataType: STRING
+            }
+            genAI {
+                columnContext: Buyer contact email
+            }
+        )
+        
+        column CONTACT_PHONE (
+            type: plainText
+            heading {
+                heading: Phone
+            }
+            layout {
+                sequence: 40
+            }
+            source {
+                dataType: STRING
+            }
+            genAI {
+                columnContext: Buyer contact phone
+            }
+        )
+        
+        column COUNTY (
+            type: plainText
+            heading {
+                heading: County
+            }
+            layout {
+                sequence: 60
+            }
+            source {
+                dataType: STRING
+            }
+            genAI {
+                columnContext: Kenyan county of the buyer delivery point
+            }
+        )
+        
+        column IS_VERIFIED (
+            type: plainTextBasedOnLov
+            lov {
+                lov: @lov-yes-no
+            }
+            heading {
+                heading: Verified
+            }
+            layout {
+                sequence: 100
+            }
+            source {
+                dataType: STRING
+            }
+            genAI {
+                columnContext: Whether the buyer has been verified, Y or N
+                referenceDataType: sharedComponent
+                lov: @lov-yes-no
+            }
+        )
+        
+        column KRA_PIN (
+            type: plainText
+            heading {
+                heading: KRA PIN
+            }
+            layout {
+                sequence: 90
+            }
+            source {
+                dataType: STRING
+            }
+            genAI {
+                columnContext: Kenya Revenue Authority PIN used for buyer verification
+            }
+        )
+        
+        column LOCATION_NAME (
+            type: plainText
+            heading {
+                heading: Location
+            }
+            layout {
+                sequence: 70
+            }
+            source {
+                dataType: STRING
+            }
+            genAI {
+                columnContext: Buyer location name
+            }
+        )
+        
+        
+        savedReport buyers-report-primary (
+            visibility: primaryDefault
+            
+            displayColumn ACCEPTED_GRADES (
+                sequence: 8
+            )
+            
+            displayColumn BUYER_ID (
+                sequence: 1
+            )
+            
+            displayColumn BUYER_NAME (
+                sequence: 2
+            )
+            
+            displayColumn BUYER_TYPE (
+                sequence: 3
+            )
+            
+            displayColumn CONTACT_PHONE (
+                sequence: 4
+            )
+            
+            displayColumn COUNTY (
+                sequence: 6
+            )
+            
+            displayColumn IS_VERIFIED (
+                sequence: 10
+            )
+            
+            displayColumn LOCATION_NAME (
+                sequence: 7
+            )
+            
+            
+        )
+        
+    )
+    
+    
+    button add-buyer (
+        buttonName: ADD-BUYER
+        label: Add Buyer
+        layout {
+            sequence: 1
+            region: @buyers-report
+            slot: rightOfInteractiveReportSearchBar
+        }
+        appearance {
+            buttonTemplate: @/text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 11
+            }
+        }
+        
+    )
+    
+    button reset-buyers-report (
+        buttonName: RESET-buyers-report
+        label: Reset
+        layout {
+            sequence: 2
+            region: @buyers-report
+            slot: rightOfInteractiveReportSearchBar
+        }
+        appearance {
+            buttonTemplate: @/text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-undo-alt
+        }
+        behavior {
+            action: triggerAction
+        }
+        
+        triggerAction reset (
+            name: Reset
+            action: executeJsCode
+            settings {
+                jsCode: apex.jQuery("#buyers-report_actions_menu").menu("find", "irReset").action();
+            }
+            execution {
+                sequence: 10
+            }
+        )
+    )
+    
+    
+    
+    dynamicAction dialog-refresh-buyers-report (
+        name: Refresh on dialog close Buyers Report
+        execution {
+            sequence: 10
+        }
+        when {
+            event: apexafterclosedialog
+            selectionType: region
+            region: @buyers-report
+        }
+        
+        action refresh (
+            action: refresh
+            settings {
+                maintainPagination: true
+            }
+            affectedElements {
+                selectionType: region
+                region: @buyers-report
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+        
+    )
+    
+    
+)
+

@@ -1,0 +1,171 @@
+list navigation-bar (
+    name: Navigation Bar
+    
+    entry --- (
+        label: ---
+        layout {
+            sequence: 20
+            parentEntry: @app-user
+        }
+        link {
+            target: {
+                type: url
+                url: separator
+            }
+        }
+        serverSideCondition {
+            type: userIsAuthenticated
+        }
+    )
+    
+    entry app-user (
+        label: &APP_USER.
+        icon {
+            imageIconCssClasses: fa-user
+        }
+        layout {
+            sequence: 10
+        }
+        link {
+            target: {
+                type: url
+                url: #
+            }
+        }
+        userDefinedAttributes {
+            2: has-username
+        }
+    )
+    
+    entry sign-out (
+        label: Sign Out
+        icon {
+            imageIconCssClasses: fa-sign-out
+        }
+        layout {
+            sequence: 30
+            parentEntry: @app-user
+        }
+        link {
+            target: {
+                type: url
+                url: &LOGOUT_URL.
+            }
+        }
+        serverSideCondition {
+            type: userIsAuthenticated
+        }
+    )
+    
+)
+
+list navigation-menu (
+    name: Navigation Menu
+    
+    entry buyer-demands (
+        label: Buyer Demands
+        icon {
+            imageIconCssClasses: fa-shopping-cart
+        }
+        layout {
+            sequence: 20
+        }
+        link {
+            target: {
+                page: 2
+            }
+        }
+    )
+    
+    entry buyers (
+        label: Buyers
+        icon {
+            imageIconCssClasses: fa-building
+        }
+        layout {
+            sequence: 70
+        }
+        link {
+            target: {
+                page: 10
+            }
+        }
+    )
+    
+    entry farmer-harvests (
+        label: Farmer Harvests
+        icon {
+            imageIconCssClasses: fa-leaf
+        }
+        layout {
+            sequence: 30
+        }
+        link {
+            target: {
+                page: 4
+            }
+        }
+    )
+    
+    entry farmers (
+        label: Farmers
+        icon {
+            imageIconCssClasses: fa-users
+        }
+        layout {
+            sequence: 60
+        }
+        link {
+            target: {
+                page: 8
+            }
+        }
+    )
+    
+    entry grade-routing (
+        label: Grade Routing
+        icon {
+            imageIconCssClasses: fa-random
+        }
+        layout {
+            sequence: 50
+        }
+        link {
+            target: {
+                page: 7
+            }
+        }
+    )
+    
+    entry impact-dashboard (
+        label: Impact Dashboard
+        icon {
+            imageIconCssClasses: fa-dashboard
+        }
+        layout {
+            sequence: 10
+        }
+        link {
+            target: {
+                page: 1
+            }
+        }
+    )
+    
+    entry match-planner (
+        label: Match Planner
+        icon {
+            imageIconCssClasses: fa-map
+        }
+        layout {
+            sequence: 40
+        }
+        link {
+            target: {
+                page: 6
+            }
+        }
+    )
+    
+)
+

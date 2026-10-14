@@ -1,0 +1,28 @@
+pageGroup dashboard (
+    name: Dashboard
+    description {
+        description: Impact KPIs and charts for matched volume, waste avoided and emissions saved.
+    }
+)
+
+pageGroup marketplace (
+    name: Marketplace
+    description {
+        description: Buyer demand, farmer harvest supply and their maintenance forms.
+    }
+)
+
+pageGroup matching-and-logistics (
+    name: Matching and Logistics
+    description {
+        description: Match planner with pickup map, route savings and grade routing.
+    }
+)
+
+pageGroup participants (
+    name: Participants
+    description {
+        description: Farmer and buyer directories and maintenance forms.
+    }
+)
+

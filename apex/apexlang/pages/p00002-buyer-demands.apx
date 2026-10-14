@@ -1,0 +1,502 @@
+page 2 (
+    name: Buyer Demands
+    alias: BUYER-DEMANDS
+    title: Buyer Demands
+    pageGroup: @marketplace
+    appearance {
+        pageTemplate: @/standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        authorizationScheme: mustNotBePublicUser
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+    advanced {
+        enableDuplicatePageSubmissions: false
+    }
+    comments {
+        comments: Buyers post needs here before harvest; saving a demand automatically re-runs matching.
+    }
+    
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @breadcrumb
+        }
+        layout {
+            sequence: 5
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @/title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @/breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+    
+    region buyer-demands-report (
+        name: Buyer Demands Report
+        type: interactiveReport
+        source {
+            location: localDatabase
+            tableName: HL_DEMAND_SUMMARY_V
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @/interactive-report
+            templateOptions: [
+                #DEFAULT#
+                t-IRR-region--hideHeader js-addHiddenHeadingRoleDesc
+            ]
+        }
+        advanced {
+            htmlDomId: buyer-demands-report
+        }
+        comments {
+            comments: Lists every buyer demand with allocation progress and opens the demand form for editing.
+        }
+        link {
+            linkColumn: customTarget
+            target: {
+                page: 3
+                items: {
+                    P3_DEMAND_ID: \#DEMAND_ID#\
+                }
+            }
+            linkIcon: <span role="img" aria-label="Edit" class="fa fa-edit" title="Edit"></span>
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        genAI {
+            naturalLanguageSupport: true
+            reportContext: Buyer produce demands posted before harvest with matched volume, fill percentage, matched farmers and transport and CO2 savings from shared pickups.
+        }
+        
+        column ALLOCATED_KG (
+            type: plainText
+            heading {
+                heading: Matched (kg)
+                alignment: end
+            }
+            layout {
+                sequence: 100
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+            genAI {
+                columnContext: Kilograms allocated from farmer harvests to this demand
+            }
+        )
+        
+        column BUYER_NAME (
+            type: plainText
+            heading {
+                heading: Buyer
+            }
+            layout {
+                sequence: 20
+            }
+            source {
+                dataType: STRING
+            }
+            genAI {
+                columnContext: Name of the buyer that posted the demand
+            }
+        )
+        
+        column BUYER_TYPE (
+            type: plainText
+            heading {
+                heading: Buyer Type
+            }
+            layout {
+                sequence: 30
+            }
+            source {
+                dataType: STRING
+            }
+            genAI {
+                columnContext: Market channel of the buyer such as RETAILER, EXPORTER, PROCESSOR, SCHOOL, HOTEL or WHOLESALE_MARKET
+            }
+        )
+        
+        column CO2_SAVED_KG (
+            type: plainText
+            heading {
+                heading: CO2 Saved (kg)
+                alignment: end
+            }
+            layout {
+                sequence: 140
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                dataType: NUMBER
+            }
+            genAI {
+                columnContext: Kilograms of CO2 avoided by the shared pickup route
+            }
+        )
+        
+        column CROP_NAME (
+            type: plainText
+            heading {
+                heading: Crop
+            }
+            layout {
+                sequence: 40
+            }
+            source {
+                dataType: STRING
+            }
+            genAI {
+                columnContext: Crop requested by the buyer
+            }
+        )
+        
+        column DEMAND_ID (
+            type: plainText
+            heading {
+                heading: Demand ID
+                alignment: end
+            }
+            layout {
+                sequence: 10
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            genAI {
+                columnContext: Surrogate primary key of the buyer demand
+            }
+        )
+        
+        column FARMERS_MATCHED (
+            type: plainText
+            heading {
+                heading: Farmers
+                alignment: end
+            }
+            layout {
+                sequence: 120
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            genAI {
+                columnContext: Number of distinct farmers aggregated into this demand
+            }
+        )
+        
+        column FILL_PCT (
+            type: plainText
+            heading {
+                heading: Fill %
+                alignment: end
+            }
+            layout {
+                sequence: 110
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 990D0
+            }
+            source {
+                dataType: NUMBER
+            }
+            genAI {
+                columnContext: Percentage of the requested quantity that has been matched
+            }
+        )
+        
+        column GRADE_REQUIRED (
+            type: plainText
+            heading {
+                heading: Min Grade
+            }
+            layout {
+                sequence: 50
+            }
+            source {
+                dataType: STRING
+            }
+            genAI {
+                columnContext: Minimum acceptable produce grade where A is best and C is lowest
+            }
+        )
+        
+        column KM_SAVED (
+            type: plainText
+            heading {
+                heading: Km Saved
+                alignment: end
+            }
+            layout {
+                sequence: 130
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+            genAI {
+                columnContext: Road kilometres saved by the shared pickup route versus individual trips
+            }
+        )
+        
+        column NEED_BY_DATE (
+            type: plainText
+            heading {
+                heading: Need By
+            }
+            layout {
+                sequence: 80
+            }
+            appearance {
+                formatMask: DD-MON-YYYY
+            }
+            source {
+                dataType: DATE
+            }
+            genAI {
+                columnContext: Date by which the buyer needs delivery
+            }
+        )
+        
+        column PRICE_PER_KG (
+            type: plainText
+            heading {
+                heading: Price (KES/kg)
+                alignment: end
+            }
+            layout {
+                sequence: 70
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+            source {
+                dataType: NUMBER
+            }
+            genAI {
+                columnContext: Price per kilogram offered by the buyer in Kenya shillings
+            }
+        )
+        
+        column QUANTITY_KG (
+            type: plainText
+            heading {
+                heading: Quantity (kg)
+                alignment: end
+            }
+            layout {
+                sequence: 60
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+            genAI {
+                columnContext: Kilograms requested by the buyer
+            }
+        )
+        
+        column STATUS (
+            type: plainText
+            heading {
+                heading: Status
+            }
+            layout {
+                sequence: 90
+            }
+            source {
+                dataType: STRING
+            }
+            genAI {
+                columnContext: Demand fill state OPEN, PARTIAL, FILLED, CLOSED or CANCELLED
+            }
+        )
+        
+        
+        savedReport buyer-demands-report-primary (
+            visibility: primaryDefault
+            
+            displayColumn ALLOCATED_KG (
+                sequence: 10
+            )
+            
+            displayColumn BUYER_NAME (
+                sequence: 2
+            )
+            
+            displayColumn BUYER_TYPE (
+                sequence: 3
+            )
+            
+            displayColumn CO2_SAVED_KG (
+                sequence: 14
+            )
+            
+            displayColumn CROP_NAME (
+                sequence: 4
+            )
+            
+            displayColumn DEMAND_ID (
+                sequence: 1
+            )
+            
+            displayColumn FARMERS_MATCHED (
+                sequence: 12
+            )
+            
+            displayColumn FILL_PCT (
+                sequence: 11
+            )
+            
+            displayColumn GRADE_REQUIRED (
+                sequence: 5
+            )
+            
+            displayColumn KM_SAVED (
+                sequence: 13
+            )
+            
+            displayColumn NEED_BY_DATE (
+                sequence: 8
+            )
+            
+            displayColumn PRICE_PER_KG (
+                sequence: 7
+            )
+            
+            displayColumn QUANTITY_KG (
+                sequence: 6
+            )
+            
+            displayColumn STATUS (
+                sequence: 9
+            )
+            
+            
+        )
+        
+    )
+    
+    
+    button post-demand (
+        buttonName: POST-DEMAND
+        label: Post Demand
+        layout {
+            sequence: 1
+            region: @buyer-demands-report
+            slot: rightOfInteractiveReportSearchBar
+        }
+        appearance {
+            buttonTemplate: @/text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 3
+            }
+        }
+        
+    )
+    
+    button reset-buyer-demands-report (
+        buttonName: RESET-buyer-demands-report
+        label: Reset
+        layout {
+            sequence: 2
+            region: @buyer-demands-report
+            slot: rightOfInteractiveReportSearchBar
+        }
+        appearance {
+            buttonTemplate: @/text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-undo-alt
+        }
+        behavior {
+            action: triggerAction
+        }
+        
+        triggerAction reset (
+            name: Reset
+            action: executeJsCode
+            settings {
+                jsCode: apex.jQuery("#buyer-demands-report_actions_menu").menu("find", "irReset").action();
+            }
+            execution {
+                sequence: 10
+            }
+        )
+    )
+    
+    
+    
+    dynamicAction dialog-refresh-buyer-demands-report (
+        name: Refresh on dialog close Buyer Demands Report
+        execution {
+            sequence: 10
+        }
+        when {
+            event: apexafterclosedialog
+            selectionType: region
+            region: @buyer-demands-report
+        }
+        
+        action refresh (
+            action: refresh
+            settings {
+                maintainPagination: true
+            }
+            affectedElements {
+                selectionType: region
+                region: @buyer-demands-report
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+        
+    )
+    
+    
+)
+

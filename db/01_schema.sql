@@ -142,7 +142,7 @@ create table hl_routes (
   status            varchar2(20)  default 'PLANNED' not null,
   created_at        timestamp     default systimestamp not null,
   constraint hl_routes_pk primary key (route_id),
-  constraint hl_routes_demand_fk foreign key (demand_id) references hl_demands,
+  constraint hl_routes_demand_fk foreign key (demand_id) references hl_demands on delete cascade,
   constraint hl_routes_demand_uk unique (demand_id),
   constraint hl_routes_vehicle_ck check (vehicle_type in ('TRUCK','PICKUP','DIRECT')),
   constraint hl_routes_status_ck check (status in
@@ -168,8 +168,8 @@ create table hl_matches (
   status          varchar2(20)  default 'PROPOSED' not null,
   created_at      timestamp     default systimestamp not null,
   constraint hl_matches_pk primary key (match_id),
-  constraint hl_matches_demand_fk foreign key (demand_id) references hl_demands,
-  constraint hl_matches_harvest_fk foreign key (harvest_id) references hl_harvests,
+  constraint hl_matches_demand_fk foreign key (demand_id) references hl_demands on delete cascade,
+  constraint hl_matches_harvest_fk foreign key (harvest_id) references hl_harvests on delete cascade,
   constraint hl_matches_uk unique (demand_id, harvest_id),
   constraint hl_matches_qty_ck check (allocated_kg > 0),
   constraint hl_matches_status_ck check (status in

@@ -27,9 +27,10 @@ from pathlib import Path
 import oracledb
 
 REPO = Path(__file__).resolve().parent.parent
-SQL_FILES = ["01_schema.sql", "02_match_pkg.sql", "03_views.sql", "04_seed.sql"]
+SQL_FILES = ["01_schema.sql", "02_match_pkg.sql", "03_views.sql", "04_seed.sql", "05_auto_match.sql"]
 SCHEMA = "HARVESTLINK"
-PLSQL_START = re.compile(r"^\s*(create\s+or\s+replace\s+package|begin|declare)\b", re.I)
+PLSQL_START = re.compile(
+    r"^\s*(create\s+or\s+replace\s+(package|trigger|procedure|function|type)|begin|declare)\b", re.I)
 
 
 def env(name):

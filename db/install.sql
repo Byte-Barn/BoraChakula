@@ -7,4 +7,5 @@ set define off
 @02_match_pkg.sql
 @03_views.sql
 @04_seed.sql
+@05_auto_match.sql
 show errors package body hl_match_pkg

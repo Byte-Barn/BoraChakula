@@ -1,0 +1,1075 @@
+page 6 (
+    name: Match Planner
+    alias: MATCH-PLANNER
+    title: Match Planner
+    pageGroup: @matching-and-logistics
+    appearance {
+        pageTemplate: @/standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        authorizationScheme: mustNotBePublicUser
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+    advanced {
+        enableDuplicatePageSubmissions: false
+    }
+    comments {
+        comments: Select a demand to see which farmers fill it, why they were matched, and the shared pickup route on the map.
+    }
+    
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @breadcrumb
+        }
+        layout {
+            sequence: 5
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @/title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @/breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+    
+    region demands (
+        name: Demands
+        type: themeTemplateComponent/contentRow
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select d.DEMAND_ID as DEMAND_ID
+                     , d.BUYER_NAME as BUYER_NAME
+                     , d.CROP_NAME || ' - ' || to_char(d.QUANTITY_KG, 'FM999G999G990') || ' kg grade '
+                       || d.GRADE_REQUIRED as DEMAND_LABEL
+                     , d.STATUS || ' - ' || to_char(d.FILL_PCT, 'FM990D0') || '% filled by '
+                       || to_char(d.FARMERS_MATCHED) || ' farmers' as FILL_LABEL
+                     , 'Need by ' || to_char(d.NEED_BY_DATE, 'DD-Mon') as NEED_BY_LABEL
+                from HL_DEMAND_SUMMARY_V d
+                ```
+        }
+        layout {
+            sequence: 10
+            parentRegion: @filter-demands
+            slot: regionBody
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Region--noUI
+                t-Region--hideHeader js-addHiddenHeadingRoleDesc
+            ]
+        }
+        accessibility {
+            landmarkType: region
+        }
+        comments {
+            comments: Provides the parent demand selector with buyer, crop, quantity and fill progress.
+        }
+        componentAppearance {
+            display: report
+        }
+        settings {
+            overline: &BUYER_NAME.
+            title: &DEMAND_LABEL.
+            description: Fill: &FILL_LABEL.
+            miscellaneous: Need By: &NEED_BY_LABEL.
+        }
+        
+        column BUYER_NAME (
+            layout {
+                sequence: 20
+            }
+            source {
+                databaseColumn: BUYER_NAME
+                dataType: varchar2
+            }
+        )
+        
+        column DEMAND_ID (
+            layout {
+                sequence: 10
+            }
+            source {
+                databaseColumn: DEMAND_ID
+                dataType: number
+                primaryKey: true
+            }
+        )
+        
+        column DEMAND_LABEL (
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: DEMAND_LABEL
+                dataType: varchar2
+            }
+        )
+        
+        column FILL_LABEL (
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: FILL_LABEL
+                dataType: varchar2
+            }
+        )
+        
+        column NEED_BY_LABEL (
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: NEED_BY_LABEL
+                dataType: varchar2
+            }
+        )
+        
+        
+        action action (
+            position: fullRowLink
+            layout {
+                sequence: 5
+            }
+            behavior {
+                type: redirectUrl
+                targetUrl: #
+            }
+        )
+        
+        action action-fullrowlink-1 (
+            position: fullRowLink
+            layout {
+                sequence: 10
+            }
+            behavior {
+                target: {
+                    page: 6
+                    items: {
+                        P6_DEMAND_ID: \&DEMAND_ID.\
+                    }
+                }
+            }
+        )
+        
+        
+        action action-menu (
+            position: primaryActions
+            template: menu
+            label: Show actions
+            layout {
+                sequence: 20
+            }
+            appearance {
+                displayType: icon
+                icon: fa-ellipsis-v
+                cssClasses: t-Button--noUI
+            }
+            
+            menu menu-entry-edit-demand (
+                label: Edit Demand
+                layout {
+                    sequence: 20
+                }
+                behavior {
+                    target: {
+                        page: 3
+                        items: {
+                            P3_DEMAND_ID: \&DEMAND_ID.\
+                        }
+                    }
+                }
+            )
+            
+            
+        )
+        
+    )
+    
+    region filter-demands (
+        name: Demands
+        type: smartFilters
+        source {
+            filteredRegion: @demands
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Region--noBorder
+            ]
+            renderComponents: belowContent
+        }
+        advanced {
+            htmlDomId: filter-demands
+        }
+        comments {
+            comments: Added by generator
+        }
+        settings {
+            maxSuggestionChips: 0
+        }
+        
+        filter P6_SEARCH (
+            type: search
+            label {
+                label: Search
+            }
+            layout {
+                sequence: 1
+            }
+        )
+        
+        
+        
+    )
+    
+    region matched-farmers (
+        name: Matched Farmers
+        type: classicReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select m.MATCH_ID as MATCH_ID
+                     , m.HARVEST_ID as HARVEST_ID
+                     , m.STOP_ORDER as STOP_ORDER
+                     , m.FARMER_NAME as FARMER_NAME
+                     , m.FARMER_LOCATION as FARMER_LOCATION
+                     , m.GRADE as GRADE
+                     , m.ALLOCATED_KG as ALLOCATED_KG
+                     , m.DISTANCE_KM as DISTANCE_KM
+                     , m.SCORE_TOTAL as SCORE_TOTAL
+                     , m.STATUS as STATUS
+                     , m.MATCH_REASON as MATCH_REASON
+                from HL_MATCH_DETAIL_V m
+                where m.DEMAND_ID = to_number(:P6_DEMAND_ID)
+                order by m.STOP_ORDER
+                ```
+            pageItemsToSubmit: P6_DEMAND_ID
+        }
+        layout {
+            sequence: 40
+            slot: body
+            column: 5
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Region--noBorder
+            ]
+        }
+        comments {
+            comments: Lists farmers aggregated into the selected demand with scores and plain-language match reasons.
+        }
+        componentAppearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Report--stretch
+                t-Report--staticRowColors
+                t-Report--rowHighlight
+                t-Report--horizontalBorders
+                t-Report--hideNoPagination
+            ]
+        }
+        pagination {
+            type: nextAndPreviousLinks
+        }
+        
+        column ALLOCATED_KG (
+            reportColumnQueryId: 8
+            derivedColumn: N
+            heading {
+                heading: Allocated (kg)
+                alignment: end
+            }
+            layout {
+                sequence: 80
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990
+            }
+        )
+        
+        column DERIVED$01 (
+            reportColumnQueryId: 1
+            derivedColumn: Y
+            type: link
+            heading {
+                heading: &nbsp;
+                alignment: center
+            }
+            layout {
+                sequence: 10
+                columnAlignment: center
+            }
+            link {
+                target: {
+                    page: 5
+                    items: {
+                        P5_HARVEST_ID: \#HARVEST_ID#\
+                    }
+                }
+                linkText: <span role="img" aria-label="Edit Harvest" class="fa fa-edit" title="Edit Harvest"></span>
+            }
+            sorting {
+                sortable: false
+            }
+        )
+        
+        column DISTANCE_KM (
+            reportColumnQueryId: 9
+            derivedColumn: N
+            heading {
+                heading: Distance (km)
+                alignment: end
+            }
+            layout {
+                sequence: 90
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990
+            }
+        )
+        
+        column FARMER_LOCATION (
+            reportColumnQueryId: 6
+            derivedColumn: N
+            heading {
+                heading: Location
+            }
+            layout {
+                sequence: 60
+            }
+        )
+        
+        column FARMER_NAME (
+            reportColumnQueryId: 5
+            derivedColumn: N
+            heading {
+                heading: Farmer
+            }
+            layout {
+                sequence: 50
+            }
+        )
+        
+        column GRADE (
+            reportColumnQueryId: 7
+            derivedColumn: N
+            heading {
+                heading: Grade
+            }
+            layout {
+                sequence: 70
+            }
+        )
+        
+        column HARVEST_ID (
+            reportColumnQueryId: 3
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 30
+            }
+        )
+        
+        column MATCH_ID (
+            reportColumnQueryId: 2
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 20
+            }
+        )
+        
+        column MATCH_REASON (
+            reportColumnQueryId: 12
+            derivedColumn: N
+            heading {
+                heading: Why Matched
+            }
+            layout {
+                sequence: 120
+            }
+        )
+        
+        column SCORE_TOTAL (
+            reportColumnQueryId: 10
+            derivedColumn: N
+            heading {
+                heading: Score
+                alignment: end
+            }
+            layout {
+                sequence: 100
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 0D00
+            }
+        )
+        
+        column STATUS (
+            reportColumnQueryId: 11
+            derivedColumn: N
+            heading {
+                heading: Status
+            }
+            layout {
+                sequence: 110
+            }
+        )
+        
+        column STOP_ORDER (
+            reportColumnQueryId: 4
+            derivedColumn: N
+            heading {
+                heading: Stop
+                alignment: end
+            }
+            layout {
+                sequence: 40
+                columnAlignment: end
+            }
+        )
+        
+        
+    )
+    
+    region pickup-farms-map (
+        name: Pickup Farms Map
+        type: map
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select m.MATCH_ID as MATCH_ID
+                     , m.FARMER_LAT as FARMER_LAT
+                     , m.FARMER_LON as FARMER_LON
+                     , 'Stop ' || to_char(m.STOP_ORDER) || ': ' || m.FARMER_NAME || ' (' || m.FARMER_LOCATION
+                       || ') - ' || to_char(m.ALLOCATED_KG, 'FM999G999G990') || ' kg grade ' || m.GRADE as MAP_TOOLTIP
+                from HL_MATCH_DETAIL_V m
+                where m.STATUS <> 'REJECTED'
+                and (:P6_DEMAND_ID is null or m.DEMAND_ID = to_number(:P6_DEMAND_ID))
+                ```
+            pageItemsToSubmit: P6_DEMAND_ID
+        }
+        layout {
+            sequence: 20
+            slot: body
+            startNewRow: false
+            column: 5
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Region--noBorder
+            ]
+        }
+        comments {
+            comments: Plots matched farms for the selected demand so the shared pickup cluster is visible.
+        }
+        controls {
+            options: [
+                scaleBar
+                infiniteMap
+                rectangleZoom
+            ]
+        }
+        attributes {
+            messagesPosition: below
+        }
+        
+        layer pickup-farms-map (
+            name: name: Pickup Farms Map
+            layout {
+                sequence: 10
+            }
+            source {
+                location: regionSource
+            }
+            columnMapping {
+                geometryColumnDataType: longitudeLatitude
+                longitudeColumn: FARMER_LON
+                latitudeColumn: FARMER_LAT
+            }
+            tooltip {
+                advancedFormatting: true
+                htmlExpression: &MAP_TOOLTIP.
+            }
+        )
+        
+    )
+    
+    region route-summary (
+        name: Route Summary
+        type: classicReport
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select r.ROUTE_ID as ROUTE_ID
+                     , r.VEHICLE_TYPE as VEHICLE_TYPE
+                     , r.TRIPS as TRIPS
+                     , r.STOPS as STOPS
+                     , r.AGGREGATED_KM as AGGREGATED_KM
+                     , r.INDIVIDUAL_KM as INDIVIDUAL_KM
+                     , r.INDIVIDUAL_CO2_KG - r.AGGREGATED_CO2_KG as CO2_SAVED_KG
+                     , r.ROUTE_SEQUENCE as ROUTE_SEQUENCE
+                from HL_ROUTES r
+                where r.DEMAND_ID = to_number(:P6_DEMAND_ID)
+                ```
+            pageItemsToSubmit: P6_DEMAND_ID
+        }
+        layout {
+            sequence: 30
+            slot: body
+            column: 5
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Region--noBorder
+            ]
+        }
+        comments {
+            comments: Shows the planned shared pickup route, vehicle, trips and savings for the selected demand.
+        }
+        componentAppearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Report--stretch
+                t-Report--staticRowColors
+                t-Report--rowHighlight
+                t-Report--horizontalBorders
+                t-Report--hideNoPagination
+            ]
+        }
+        pagination {
+            type: nextAndPreviousLinks
+        }
+        
+        column AGGREGATED_KM (
+            reportColumnQueryId: 5
+            derivedColumn: N
+            heading {
+                heading: Shared Route km
+                alignment: end
+            }
+            layout {
+                sequence: 50
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990
+            }
+        )
+        
+        column CO2_SAVED_KG (
+            reportColumnQueryId: 7
+            derivedColumn: N
+            heading {
+                heading: CO2 Saved (kg)
+                alignment: end
+            }
+            layout {
+                sequence: 70
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990D00
+            }
+        )
+        
+        column INDIVIDUAL_KM (
+            reportColumnQueryId: 6
+            derivedColumn: N
+            heading {
+                heading: Individual Trips km
+                alignment: end
+            }
+            layout {
+                sequence: 60
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990
+            }
+        )
+        
+        column ROUTE_ID (
+            reportColumnQueryId: 1
+            derivedColumn: N
+            type: hidden
+            layout {
+                sequence: 10
+            }
+        )
+        
+        column ROUTE_SEQUENCE (
+            reportColumnQueryId: 8
+            derivedColumn: N
+            heading {
+                heading: Pickup Sequence
+            }
+            layout {
+                sequence: 80
+            }
+        )
+        
+        column STOPS (
+            reportColumnQueryId: 4
+            derivedColumn: N
+            heading {
+                heading: Stops
+                alignment: end
+            }
+            layout {
+                sequence: 40
+                columnAlignment: end
+            }
+        )
+        
+        column TRIPS (
+            reportColumnQueryId: 3
+            derivedColumn: N
+            heading {
+                heading: Trips
+                alignment: end
+            }
+            layout {
+                sequence: 30
+                columnAlignment: end
+            }
+        )
+        
+        column VEHICLE_TYPE (
+            reportColumnQueryId: 2
+            derivedColumn: N
+            heading {
+                heading: Vehicle
+            }
+            layout {
+                sequence: 20
+            }
+        )
+        
+        
+    )
+    
+    
+    pageItem P6_DEMAND_ID (
+        type: hidden
+        layout {
+            sequence: 10
+            region: @demands
+            slot: regionBody
+        }
+    )
+    
+    
+    
+    dynamicAction dialog-closed-parent-action (
+        name: Parent Action Dialog Closed
+        execution {
+            sequence: 50
+        }
+        when {
+            event: apexafterclosedialog
+            selectionType: region
+            region: @demands
+        }
+        
+        action refresh-2-dialog-closed-parent-action-pickup-farms-map (
+            name: Refresh Pickup Farms Map
+            action: refresh
+            settings {
+                maintainPagination: true
+            }
+            affectedElements {
+                selectionType: region
+                region: @pickup-farms-map
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+        
+        action refresh-3-dialog-closed-parent-action-route-summary (
+            name: Refresh Route Summary
+            action: refresh
+            settings {
+                maintainPagination: true
+            }
+            affectedElements {
+                selectionType: region
+                region: @route-summary
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+        )
+        
+        action refresh-4-dialog-closed-parent-action-matched-farmers (
+            name: Refresh Matched Farmers
+            action: refresh
+            settings {
+                maintainPagination: true
+            }
+            affectedElements {
+                selectionType: region
+                region: @matched-farmers
+            }
+            execution {
+                sequence: 40
+                fireOnInit: false
+            }
+        )
+        
+        
+        
+        action refresh-parent-region-action (
+            name: Refresh Parent Region
+            action: refresh
+            settings {
+                maintainPagination: true
+            }
+            affectedElements {
+                selectionType: region
+                region: @demands
+            }
+            execution {
+                sequence: 5
+                fireOnInit: false
+            }
+        )
+        
+        action select-parent (
+            name: Select Parent
+            action: executeJsCode
+            settings {
+                jsCode:
+                    ```javascript-browser
+                                    if ($v('P6_DEMAND_ID') !== '') {
+                                    setTimeout(function(){
+                                        $('.t-ContentRow-item[data-id=' + $v('P6_DEMAND_ID') + ']').click();
+                                    }, 2000);
+                                    }
+                                    ```
+            }
+            execution {
+                sequence: 6
+                fireOnInit: false
+            }
+        )
+        
+    )
+    
+    dynamicAction dialog-refresh-matched-farmers (
+        name: Refresh on dialog close Matched Farmers
+        execution {
+            sequence: 10
+        }
+        when {
+            event: apexafterclosedialog
+            selectionType: region
+            region: @matched-farmers
+        }
+        
+        action refresh (
+            action: refresh
+            settings {
+                maintainPagination: true
+            }
+            affectedElements {
+                selectionType: region
+                region: @matched-farmers
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+        
+    )
+    
+    dynamicAction dialog-refresh-pickup-farms-map (
+        name: Refresh on dialog close Pickup Farms Map
+        execution {
+            sequence: 10
+        }
+        when {
+            event: apexafterclosedialog
+            selectionType: region
+            region: @pickup-farms-map
+        }
+        
+        action refresh (
+            action: refresh
+            settings {
+                maintainPagination: true
+            }
+            affectedElements {
+                selectionType: region
+                region: @pickup-farms-map
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+        
+    )
+    
+    dynamicAction dialog-refresh-route-summary (
+        name: Refresh on dialog close Route Summary
+        execution {
+            sequence: 10
+        }
+        when {
+            event: apexafterclosedialog
+            selectionType: region
+            region: @route-summary
+        }
+        
+        action refresh (
+            action: refresh
+            settings {
+                maintainPagination: true
+            }
+            affectedElements {
+                selectionType: region
+                region: @route-summary
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+        
+    )
+    
+    dynamicAction parent-row-selected (
+        name: Parent Row Selected
+        execution {
+            sequence: 20
+            eventScope: dynamic
+            staticContainer: #filter-demands
+        }
+        when {
+            event: click
+            selectionType: jQuerySelector
+            jquerySelector: .t-ContentRow-item
+        }
+        
+        action native-add-class (
+            action: addClass
+            settings {
+                class: is-selected
+            }
+            affectedElements {
+                selectionType: triggeringElement
+            }
+            execution {
+                sequence: 7
+                fireOnInit: false
+            }
+        )
+        
+        action native-remove-class (
+            action: removeClass
+            settings {
+                class: is-selected
+            }
+            affectedElements {
+                selectionType: javaScriptExpression
+                javaScriptExpression: $('.t-ContentRow-item')
+            }
+            execution {
+                sequence: 6
+            }
+        )
+        
+        action refresh-2-parent-row-selected-pickup-farms-map (
+            name: Refresh Pickup Farms Map
+            action: refresh
+            settings {
+                maintainPagination: true
+            }
+            affectedElements {
+                selectionType: region
+                region: @pickup-farms-map
+            }
+            execution {
+                sequence: 20
+                fireOnInit: false
+            }
+        )
+        
+        action refresh-3-parent-row-selected-route-summary (
+            name: Refresh Route Summary
+            action: refresh
+            settings {
+                maintainPagination: true
+            }
+            affectedElements {
+                selectionType: region
+                region: @route-summary
+            }
+            execution {
+                sequence: 30
+                fireOnInit: false
+            }
+        )
+        
+        action refresh-4-parent-row-selected-matched-farmers (
+            name: Refresh Matched Farmers
+            action: refresh
+            settings {
+                maintainPagination: true
+            }
+            affectedElements {
+                selectionType: region
+                region: @matched-farmers
+            }
+            execution {
+                sequence: 40
+                fireOnInit: false
+            }
+        )
+        
+        
+        
+        action set-page-items (
+            action: setValue
+            settings {
+                type: jsExpression
+                jsExpression: this.triggeringElement.getAttribute('data-id')
+            }
+            affectedElements {
+                selectionType: items
+                items: P6_DEMAND_ID
+            }
+            execution {
+                sequence: 5
+                fireOnInit: false
+            }
+        )
+        
+    )
+    
+    dynamicAction smart-filter-change (
+        name: Smart Filter Change
+        execution {
+            sequence: 30
+        }
+        when {
+            event: region/smartFilters/facetschange
+            selectionType: region
+            region: @filter-demands
+        }
+        
+        action clear-page-items (
+            name: Clear Page Items
+            action: setValue
+            affectedElements {
+                selectionType: items
+                items: P6_DEMAND_ID
+            }
+            execution {
+                sequence: 10
+            }
+        )
+        
+        action refresh-2-smart-filter-change-pickup-farms-map (
+            name: Refresh Pickup Farms Map
+            action: refresh
+            settings {
+                maintainPagination: true
+            }
+            affectedElements {
+                selectionType: region
+                region: @pickup-farms-map
+            }
+            execution {
+                sequence: 20
+            }
+        )
+        
+        action refresh-3-smart-filter-change-route-summary (
+            name: Refresh Route Summary
+            action: refresh
+            settings {
+                maintainPagination: true
+            }
+            affectedElements {
+                selectionType: region
+                region: @route-summary
+            }
+            execution {
+                sequence: 30
+            }
+        )
+        
+        action refresh-4-smart-filter-change-matched-farmers (
+            name: Refresh Matched Farmers
+            action: refresh
+            settings {
+                maintainPagination: true
+            }
+            affectedElements {
+                selectionType: region
+                region: @matched-farmers
+            }
+            execution {
+                sequence: 40
+            }
+        )
+        
+        
+        
+    )
+    
+    
+)
+

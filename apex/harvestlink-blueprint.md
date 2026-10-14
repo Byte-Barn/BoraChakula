@@ -1,0 +1,1637 @@
+# Provenance
+- Source Prompt: blueprint-prompt.md (v26.1.220)
+- Functional Requirements: harvestlink-functional-requirements.md
+- Schema Metadata: harvestlink-schema-metadata.md
+- UX Patterns: Built-in
+# Application Definition
+- Name: HarvestLink
+- Description: Demand-first agricultural marketplace that matches buyer produce demand with aggregated smallholder harvests before harvest.
+- Comments: Buyers post produce needs, farmers register expected harvests, and the HL_MATCH_PKG engine aggregates farmers, routes grades and plans shared pickups.
+- Primary Application Language: en
+- Home Page: Page 1
+- List of Values:
+  - LOV
+    - Name: LOV_BUYERS
+    - Type: Table
+    - Table Name: HL_BUYERS
+    - Display: BUYER_NAME
+    - Return: BUYER_ID
+  - LOV
+    - Name: LOV_CROPS
+    - Type: Table
+    - Table Name: HL_CROPS
+    - Display: CROP_NAME
+    - Return: CROP_ID
+  - LOV
+    - Name: LOV_FARMERS
+    - Type: Table
+    - Table Name: HL_FARMERS
+    - Display: FULL_NAME
+    - Return: FARMER_ID
+  - LOV
+    - Name: LOV_GRADES
+    - Type: Static
+    - Entries:
+      - Entry:
+        - Display: A
+        - Return: A
+      - Entry:
+        - Display: B
+        - Return: B
+      - Entry:
+        - Display: C
+        - Return: C
+  - LOV
+    - Name: LOV_DEMAND_STATUS
+    - Type: Static
+    - Entries:
+      - Entry:
+        - Display: OPEN
+        - Return: OPEN
+      - Entry:
+        - Display: PARTIAL
+        - Return: PARTIAL
+      - Entry:
+        - Display: FILLED
+        - Return: FILLED
+      - Entry:
+        - Display: CLOSED
+        - Return: CLOSED
+      - Entry:
+        - Display: CANCELLED
+        - Return: CANCELLED
+  - LOV
+    - Name: LOV_HARVEST_STATUS
+    - Type: Static
+    - Entries:
+      - Entry:
+        - Display: OPEN
+        - Return: OPEN
+      - Entry:
+        - Display: PARTIAL
+        - Return: PARTIAL
+      - Entry:
+        - Display: COMMITTED
+        - Return: COMMITTED
+      - Entry:
+        - Display: HARVESTED
+        - Return: HARVESTED
+      - Entry:
+        - Display: CANCELLED
+        - Return: CANCELLED
+  - LOV
+    - Name: LOV_BUYER_TYPES
+    - Type: Static
+    - Entries:
+      - Entry:
+        - Display: RETAILER
+        - Return: RETAILER
+      - Entry:
+        - Display: EXPORTER
+        - Return: EXPORTER
+      - Entry:
+        - Display: PROCESSOR
+        - Return: PROCESSOR
+      - Entry:
+        - Display: SCHOOL
+        - Return: SCHOOL
+      - Entry:
+        - Display: HOTEL
+        - Return: HOTEL
+      - Entry:
+        - Display: WHOLESALE_MARKET
+        - Return: WHOLESALE_MARKET
+  - LOV
+    - Name: LOV_YES_NO
+    - Type: Static
+    - Entries:
+      - Entry:
+        - Display: Yes
+        - Return: Y
+      - Entry:
+        - Display: No
+        - Return: N
+- Page Groups
+  - Page Group
+    - Name: Dashboard
+    - Description: Impact KPIs and charts for matched volume, waste avoided and emissions saved.
+  - Page Group
+    - Name: Marketplace
+    - Description: Buyer demand, farmer harvest supply and their maintenance forms.
+  - Page Group
+    - Name: Matching and Logistics
+    - Description: Match planner with pickup map, route savings and grade routing.
+  - Page Group
+    - Name: Participants
+    - Description: Farmer and buyer directories and maintenance forms.
+- Menu
+  - Menu Name: Navigation Menu
+  - Entries:
+    - Entry
+      - Label: Impact Dashboard
+      - Icon: fa-dashboard
+      - Action: Navigate
+      - Target: Page 1
+    - Entry
+      - Label: Buyer Demands
+      - Icon: fa-shopping-cart
+      - Action: Navigate
+      - Target: Page 2
+    - Entry
+      - Label: Farmer Harvests
+      - Icon: fa-leaf
+      - Action: Navigate
+      - Target: Page 4
+    - Entry
+      - Label: Match Planner
+      - Icon: fa-map
+      - Action: Navigate
+      - Target: Page 6
+    - Entry
+      - Label: Grade Routing
+      - Icon: fa-random
+      - Action: Navigate
+      - Target: Page 7
+    - Entry
+      - Label: Farmers
+      - Icon: fa-users
+      - Action: Navigate
+      - Target: Page 8
+    - Entry
+      - Label: Buyers
+      - Icon: fa-building
+      - Action: Navigate
+      - Target: Page 10
+- Breadcrumb
+  - Name: Breadcrumb
+  - Entries:
+    - Entry
+      - Name: Impact Dashboard
+      - Page: Page 1
+    - Entry
+      - Name: Buyer Demands
+      - Page: Page 2
+    - Entry
+      - Name: Farmer Harvests
+      - Page: Page 4
+    - Entry
+      - Name: Match Planner
+      - Page: Page 6
+    - Entry
+      - Name: Grade Routing
+      - Page: Page 7
+    - Entry
+      - Name: Farmers
+      - Page: Page 8
+    - Entry
+      - Name: Buyers
+      - Page: Page 10
+## Pages
+### Page 1: Impact Dashboard
+- Description: Dashboard of matched volume, farmers reached, waste avoided, transport and emissions saved, and farmer income uplift.
+- Comments: Landing page summarising the green impact of demand-first matching for buyers, farmers and judges.
+- Pattern: analytics-workspace
+- Page Mode: standard
+- Menu: true
+- Page Group: Dashboard
+#### Regions
+##### Region: Matched Volume KPI
+- Comments: Shows total kilograms of harvest committed to buyer demand before harvest.
+- Position: body
+- Colstart: 1
+- Colspan: 4
+- Component:
+  - Component Type: Metric Card
+- Metric Subtitle: Kilograms of produce matched to buyers before harvest.
+- Metric Icon: fa-cubes
+- Metric Icon Style: subtle
+- Data Source:
+  - Type: SQL
+  - SQL:
+```sql
+select v.TOTAL_MATCHED_KG as TOTAL_MATCHED_KG
+from HL_IMPACT_V v
+```
+  - Summary: Single KPI from the impact view for matched kilograms.
+- Columns:
+  - Column Name: TOTAL_MATCHED_KG
+    - Label: Matched Volume (kg)
+    - Datatype: number
+    - Render As: metric
+    - Visible: true
+    - Format Mask: 999G999G999G999G990
+##### Region: Farmers Reached KPI
+- Comments: Shows how many distinct smallholder farmers have a confirmed buyer.
+- Position: body
+- Colstart: 5
+- Colspan: 4
+- Component:
+  - Component Type: Metric Card
+- Metric Subtitle: Smallholder farmers with a buyer secured before harvest.
+- Metric Icon: fa-users
+- Metric Icon Style: subtle
+- Data Source:
+  - Type: SQL
+  - SQL:
+```sql
+select v.FARMERS_MATCHED as FARMERS_MATCHED
+from HL_IMPACT_V v
+```
+  - Summary: Single KPI from the impact view for farmers matched.
+- Columns:
+  - Column Name: FARMERS_MATCHED
+    - Label: Farmers Reached
+    - Datatype: number
+    - Render As: metric
+    - Visible: true
+    - Format Mask: 999G999G999G999G990
+##### Region: Waste Avoided KPI
+- Comments: Shows kilograms of post-harvest loss avoided using the baseline loss rate setting.
+- Position: body
+- Colstart: 9
+- Colspan: 4
+- Component:
+  - Component Type: Metric Card
+- Metric Subtitle: Post-harvest loss avoided at the baseline loss rate.
+- Metric Icon: fa-recycle
+- Metric Icon Style: subtle
+- Data Source:
+  - Type: SQL
+  - SQL:
+```sql
+select v.LOSS_AVOIDED_KG as LOSS_AVOIDED_KG
+from HL_IMPACT_V v
+```
+  - Summary: Single KPI from the impact view for loss avoided.
+- Columns:
+  - Column Name: LOSS_AVOIDED_KG
+    - Label: Waste Avoided (kg)
+    - Datatype: number
+    - Render As: metric
+    - Visible: true
+    - Format Mask: 999G999G999G999G990
+##### Region: Transport Saved KPI
+- Comments: Shows road kilometres saved by shared pickup routes versus farmers travelling alone.
+- Position: body
+- Colstart: 1
+- Colspan: 4
+- Component:
+  - Component Type: Metric Card
+- Metric Subtitle: Road km saved by aggregated pickups.
+- Metric Icon: fa-truck
+- Metric Icon Style: subtle
+- Data Source:
+  - Type: SQL
+  - SQL:
+```sql
+select v.KM_SAVED as KM_SAVED
+from HL_IMPACT_V v
+```
+  - Summary: Single KPI from the impact view for kilometres saved.
+- Columns:
+  - Column Name: KM_SAVED
+    - Label: Transport Saved (km)
+    - Datatype: number
+    - Render As: metric
+    - Visible: true
+    - Format Mask: 999G999G999G999G990
+##### Region: Emissions Saved KPI
+- Comments: Shows kilograms of CO2 avoided by shared pickup routes.
+- Position: body
+- Colstart: 5
+- Colspan: 4
+- Component:
+  - Component Type: Metric Card
+- Metric Subtitle: Kilograms of CO2 avoided by shared logistics.
+- Metric Icon: fa-leaf
+- Metric Icon Style: subtle
+- Data Source:
+  - Type: SQL
+  - SQL:
+```sql
+select v.CO2_SAVED_KG as CO2_SAVED_KG
+from HL_IMPACT_V v
+```
+  - Summary: Single KPI from the impact view for CO2 saved.
+- Columns:
+  - Column Name: CO2_SAVED_KG
+    - Label: CO2 Saved (kg)
+    - Datatype: number
+    - Render As: metric
+    - Visible: true
+    - Format Mask: 999G999G999G999G990
+##### Region: Farmer Income Uplift KPI
+- Comments: Shows extra farmer income from buyer prices compared with typical broker prices.
+- Position: body
+- Colstart: 9
+- Colspan: 4
+- Component:
+  - Component Type: Metric Card
+- Metric Subtitle: Extra KES earned versus broker farm-gate prices.
+- Metric Icon: fa-money
+- Metric Icon Style: subtle
+- Data Source:
+  - Type: SQL
+  - SQL:
+```sql
+select v.FARMER_INCOME_UPLIFT_KES as FARMER_INCOME_UPLIFT_KES
+from HL_IMPACT_V v
+```
+  - Summary: Single KPI from the impact view for farmer income uplift.
+- Columns:
+  - Column Name: FARMER_INCOME_UPLIFT_KES
+    - Label: Farmer Income Uplift (KES)
+    - Datatype: number
+    - Render As: metric
+    - Visible: true
+    - Format Mask: 999G999G999G999G990
+##### Region: Matched Volume by Crop Chart
+- Comments: Compares matched kilograms across crops to show where demand-first sourcing is active.
+- Position: body
+- Colstart: 1
+- Colspan: 6
+- Component:
+  - Component Type: Chart
+  - Qualifier: Bar
+- Data Source:
+  - Type: SQL
+  - SQL:
+```sql
+select m.CROP_NAME as label
+     , sum(m.ALLOCATED_KG) as value
+from HL_MATCH_DETAIL_V m
+where m.STATUS <> 'REJECTED'
+group by m.CROP_NAME
+order by value desc
+```
+  - Summary: Bar chart of matched kilograms grouped by crop.
+- Columns:
+  - Column Name: label
+    - Label: Crop
+    - Datatype: varchar2
+    - Render As: label
+  - Column Name: value
+    - Label: Matched kg
+    - Datatype: number
+    - Render As: value
+##### Region: Demands by Status Chart
+- Comments: Shows how many buyer demands are open, partially filled or filled.
+- Position: body
+- Colstart: 7
+- Colspan: 6
+- Component:
+  - Component Type: Chart
+  - Qualifier: Donut
+- Data Source:
+  - Type: SQL
+  - SQL:
+```sql
+select d.STATUS as label
+     , count(*) as value
+from HL_DEMANDS d
+group by d.STATUS
+order by label
+```
+  - Summary: Donut chart of buyer demand counts by status.
+- Columns:
+  - Column Name: label
+    - Label: Demand Status
+    - Datatype: varchar2
+    - Render As: label
+  - Column Name: value
+    - Label: Demands
+    - Datatype: number
+    - Render As: value
+### Page 2: Buyer Demands
+- Description: Interactive report of buyer produce demands with fill progress, farmers matched and logistics savings.
+- Comments: Buyers post needs here before harvest; saving a demand automatically re-runs matching.
+- Pattern: vertical-stack
+- Page Mode: standard
+- Menu: true
+- Page Group: Marketplace
+#### Regions
+##### Region: Buyer Demands Report
+- Comments: Lists every buyer demand with allocation progress and opens the demand form for editing.
+- Position: body
+- Colstart: 1
+- Colspan: 12
+- Component:
+  - Component Type: Interactive Report
+- Report Context: Buyer produce demands posted before harvest with matched volume, fill percentage, matched farmers and transport and CO2 savings from shared pickups.
+- Data Source:
+  - Type: View
+  - Name: HL_DEMAND_SUMMARY_V
+  - Primary Keys: DEMAND_ID
+  - Summary: Demand summary view joining buyers, crops, matches and routes.
+- Columns:
+  - Column Name: DEMAND_ID
+    - Label: Demand ID
+    - Datatype: number
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Surrogate primary key of the buyer demand
+  - Column Name: BUYER_NAME
+    - Label: Buyer
+    - Datatype: varchar2
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Name of the buyer that posted the demand
+  - Column Name: BUYER_TYPE
+    - Label: Buyer Type
+    - Datatype: varchar2
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Market channel of the buyer such as RETAILER, EXPORTER, PROCESSOR, SCHOOL, HOTEL or WHOLESALE_MARKET
+  - Column Name: CROP_NAME
+    - Label: Crop
+    - Datatype: varchar2
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Crop requested by the buyer
+  - Column Name: GRADE_REQUIRED
+    - Label: Min Grade
+    - Datatype: varchar2
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Minimum acceptable produce grade where A is best and C is lowest
+  - Column Name: QUANTITY_KG
+    - Label: Quantity (kg)
+    - Datatype: number
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Kilograms requested by the buyer
+    - Format Mask: 999G999G999G999G990
+  - Column Name: PRICE_PER_KG
+    - Label: Price (KES/kg)
+    - Datatype: number
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Price per kilogram offered by the buyer in Kenya shillings
+    - Format Mask: 999G999G999G999G990D00
+  - Column Name: NEED_BY_DATE
+    - Label: Need By
+    - Datatype: date
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Date by which the buyer needs delivery
+    - Format Mask: DD-MON-YYYY
+  - Column Name: STATUS
+    - Label: Status
+    - Datatype: varchar2
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Demand fill state OPEN, PARTIAL, FILLED, CLOSED or CANCELLED
+  - Column Name: ALLOCATED_KG
+    - Label: Matched (kg)
+    - Datatype: number
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Kilograms allocated from farmer harvests to this demand
+    - Format Mask: 999G999G999G999G990
+  - Column Name: FILL_PCT
+    - Label: Fill %
+    - Datatype: number
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Percentage of the requested quantity that has been matched
+    - Format Mask: 990D0
+  - Column Name: FARMERS_MATCHED
+    - Label: Farmers
+    - Datatype: number
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Number of distinct farmers aggregated into this demand
+  - Column Name: KM_SAVED
+    - Label: Km Saved
+    - Datatype: number
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Road kilometres saved by the shared pickup route versus individual trips
+    - Format Mask: 999G999G999G999G990
+  - Column Name: CO2_SAVED_KG
+    - Label: CO2 Saved (kg)
+    - Datatype: number
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Kilograms of CO2 avoided by the shared pickup route
+    - Format Mask: 999G999G999G999G990D00
+- Links: 
+  - Link:
+    - Link To: Page 3
+    - Link Passing: DEMAND_ID
+    - Link Target Items: P3_DEMAND_ID
+    - Label: Edit
+    - Link Icon: fa-edit
+- Actions:
+  - Action
+    - Label: Post Demand
+    - Link To: Page 3
+    - slot: CREATE
+    - Action Type: navigate
+### Page 3: Demand Form
+- Description: Modal form for posting, editing and deleting a buyer demand.
+- Comments: Maintains HL_DEMANDS rows; database triggers re-run matching after every save or delete.
+- Pattern: modal-drawer
+- Page Mode: modalDialog
+- Menu: false
+- Page Group: Marketplace
+#### Regions
+##### Region: Demand Form
+- Comments: Captures buyer, crop, grade, quantity, price and need-by date for a produce demand.
+- Position: body
+- Colstart: 1
+- Colspan: 12
+- Component:
+  - Component Type: Form
+- Data Source:
+  - Type: Table
+  - Name: HL_DEMANDS
+  - Primary Keys: DEMAND_ID
+  - Summary: Form source for buyer demand create, edit and delete operations.
+- Columns:
+  - Column Name: DEMAND_ID
+    - Label: Demand ID
+    - Datatype: number
+    - Page Item Name: P3_DEMAND_ID
+    - Render As: displayOnly
+  - Column Name: BUYER_ID
+    - Label: Buyer
+    - Datatype: number
+    - Page Item Name: P3_BUYER_ID
+    - Render As: selectList
+    - LOV: LOV_BUYERS
+    - Required: true
+  - Column Name: CROP_ID
+    - Label: Crop
+    - Datatype: number
+    - Page Item Name: P3_CROP_ID
+    - Render As: selectList
+    - LOV: LOV_CROPS
+    - Required: true
+  - Column Name: GRADE_REQUIRED
+    - Label: Minimum Grade
+    - Datatype: varchar2
+    - Page Item Name: P3_GRADE_REQUIRED
+    - Render As: radioGroup
+    - LOV: LOV_GRADES
+    - Required: true
+  - Column Name: QUANTITY_KG
+    - Label: Quantity (kg)
+    - Datatype: number
+    - Page Item Name: P3_QUANTITY_KG
+    - Render As: numberField
+    - Required: true
+  - Column Name: PRICE_PER_KG
+    - Label: Price (KES/kg)
+    - Datatype: number
+    - Page Item Name: P3_PRICE_PER_KG
+    - Render As: numberField
+    - Required: true
+    - Same Row: true
+  - Column Name: NEED_BY_DATE
+    - Label: Need By
+    - Datatype: date
+    - Page Item Name: P3_NEED_BY_DATE
+    - Render As: datePicker
+    - Required: true
+  - Column Name: STATUS
+    - Label: Status
+    - Datatype: varchar2
+    - Page Item Name: P3_STATUS
+    - Render As: selectList
+    - LOV: LOV_DEMAND_STATUS
+    - Required: true
+    - Same Row: true
+  - Column Name: DELIVERY_LAT
+    - Label: Delivery Latitude
+    - Datatype: number
+    - Page Item Name: P3_DELIVERY_LAT
+    - Render As: numberField
+  - Column Name: DELIVERY_LON
+    - Label: Delivery Longitude
+    - Datatype: number
+    - Page Item Name: P3_DELIVERY_LON
+    - Render As: numberField
+    - Same Row: true
+  - Column Name: NOTES
+    - Label: Notes
+    - Datatype: varchar2
+    - Page Item Name: P3_NOTES
+    - Render As: textarea
+    - MaxLength: 400
+- Actions:
+  - Action
+    - Label: Create
+    - slot: CHANGE
+    - Action Type: submit
+    - Process: Create
+  - Action
+    - Label: Apply Changes
+    - slot: CHANGE
+    - Action Type: submit
+    - Process: Apply
+  - Action
+    - Label: Delete
+    - slot: DELETE
+    - Action Type: submit
+    - Process: Delete
+  - Action
+    - Label: Cancel
+    - slot: CLOSE
+    - Action Type: navigate
+    - Process: cancelDialog
+### Page 4: Farmer Harvests
+- Description: Interactive report of expected harvests with remaining unallocated volume.
+- Comments: Farmers register expected harvests here before harvest; saving a harvest automatically re-runs matching.
+- Pattern: vertical-stack
+- Page Mode: standard
+- Menu: true
+- Page Group: Marketplace
+#### Regions
+##### Region: Farmer Harvests Report
+- Comments: Lists expected harvests with available kilograms and opens the harvest form for editing.
+- Position: body
+- Colstart: 1
+- Colspan: 12
+- Component:
+  - Component Type: Interactive Report
+- Report Context: Expected farmer harvests registered before harvest with crop, grade, harvest window, expected and still-available kilograms.
+- Data Source:
+  - Type: View
+  - Name: HL_HARVEST_AVAILABILITY_V
+  - Primary Keys: HARVEST_ID
+  - Summary: Harvest availability view joining farmers, crops and allocations.
+- Columns:
+  - Column Name: HARVEST_ID
+    - Label: Harvest ID
+    - Datatype: number
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Surrogate primary key of the expected harvest
+  - Column Name: FARMER_NAME
+    - Label: Farmer
+    - Datatype: varchar2
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Farmer who registered the expected harvest
+  - Column Name: LOCATION_NAME
+    - Label: Location
+    - Datatype: varchar2
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Farm location name such as a sub-county or town
+  - Column Name: CROP_NAME
+    - Label: Crop
+    - Datatype: varchar2
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Crop being harvested
+  - Column Name: GRADE
+    - Label: Grade
+    - Datatype: varchar2
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Expected produce grade where A is best and C is lowest
+  - Column Name: EXPECTED_QTY_KG
+    - Label: Expected (kg)
+    - Datatype: number
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Expected harvest quantity in kilograms
+    - Format Mask: 999G999G999G999G990
+  - Column Name: AVAILABLE_KG
+    - Label: Available (kg)
+    - Datatype: number
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Kilograms not yet allocated to any buyer demand
+    - Format Mask: 999G999G999G999G990
+  - Column Name: HARVEST_FROM
+    - Label: Harvest From
+    - Datatype: date
+    - Render As: plainText
+    - Visible: true
+    - Column Context: First day of the expected harvest window
+    - Format Mask: DD-MON-YYYY
+  - Column Name: HARVEST_TO
+    - Label: Harvest To
+    - Datatype: date
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Last day of the expected harvest window
+    - Format Mask: DD-MON-YYYY
+  - Column Name: STATUS
+    - Label: Status
+    - Datatype: varchar2
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Harvest allocation state OPEN, PARTIAL, COMMITTED, HARVESTED or CANCELLED
+- Links: 
+  - Link:
+    - Link To: Page 5
+    - Link Passing: HARVEST_ID
+    - Link Target Items: P5_HARVEST_ID
+    - Label: Edit
+    - Link Icon: fa-edit
+- Actions:
+  - Action
+    - Label: Register Harvest
+    - Link To: Page 5
+    - slot: CREATE
+    - Action Type: navigate
+### Page 5: Harvest Form
+- Description: Modal form for registering, editing and deleting an expected harvest.
+- Comments: Maintains HL_HARVESTS rows; database triggers re-run matching after every save or delete.
+- Pattern: modal-drawer
+- Page Mode: modalDialog
+- Menu: false
+- Page Group: Marketplace
+#### Regions
+##### Region: Harvest Form
+- Comments: Captures farmer, crop, grade, expected quantity and harvest window for an expected harvest.
+- Position: body
+- Colstart: 1
+- Colspan: 12
+- Component:
+  - Component Type: Form
+- Data Source:
+  - Type: Table
+  - Name: HL_HARVESTS
+  - Primary Keys: HARVEST_ID
+  - Summary: Form source for expected harvest create, edit and delete operations.
+- Columns:
+  - Column Name: HARVEST_ID
+    - Label: Harvest ID
+    - Datatype: number
+    - Page Item Name: P5_HARVEST_ID
+    - Render As: displayOnly
+  - Column Name: FARMER_ID
+    - Label: Farmer
+    - Datatype: number
+    - Page Item Name: P5_FARMER_ID
+    - Render As: selectList
+    - LOV: LOV_FARMERS
+    - Required: true
+  - Column Name: CROP_ID
+    - Label: Crop
+    - Datatype: number
+    - Page Item Name: P5_CROP_ID
+    - Render As: selectList
+    - LOV: LOV_CROPS
+    - Required: true
+  - Column Name: GRADE
+    - Label: Grade
+    - Datatype: varchar2
+    - Page Item Name: P5_GRADE
+    - Render As: radioGroup
+    - LOV: LOV_GRADES
+    - Required: true
+  - Column Name: EXPECTED_QTY_KG
+    - Label: Expected Quantity (kg)
+    - Datatype: number
+    - Page Item Name: P5_EXPECTED_QTY_KG
+    - Render As: numberField
+    - Required: true
+  - Column Name: HARVEST_FROM
+    - Label: Harvest From
+    - Datatype: date
+    - Page Item Name: P5_HARVEST_FROM
+    - Render As: datePicker
+    - Required: true
+  - Column Name: HARVEST_TO
+    - Label: Harvest To
+    - Datatype: date
+    - Page Item Name: P5_HARVEST_TO
+    - Render As: datePicker
+    - Required: true
+    - Same Row: true
+  - Column Name: STATUS
+    - Label: Status
+    - Datatype: varchar2
+    - Page Item Name: P5_STATUS
+    - Render As: selectList
+    - LOV: LOV_HARVEST_STATUS
+    - Required: true
+  - Column Name: NOTES
+    - Label: Notes
+    - Datatype: varchar2
+    - Page Item Name: P5_NOTES
+    - Render As: textarea
+    - MaxLength: 400
+- Actions:
+  - Action
+    - Label: Create
+    - slot: CHANGE
+    - Action Type: submit
+    - Process: Create
+  - Action
+    - Label: Apply Changes
+    - slot: CHANGE
+    - Action Type: submit
+    - Process: Apply
+  - Action
+    - Label: Delete
+    - slot: DELETE
+    - Action Type: submit
+    - Process: Delete
+  - Action
+    - Label: Cancel
+    - slot: CLOSE
+    - Action Type: navigate
+    - Process: cancelDialog
+### Page 6: Match Planner
+- Description: Parent-child planner showing aggregated farmers, pickup map and route savings for a selected buyer demand.
+- Comments: Select a demand to see which farmers fill it, why they were matched, and the shared pickup route on the map.
+- Pattern: parent-child
+- Page Mode: standard
+- Menu: true
+- Page Group: Matching and Logistics
+#### Regions
+##### Region: Demands
+- Comments: Provides the parent demand selector with buyer, crop, quantity and fill progress.
+- Position: body
+- Colstart: 1
+- Colspan: 4
+- Component:
+  - Component Type: Content Row
+  - Parent Child Role: Parent
+- Data Source:
+  - Type: SQL
+  - Primary Keys: DEMAND_ID
+  - SQL:
+```sql
+select d.DEMAND_ID as DEMAND_ID
+     , d.BUYER_NAME as BUYER_NAME
+     , d.CROP_NAME || ' - ' || to_char(d.QUANTITY_KG, 'FM999G999G990') || ' kg grade '
+       || d.GRADE_REQUIRED as DEMAND_LABEL
+     , d.STATUS || ' - ' || to_char(d.FILL_PCT, 'FM990D0') || '% filled by '
+       || to_char(d.FARMERS_MATCHED) || ' farmers' as FILL_LABEL
+     , 'Need by ' || to_char(d.NEED_BY_DATE, 'DD-Mon') as NEED_BY_LABEL
+from HL_DEMAND_SUMMARY_V d
+```
+  - Summary: Parent content rows summarise each demand and its fill progress.
+- Hidden Page Items: P6_DEMAND_ID
+- Columns:
+  - Column Name: DEMAND_ID
+    - Label: Demand ID
+    - Datatype: number
+    - Render As: hidden
+    - Visible: false
+  - Column Name: BUYER_NAME
+    - Label: Buyer
+    - Datatype: varchar2
+    - Render As: overline
+    - Visible: true
+  - Column Name: DEMAND_LABEL
+    - Label: Demand
+    - Datatype: varchar2
+    - Render As: title2
+    - Visible: true
+  - Column Name: FILL_LABEL
+    - Label: Fill
+    - Datatype: varchar2
+    - Render As: description
+    - Visible: true
+  - Column Name: NEED_BY_LABEL
+    - Label: Need By
+    - Datatype: varchar2
+    - Render As: miscellaneous
+    - Visible: true
+- Links: 
+  - Link:
+    - Link To: Page 6
+    - Link Type: fullRowLink
+    - Link Passing: DEMAND_ID
+    - Link Target Items: P6_DEMAND_ID
+  - Link:
+    - Link To: Page 3
+    - Link Type: primaryActions
+    - Link Passing: DEMAND_ID
+    - Link Target Items: P3_DEMAND_ID
+    - Label: Edit Demand
+##### Region: Pickup Farms Map
+- Comments: Plots matched farms for the selected demand so the shared pickup cluster is visible.
+- Position: body
+- Colstart: 5
+- Colspan: 8
+- Component:
+  - Component Type: Map
+  - Qualifier: longitudeLatitude
+  - Parent Child Role: Child
+- Data Source:
+  - Type: SQL
+  - Primary Keys: MATCH_ID
+  - SQL:
+```sql
+select m.MATCH_ID as MATCH_ID
+     , m.FARMER_LAT as FARMER_LAT
+     , m.FARMER_LON as FARMER_LON
+     , 'Stop ' || to_char(m.STOP_ORDER) || ': ' || m.FARMER_NAME || ' (' || m.FARMER_LOCATION
+       || ') - ' || to_char(m.ALLOCATED_KG, 'FM999G999G990') || ' kg grade ' || m.GRADE as MAP_TOOLTIP
+from HL_MATCH_DETAIL_V m
+where m.STATUS <> 'REJECTED'
+and (:P6_DEMAND_ID is null or m.DEMAND_ID = to_number(:P6_DEMAND_ID))
+```
+  - Summary: Map query returns matched farm coordinates for the selected demand or all demands.
+- Columns:
+  - Column Name: MATCH_ID
+    - Label: Match ID
+    - Datatype: number
+    - Render As: hidden
+    - Visible: false
+  - Column Name: FARMER_LAT
+    - Label: Latitude
+    - Datatype: number
+    - Render As: latitudeCol
+    - Visible: true
+  - Column Name: FARMER_LON
+    - Label: Longitude
+    - Datatype: number
+    - Render As: longitudeCol
+    - Visible: true
+  - Column Name: MAP_TOOLTIP
+    - Label: Farm
+    - Datatype: varchar2
+    - Render As: tooltip
+    - Visible: true
+##### Region: Route Summary
+- Comments: Shows the planned shared pickup route, vehicle, trips and savings for the selected demand.
+- Position: body
+- Colstart: 5
+- Colspan: 8
+- Component:
+  - Component Type: Classic Report
+  - Qualifier: Standard
+  - Parent Child Role: Child
+- Data Source:
+  - Type: SQL
+  - Primary Keys: ROUTE_ID
+  - SQL:
+```sql
+select r.ROUTE_ID as ROUTE_ID
+     , r.VEHICLE_TYPE as VEHICLE_TYPE
+     , r.TRIPS as TRIPS
+     , r.STOPS as STOPS
+     , r.AGGREGATED_KM as AGGREGATED_KM
+     , r.INDIVIDUAL_KM as INDIVIDUAL_KM
+     , r.INDIVIDUAL_CO2_KG - r.AGGREGATED_CO2_KG as CO2_SAVED_KG
+     , r.ROUTE_SEQUENCE as ROUTE_SEQUENCE
+from HL_ROUTES r
+where r.DEMAND_ID = to_number(:P6_DEMAND_ID)
+```
+  - Summary: Single route row for the selected demand with vehicle choice and savings.
+- Columns:
+  - Column Name: ROUTE_ID
+    - Label: Route ID
+    - Datatype: number
+    - Render As: hidden
+  - Column Name: VEHICLE_TYPE
+    - Label: Vehicle
+    - Datatype: varchar2
+    - Render As: plainText
+  - Column Name: TRIPS
+    - Label: Trips
+    - Datatype: number
+    - Render As: plainText
+  - Column Name: STOPS
+    - Label: Stops
+    - Datatype: number
+    - Render As: plainText
+  - Column Name: AGGREGATED_KM
+    - Label: Shared Route km
+    - Datatype: number
+    - Render As: plainText
+    - Format Mask: 999G999G999G999G990
+  - Column Name: INDIVIDUAL_KM
+    - Label: Individual Trips km
+    - Datatype: number
+    - Render As: plainText
+    - Format Mask: 999G999G999G999G990
+  - Column Name: CO2_SAVED_KG
+    - Label: CO2 Saved (kg)
+    - Datatype: number
+    - Render As: plainText
+    - Format Mask: 999G999G999G999G990D00
+  - Column Name: ROUTE_SEQUENCE
+    - Label: Pickup Sequence
+    - Datatype: varchar2
+    - Render As: plainText
+##### Region: Matched Farmers
+- Comments: Lists farmers aggregated into the selected demand with scores and plain-language match reasons.
+- Position: body
+- Colstart: 5
+- Colspan: 8
+- Component:
+  - Component Type: Classic Report
+  - Qualifier: Standard
+  - Parent Child Role: Child
+- Data Source:
+  - Type: SQL
+  - Primary Keys: MATCH_ID
+  - SQL:
+```sql
+select m.MATCH_ID as MATCH_ID
+     , m.HARVEST_ID as HARVEST_ID
+     , m.STOP_ORDER as STOP_ORDER
+     , m.FARMER_NAME as FARMER_NAME
+     , m.FARMER_LOCATION as FARMER_LOCATION
+     , m.GRADE as GRADE
+     , m.ALLOCATED_KG as ALLOCATED_KG
+     , m.DISTANCE_KM as DISTANCE_KM
+     , m.SCORE_TOTAL as SCORE_TOTAL
+     , m.STATUS as STATUS
+     , m.MATCH_REASON as MATCH_REASON
+from HL_MATCH_DETAIL_V m
+where m.DEMAND_ID = to_number(:P6_DEMAND_ID)
+order by m.STOP_ORDER
+```
+  - Summary: Child report of matches for the selected demand in pickup order.
+- Columns:
+  - Column Name: MATCH_ID
+    - Label: Match ID
+    - Datatype: number
+    - Render As: hidden
+  - Column Name: HARVEST_ID
+    - Label: Harvest ID
+    - Datatype: number
+    - Render As: hidden
+  - Column Name: STOP_ORDER
+    - Label: Stop
+    - Datatype: number
+    - Render As: plainText
+  - Column Name: FARMER_NAME
+    - Label: Farmer
+    - Datatype: varchar2
+    - Render As: plainText
+  - Column Name: FARMER_LOCATION
+    - Label: Location
+    - Datatype: varchar2
+    - Render As: plainText
+  - Column Name: GRADE
+    - Label: Grade
+    - Datatype: varchar2
+    - Render As: plainText
+  - Column Name: ALLOCATED_KG
+    - Label: Allocated (kg)
+    - Datatype: number
+    - Render As: plainText
+    - Format Mask: 999G999G999G999G990
+  - Column Name: DISTANCE_KM
+    - Label: Distance (km)
+    - Datatype: number
+    - Render As: plainText
+    - Format Mask: 999G999G999G999G990
+  - Column Name: SCORE_TOTAL
+    - Label: Score
+    - Datatype: number
+    - Render As: plainText
+    - Format Mask: 0D00
+  - Column Name: STATUS
+    - Label: Status
+    - Datatype: varchar2
+    - Render As: plainText
+  - Column Name: MATCH_REASON
+    - Label: Why Matched
+    - Datatype: varchar2
+    - Render As: plainText
+- Links: 
+  - Link:
+    - Link To: Page 5
+    - Link Passing: HARVEST_ID
+    - Link Target Items: P5_HARVEST_ID
+    - Label: Edit Harvest
+    - Link Icon: fa-edit
+### Page 7: Grade Routing
+- Description: Interactive report routing unallocated produce to the right market channel and nearest suitable buyer by grade.
+- Comments: Ensures every grade has an outlet so lower grades go to processors, schools or markets instead of waste.
+- Pattern: vertical-stack
+- Page Mode: standard
+- Menu: true
+- Page Group: Matching and Logistics
+#### Regions
+##### Region: Grade Routing Report
+- Comments: Lists unallocated harvest volume with recommended channel and suggested buyer, and opens the harvest form.
+- Position: body
+- Colstart: 1
+- Colspan: 12
+- Component:
+  - Component Type: Interactive Report
+- Report Context: Unallocated farmer harvest volume with grade, recommended market channel and the suggested buyer that accepts that grade, including distance.
+- Data Source:
+  - Type: View
+  - Name: HL_GRADE_ROUTING_V
+  - Primary Keys: HARVEST_ID
+  - Summary: Grade routing view over harvest availability and buyers.
+- Columns:
+  - Column Name: HARVEST_ID
+    - Label: Harvest ID
+    - Datatype: number
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Surrogate primary key of the expected harvest
+  - Column Name: FARMER_NAME
+    - Label: Farmer
+    - Datatype: varchar2
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Farmer who owns the unallocated produce
+  - Column Name: LOCATION_NAME
+    - Label: Location
+    - Datatype: varchar2
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Farm location name
+  - Column Name: CROP_NAME
+    - Label: Crop
+    - Datatype: varchar2
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Crop of the unallocated produce
+  - Column Name: GRADE
+    - Label: Grade
+    - Datatype: varchar2
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Produce grade where A is best and C is lowest
+  - Column Name: AVAILABLE_KG
+    - Label: Available (kg)
+    - Datatype: number
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Kilograms not yet allocated to any demand
+    - Format Mask: 999G999G999G999G990
+  - Column Name: HARVEST_FROM
+    - Label: Harvest From
+    - Datatype: date
+    - Render As: plainText
+    - Visible: true
+    - Column Context: First day of the expected harvest window
+    - Format Mask: DD-MON-YYYY
+  - Column Name: HARVEST_TO
+    - Label: Harvest To
+    - Datatype: date
+    - Render As: plainText
+    - Visible: false
+    - Column Context: Last day of the expected harvest window
+    - Format Mask: DD-MON-YYYY
+  - Column Name: RECOMMENDED_CHANNEL
+    - Label: Recommended Channel
+    - Datatype: varchar2
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Market channel suited to the grade, premium for A, markets and institutions for B, processors for C
+  - Column Name: SUGGESTED_BUYER
+    - Label: Suggested Buyer
+    - Datatype: varchar2
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Buyer in the recommended channel that accepts this grade, nearest first
+  - Column Name: SUGGESTED_BUYER_TYPE
+    - Label: Buyer Type
+    - Datatype: varchar2
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Market channel of the suggested buyer
+  - Column Name: SUGGESTED_BUYER_KM
+    - Label: Distance (km)
+    - Datatype: number
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Estimated road kilometres from the farm to the suggested buyer
+    - Format Mask: 999G999G999G999G990
+- Links: 
+  - Link:
+    - Link To: Page 5
+    - Link Passing: HARVEST_ID
+    - Link Target Items: P5_HARVEST_ID
+    - Label: Edit
+    - Link Icon: fa-edit
+### Page 8: Farmers
+- Description: Interactive report of registered farmers with location, cooperative and consent status.
+- Comments: Farmer directory used to onboard smallholders and maintain their farm coordinates for matching.
+- Pattern: vertical-stack
+- Page Mode: standard
+- Menu: true
+- Page Group: Participants
+#### Regions
+##### Region: Farmers Report
+- Comments: Lists farmers and opens the farmer form for editing.
+- Position: body
+- Colstart: 1
+- Colspan: 12
+- Component:
+  - Component Type: Interactive Report
+- Report Context: Registered smallholder farmers with phone, county, location, farm coordinates, cooperative membership, smartphone access and data consent.
+- Data Source:
+  - Type: Table
+  - Name: HL_FARMERS
+  - Primary Keys: FARMER_ID
+  - Summary: Farmer table for the directory report.
+- Columns:
+  - Column Name: FARMER_ID
+    - Label: Farmer ID
+    - Datatype: number
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Surrogate primary key of the farmer
+  - Column Name: FULL_NAME
+    - Label: Name
+    - Datatype: varchar2
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Farmer full name
+  - Column Name: PHONE
+    - Label: Phone
+    - Datatype: varchar2
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Farmer mobile number used for M-Pesa and SMS
+  - Column Name: COUNTY
+    - Label: County
+    - Datatype: varchar2
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Kenyan county of the farm
+  - Column Name: LOCATION_NAME
+    - Label: Location
+    - Datatype: varchar2
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Farm location name such as a sub-county or town
+  - Column Name: LATITUDE
+    - Label: Latitude
+    - Datatype: number
+    - Render As: plainText
+    - Visible: false
+    - Column Context: Farm latitude in decimal degrees
+  - Column Name: LONGITUDE
+    - Label: Longitude
+    - Datatype: number
+    - Render As: plainText
+    - Visible: false
+    - Column Context: Farm longitude in decimal degrees
+  - Column Name: COOPERATIVE
+    - Label: Cooperative
+    - Datatype: varchar2
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Farmer cooperative or group membership
+  - Column Name: HAS_SMARTPHONE
+    - Label: Smartphone
+    - Datatype: varchar2
+    - Render As: plainTextBasedOnLov
+    - LOV: LOV_YES_NO
+    - Visible: true
+    - Column Context: Whether the farmer has a smartphone, Y or N
+    - Column Context LOV: LOV_YES_NO
+  - Column Name: CONSENT_GIVEN
+    - Label: Consent
+    - Datatype: varchar2
+    - Render As: plainTextBasedOnLov
+    - LOV: LOV_YES_NO
+    - Visible: true
+    - Column Context: Whether the farmer consented to data use, Y or N
+    - Column Context LOV: LOV_YES_NO
+- Links: 
+  - Link:
+    - Link To: Page 9
+    - Link Passing: FARMER_ID
+    - Link Target Items: P9_FARMER_ID
+    - Label: Edit
+    - Link Icon: fa-edit
+- Actions:
+  - Action
+    - Label: Add Farmer
+    - Link To: Page 9
+    - slot: CREATE
+    - Action Type: navigate
+### Page 9: Farmer Form
+- Description: Modal form for adding, editing and deleting a farmer.
+- Comments: Maintains HL_FARMERS rows including farm coordinates used by matching and routing.
+- Pattern: modal-drawer
+- Page Mode: modalDialog
+- Menu: false
+- Page Group: Participants
+#### Regions
+##### Region: Farmer Form
+- Comments: Captures farmer contact, location, coordinates, cooperative and consent.
+- Position: body
+- Colstart: 1
+- Colspan: 12
+- Component:
+  - Component Type: Form
+- Data Source:
+  - Type: Table
+  - Name: HL_FARMERS
+  - Primary Keys: FARMER_ID
+  - Summary: Form source for farmer create, edit and delete operations.
+- Columns:
+  - Column Name: FARMER_ID
+    - Label: Farmer ID
+    - Datatype: number
+    - Page Item Name: P9_FARMER_ID
+    - Render As: displayOnly
+  - Column Name: FULL_NAME
+    - Label: Full Name
+    - Datatype: varchar2
+    - Page Item Name: P9_FULL_NAME
+    - Render As: textField
+    - Required: true
+    - MaxLength: 150
+  - Column Name: PHONE
+    - Label: Phone
+    - Datatype: varchar2
+    - Page Item Name: P9_PHONE
+    - Render As: textField
+    - Required: true
+    - MaxLength: 20
+    - Same Row: true
+  - Column Name: COUNTY
+    - Label: County
+    - Datatype: varchar2
+    - Page Item Name: P9_COUNTY
+    - Render As: textField
+    - Required: true
+    - MaxLength: 60
+  - Column Name: LOCATION_NAME
+    - Label: Location
+    - Datatype: varchar2
+    - Page Item Name: P9_LOCATION_NAME
+    - Render As: textField
+    - MaxLength: 100
+    - Same Row: true
+  - Column Name: LATITUDE
+    - Label: Latitude
+    - Datatype: number
+    - Page Item Name: P9_LATITUDE
+    - Render As: numberField
+    - Required: true
+  - Column Name: LONGITUDE
+    - Label: Longitude
+    - Datatype: number
+    - Page Item Name: P9_LONGITUDE
+    - Render As: numberField
+    - Required: true
+    - Same Row: true
+  - Column Name: COOPERATIVE
+    - Label: Cooperative
+    - Datatype: varchar2
+    - Page Item Name: P9_COOPERATIVE
+    - Render As: textField
+    - MaxLength: 150
+  - Column Name: HAS_SMARTPHONE
+    - Label: Has Smartphone
+    - Datatype: varchar2
+    - Page Item Name: P9_HAS_SMARTPHONE
+    - Render As: radioGroup
+    - LOV: LOV_YES_NO
+    - Required: true
+  - Column Name: CONSENT_GIVEN
+    - Label: Data Consent Given
+    - Datatype: varchar2
+    - Page Item Name: P9_CONSENT_GIVEN
+    - Render As: radioGroup
+    - LOV: LOV_YES_NO
+    - Required: true
+    - Same Row: true
+- Actions:
+  - Action
+    - Label: Create
+    - slot: CHANGE
+    - Action Type: submit
+    - Process: Create
+  - Action
+    - Label: Apply Changes
+    - slot: CHANGE
+    - Action Type: submit
+    - Process: Apply
+  - Action
+    - Label: Delete
+    - slot: DELETE
+    - Action Type: submit
+    - Process: Delete
+  - Action
+    - Label: Cancel
+    - slot: CLOSE
+    - Action Type: navigate
+    - Process: cancelDialog
+### Page 10: Buyers
+- Description: Interactive report of buyers with channel, accepted grades and verification status.
+- Comments: Buyer directory used to verify buyers and maintain delivery locations for routing.
+- Pattern: vertical-stack
+- Page Mode: standard
+- Menu: true
+- Page Group: Participants
+#### Regions
+##### Region: Buyers Report
+- Comments: Lists buyers and opens the buyer form for editing.
+- Position: body
+- Colstart: 1
+- Colspan: 12
+- Component:
+  - Component Type: Interactive Report
+- Report Context: Buyers posting produce demand with market channel, contact details, location, accepted grades, KRA PIN and verification status.
+- Data Source:
+  - Type: Table
+  - Name: HL_BUYERS
+  - Primary Keys: BUYER_ID
+  - Summary: Buyer table for the directory report.
+- Columns:
+  - Column Name: BUYER_ID
+    - Label: Buyer ID
+    - Datatype: number
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Surrogate primary key of the buyer
+  - Column Name: BUYER_NAME
+    - Label: Buyer
+    - Datatype: varchar2
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Buyer business name
+  - Column Name: BUYER_TYPE
+    - Label: Type
+    - Datatype: varchar2
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Market channel RETAILER, EXPORTER, PROCESSOR, SCHOOL, HOTEL or WHOLESALE_MARKET
+  - Column Name: CONTACT_PHONE
+    - Label: Phone
+    - Datatype: varchar2
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Buyer contact phone
+  - Column Name: CONTACT_EMAIL
+    - Label: Email
+    - Datatype: varchar2
+    - Render As: plainText
+    - Visible: false
+    - Column Context: Buyer contact email
+  - Column Name: COUNTY
+    - Label: County
+    - Datatype: varchar2
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Kenyan county of the buyer delivery point
+  - Column Name: LOCATION_NAME
+    - Label: Location
+    - Datatype: varchar2
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Buyer location name
+  - Column Name: ACCEPTED_GRADES
+    - Label: Accepted Grades
+    - Datatype: varchar2
+    - Render As: plainText
+    - Visible: true
+    - Column Context: Comma-separated produce grades the buyer accepts such as A or A,B or B,C
+  - Column Name: KRA_PIN
+    - Label: KRA PIN
+    - Datatype: varchar2
+    - Render As: plainText
+    - Visible: false
+    - Column Context: Kenya Revenue Authority PIN used for buyer verification
+  - Column Name: IS_VERIFIED
+    - Label: Verified
+    - Datatype: varchar2
+    - Render As: plainTextBasedOnLov
+    - LOV: LOV_YES_NO
+    - Visible: true
+    - Column Context: Whether the buyer has been verified, Y or N
+    - Column Context LOV: LOV_YES_NO
+- Links: 
+  - Link:
+    - Link To: Page 11
+    - Link Passing: BUYER_ID
+    - Link Target Items: P11_BUYER_ID
+    - Label: Edit
+    - Link Icon: fa-edit
+- Actions:
+  - Action
+    - Label: Add Buyer
+    - Link To: Page 11
+    - slot: CREATE
+    - Action Type: navigate
+### Page 11: Buyer Form
+- Description: Modal form for adding, editing and deleting a buyer.
+- Comments: Maintains HL_BUYERS rows including delivery coordinates and accepted grades used by matching.
+- Pattern: modal-drawer
+- Page Mode: modalDialog
+- Menu: false
+- Page Group: Participants
+#### Regions
+##### Region: Buyer Form
+- Comments: Captures buyer identity, channel, contact, location, accepted grades and verification.
+- Position: body
+- Colstart: 1
+- Colspan: 12
+- Component:
+  - Component Type: Form
+- Data Source:
+  - Type: Table
+  - Name: HL_BUYERS
+  - Primary Keys: BUYER_ID
+  - Summary: Form source for buyer create, edit and delete operations.
+- Columns:
+  - Column Name: BUYER_ID
+    - Label: Buyer ID
+    - Datatype: number
+    - Page Item Name: P11_BUYER_ID
+    - Render As: displayOnly
+  - Column Name: BUYER_NAME
+    - Label: Buyer Name
+    - Datatype: varchar2
+    - Page Item Name: P11_BUYER_NAME
+    - Render As: textField
+    - Required: true
+    - MaxLength: 150
+  - Column Name: BUYER_TYPE
+    - Label: Buyer Type
+    - Datatype: varchar2
+    - Page Item Name: P11_BUYER_TYPE
+    - Render As: selectList
+    - LOV: LOV_BUYER_TYPES
+    - Required: true
+    - Same Row: true
+  - Column Name: CONTACT_PHONE
+    - Label: Phone
+    - Datatype: varchar2
+    - Page Item Name: P11_CONTACT_PHONE
+    - Render As: textField
+    - MaxLength: 20
+  - Column Name: CONTACT_EMAIL
+    - Label: Email
+    - Datatype: varchar2
+    - Page Item Name: P11_CONTACT_EMAIL
+    - Render As: textField
+    - MaxLength: 150
+    - Same Row: true
+  - Column Name: COUNTY
+    - Label: County
+    - Datatype: varchar2
+    - Page Item Name: P11_COUNTY
+    - Render As: textField
+    - Required: true
+    - MaxLength: 60
+  - Column Name: LOCATION_NAME
+    - Label: Location
+    - Datatype: varchar2
+    - Page Item Name: P11_LOCATION_NAME
+    - Render As: textField
+    - MaxLength: 100
+    - Same Row: true
+  - Column Name: LATITUDE
+    - Label: Latitude
+    - Datatype: number
+    - Page Item Name: P11_LATITUDE
+    - Render As: numberField
+    - Required: true
+  - Column Name: LONGITUDE
+    - Label: Longitude
+    - Datatype: number
+    - Page Item Name: P11_LONGITUDE
+    - Render As: numberField
+    - Required: true
+    - Same Row: true
+  - Column Name: ACCEPTED_GRADES
+    - Label: Accepted Grades
+    - Datatype: varchar2
+    - Page Item Name: P11_ACCEPTED_GRADES
+    - Render As: textField
+    - Required: true
+    - MaxLength: 10
+  - Column Name: KRA_PIN
+    - Label: KRA PIN
+    - Datatype: varchar2
+    - Page Item Name: P11_KRA_PIN
+    - Render As: textField
+    - MaxLength: 20
+    - Same Row: true
+  - Column Name: IS_VERIFIED
+    - Label: Verified
+    - Datatype: varchar2
+    - Page Item Name: P11_IS_VERIFIED
+    - Render As: radioGroup
+    - LOV: LOV_YES_NO
+    - Required: true
+- Actions:
+  - Action
+    - Label: Create
+    - slot: CHANGE
+    - Action Type: submit
+    - Process: Create
+  - Action
+    - Label: Apply Changes
+    - slot: CHANGE
+    - Action Type: submit
+    - Process: Apply
+  - Action
+    - Label: Delete
+    - slot: DELETE
+    - Action Type: submit
+    - Process: Delete
+  - Action
+    - Label: Cancel
+    - slot: CLOSE
+    - Action Type: navigate
+    - Process: cancelDialog

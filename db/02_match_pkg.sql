@@ -35,6 +35,9 @@ create or replace package hl_match_pkg as
 
   procedure run_matching (p_demand_id in number);
   procedure run_all_open;
+  -- Clears all proposals for active demands and re-matches them in deadline
+  -- order, so results do not depend on which record changed last
+  procedure rematch_all;
   procedure plan_route (p_demand_id in number);
   procedure refresh_statuses (p_demand_id in number);
 
@@ -414,6 +417,20 @@ create or replace package body hl_match_pkg as
       run_matching(d.demand_id);
     end loop;
   end run_all_open;
+
+  procedure rematch_all is
+  begin
+    delete from hl_matches
+     where status = 'PROPOSED'
+       and demand_id in (select demand_id from hl_demands
+                          where status in ('OPEN', 'PARTIAL', 'FILLED'));
+
+    for d in (select demand_id from hl_demands
+               where status in ('OPEN', 'PARTIAL', 'FILLED')
+               order by need_by_date, created_at) loop
+      run_matching(d.demand_id);
+    end loop;
+  end rematch_all;
 
   procedure accept_match (p_match_id in number) is
   begin

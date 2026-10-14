@@ -1,0 +1,393 @@
+page 8 (
+    name: Farmers
+    alias: FARMERS
+    title: Farmers
+    pageGroup: @participants
+    appearance {
+        pageTemplate: @/standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        authorizationScheme: mustNotBePublicUser
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+    advanced {
+        enableDuplicatePageSubmissions: false
+    }
+    comments {
+        comments: Farmer directory used to onboard smallholders and maintain their farm coordinates for matching.
+    }
+    
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @breadcrumb
+        }
+        layout {
+            sequence: 5
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @/title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @/breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+    
+    region farmers-report (
+        name: Farmers Report
+        type: interactiveReport
+        source {
+            location: localDatabase
+            tableName: HL_FARMERS
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @/interactive-report
+            templateOptions: [
+                #DEFAULT#
+                t-IRR-region--hideHeader js-addHiddenHeadingRoleDesc
+            ]
+        }
+        advanced {
+            htmlDomId: farmers-report
+        }
+        comments {
+            comments: Lists farmers and opens the farmer form for editing.
+        }
+        link {
+            linkColumn: customTarget
+            target: {
+                page: 9
+                items: {
+                    P9_FARMER_ID: \#FARMER_ID#\
+                }
+            }
+            linkIcon: <span role="img" aria-label="Edit" class="fa fa-edit" title="Edit"></span>
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        genAI {
+            naturalLanguageSupport: true
+            reportContext: Registered smallholder farmers with phone, county, location, farm coordinates, cooperative membership, smartphone access and data consent.
+        }
+        
+        column CONSENT_GIVEN (
+            type: plainTextBasedOnLov
+            lov {
+                lov: @lov-yes-no
+            }
+            heading {
+                heading: Consent
+            }
+            layout {
+                sequence: 100
+            }
+            source {
+                dataType: STRING
+            }
+            genAI {
+                columnContext: Whether the farmer consented to data use, Y or N
+                referenceDataType: sharedComponent
+                lov: @lov-yes-no
+            }
+        )
+        
+        column COOPERATIVE (
+            type: plainText
+            heading {
+                heading: Cooperative
+            }
+            layout {
+                sequence: 80
+            }
+            source {
+                dataType: STRING
+            }
+            genAI {
+                columnContext: Farmer cooperative or group membership
+            }
+        )
+        
+        column COUNTY (
+            type: plainText
+            heading {
+                heading: County
+            }
+            layout {
+                sequence: 40
+            }
+            source {
+                dataType: STRING
+            }
+            genAI {
+                columnContext: Kenyan county of the farm
+            }
+        )
+        
+        column FARMER_ID (
+            type: plainText
+            heading {
+                heading: Farmer ID
+                alignment: end
+            }
+            layout {
+                sequence: 10
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            genAI {
+                columnContext: Surrogate primary key of the farmer
+            }
+        )
+        
+        column FULL_NAME (
+            type: plainText
+            heading {
+                heading: Name
+            }
+            layout {
+                sequence: 20
+            }
+            source {
+                dataType: STRING
+            }
+            genAI {
+                columnContext: Farmer full name
+            }
+        )
+        
+        column HAS_SMARTPHONE (
+            type: plainTextBasedOnLov
+            lov {
+                lov: @lov-yes-no
+            }
+            heading {
+                heading: Smartphone
+            }
+            layout {
+                sequence: 90
+            }
+            source {
+                dataType: STRING
+            }
+            genAI {
+                columnContext: Whether the farmer has a smartphone, Y or N
+                referenceDataType: sharedComponent
+                lov: @lov-yes-no
+            }
+        )
+        
+        column LATITUDE (
+            type: plainText
+            heading {
+                heading: Latitude
+                alignment: end
+            }
+            layout {
+                sequence: 60
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            genAI {
+                columnContext: Farm latitude in decimal degrees
+            }
+        )
+        
+        column LOCATION_NAME (
+            type: plainText
+            heading {
+                heading: Location
+            }
+            layout {
+                sequence: 50
+            }
+            source {
+                dataType: STRING
+            }
+            genAI {
+                columnContext: Farm location name such as a sub-county or town
+            }
+        )
+        
+        column LONGITUDE (
+            type: plainText
+            heading {
+                heading: Longitude
+                alignment: end
+            }
+            layout {
+                sequence: 70
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            genAI {
+                columnContext: Farm longitude in decimal degrees
+            }
+        )
+        
+        column PHONE (
+            type: plainText
+            heading {
+                heading: Phone
+            }
+            layout {
+                sequence: 30
+            }
+            source {
+                dataType: STRING
+            }
+            genAI {
+                columnContext: Farmer mobile number used for M-Pesa and SMS
+            }
+        )
+        
+        
+        savedReport farmers-report-primary (
+            visibility: primaryDefault
+            
+            displayColumn CONSENT_GIVEN (
+                sequence: 10
+            )
+            
+            displayColumn COOPERATIVE (
+                sequence: 8
+            )
+            
+            displayColumn COUNTY (
+                sequence: 4
+            )
+            
+            displayColumn FARMER_ID (
+                sequence: 1
+            )
+            
+            displayColumn FULL_NAME (
+                sequence: 2
+            )
+            
+            displayColumn HAS_SMARTPHONE (
+                sequence: 9
+            )
+            
+            displayColumn LOCATION_NAME (
+                sequence: 5
+            )
+            
+            displayColumn PHONE (
+                sequence: 3
+            )
+            
+            
+        )
+        
+    )
+    
+    
+    button add-farmer (
+        buttonName: ADD-FARMER
+        label: Add Farmer
+        layout {
+            sequence: 1
+            region: @farmers-report
+            slot: rightOfInteractiveReportSearchBar
+        }
+        appearance {
+            buttonTemplate: @/text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 9
+            }
+        }
+        
+    )
+    
+    button reset-farmers-report (
+        buttonName: RESET-farmers-report
+        label: Reset
+        layout {
+            sequence: 2
+            region: @farmers-report
+            slot: rightOfInteractiveReportSearchBar
+        }
+        appearance {
+            buttonTemplate: @/text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-undo-alt
+        }
+        behavior {
+            action: triggerAction
+        }
+        
+        triggerAction reset (
+            name: Reset
+            action: executeJsCode
+            settings {
+                jsCode: apex.jQuery("#farmers-report_actions_menu").menu("find", "irReset").action();
+            }
+            execution {
+                sequence: 10
+            }
+        )
+    )
+    
+    
+    
+    dynamicAction dialog-refresh-farmers-report (
+        name: Refresh on dialog close Farmers Report
+        execution {
+            sequence: 10
+        }
+        when {
+            event: apexafterclosedialog
+            selectionType: region
+            region: @farmers-report
+        }
+        
+        action refresh (
+            action: refresh
+            settings {
+                maintainPagination: true
+            }
+            affectedElements {
+                selectionType: region
+                region: @farmers-report
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+        
+    )
+    
+    
+)
+

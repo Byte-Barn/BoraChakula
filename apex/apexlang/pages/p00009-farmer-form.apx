@@ -1,0 +1,527 @@
+page 9 (
+    name: Farmer Form
+    alias: FARMER-FORM
+    title: Farmer Form
+    pageGroup: @participants
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @/drawer
+        templateOptions: [
+            #DEFAULT#
+            js-dialog-class-t-Drawer--pullOutEnd
+        ]
+    }
+    dialog {
+        chained: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        authorizationScheme: mustNotBePublicUser
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+    advanced {
+        enableDuplicatePageSubmissions: false
+    }
+    comments {
+        comments: Maintains HL_FARMERS rows including farm coordinates used by matching and routing.
+    }
+    
+    region buttons (
+        name: Buttons
+        type: staticContent
+        layout {
+            sequence: 20
+            slot: dialogFooter
+        }
+        appearance {
+            template: @/buttons-container
+            templateOptions: #DEFAULT#
+        }
+        settings {
+            outputAs: text
+        }
+    )
+    
+    region farmer-form (
+        name: Farmer Form
+        type: form
+        source {
+            location: localDatabase
+            tableName: HL_FARMERS
+        }
+        layout {
+            sequence: 10
+            slot: contentBody
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Region--noBorder
+                t-Region--hideHeader js-addHiddenHeadingRoleDesc
+            ]
+        }
+        comments {
+            comments: Captures farmer contact, location, coordinates, cooperative and consent.
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+    )
+    
+    
+    pageItem P9_CONSENT_GIVEN (
+        type: radioGroup
+        label {
+            label: Data Consent Given
+            alignment: right
+        }
+        settings {
+            noOfCols: 10
+        }
+        lov {
+            type: sharedComponent
+            lov: @lov-yes-no
+            displayNullValue: false
+        }
+        layout {
+            sequence: 100
+            region: @farmer-form
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+        }
+        validation {
+            valueRequired: true
+        }
+        source {
+            formRegion: @farmer-form
+            column: CONSENT_GIVEN
+            dataType: varchar2
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+    
+    pageItem P9_COOPERATIVE (
+        type: textField
+        label {
+            label: Cooperative
+            alignment: right
+        }
+        layout {
+            sequence: 80
+            region: @farmer-form
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        source {
+            formRegion: @farmer-form
+            column: COOPERATIVE
+            dataType: varchar2
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+    
+    pageItem P9_COUNTY (
+        type: textField
+        label {
+            label: County
+            alignment: right
+        }
+        layout {
+            sequence: 40
+            region: @farmer-form
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            valueRequired: true
+        }
+        source {
+            formRegion: @farmer-form
+            column: COUNTY
+            dataType: varchar2
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+    
+    pageItem P9_FARMER_ID (
+        type: displayOnly
+        label {
+            label: Farmer ID
+            alignment: right
+        }
+        layout {
+            sequence: 10
+            region: @farmer-form
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @farmer-form
+            column: FARMER_ID
+            dataType: number
+            primaryKey: true
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+    
+    pageItem P9_FULL_NAME (
+        type: textField
+        label {
+            label: Full Name
+            alignment: right
+        }
+        layout {
+            sequence: 20
+            region: @farmer-form
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            valueRequired: true
+        }
+        source {
+            formRegion: @farmer-form
+            column: FULL_NAME
+            dataType: varchar2
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+    
+    pageItem P9_HAS_SMARTPHONE (
+        type: radioGroup
+        label {
+            label: Has Smartphone
+            alignment: right
+        }
+        settings {
+            noOfCols: 10
+        }
+        lov {
+            type: sharedComponent
+            lov: @lov-yes-no
+            displayNullValue: false
+        }
+        layout {
+            sequence: 90
+            region: @farmer-form
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+        }
+        validation {
+            valueRequired: true
+        }
+        source {
+            formRegion: @farmer-form
+            column: HAS_SMARTPHONE
+            dataType: varchar2
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+    
+    pageItem P9_LATITUDE (
+        type: numberField
+        label {
+            label: Latitude
+            alignment: right
+        }
+        layout {
+            sequence: 60
+            region: @farmer-form
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            valueRequired: true
+        }
+        source {
+            formRegion: @farmer-form
+            column: LATITUDE
+            dataType: number
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+    
+    pageItem P9_LOCATION_NAME (
+        type: textField
+        label {
+            label: Location
+            alignment: right
+        }
+        layout {
+            sequence: 50
+            region: @farmer-form
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        source {
+            formRegion: @farmer-form
+            column: LOCATION_NAME
+            dataType: varchar2
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+    
+    pageItem P9_LONGITUDE (
+        type: numberField
+        label {
+            label: Longitude
+            alignment: right
+        }
+        layout {
+            sequence: 70
+            region: @farmer-form
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            valueRequired: true
+        }
+        source {
+            formRegion: @farmer-form
+            column: LONGITUDE
+            dataType: number
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+    
+    pageItem P9_PHONE (
+        type: textField
+        label {
+            label: Phone
+            alignment: right
+        }
+        layout {
+            sequence: 30
+            region: @farmer-form
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            valueRequired: true
+        }
+        source {
+            formRegion: @farmer-form
+            column: PHONE
+            dataType: varchar2
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+    
+    
+    button apply-changes (
+        buttonName: APPLY-CHANGES
+        label: Apply Changes
+        layout {
+            sequence: 2
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @/text
+            hot: true
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: update
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P9_FARMER_ID
+        }
+        
+    )
+    
+    button cancel (
+        buttonName: CANCEL
+        label: Cancel
+        layout {
+            sequence: 4
+            region: @buttons
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @/text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: triggerAction
+            executeValidations: false
+        }
+        
+        triggerAction cancel-dialog (
+            name: Cancel Dialog
+            action: cancelDialog
+            execution {
+                sequence: 10
+            }
+        )
+    )
+    
+    button create (
+        buttonName: CREATE
+        label: Create
+        layout {
+            sequence: 1
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @/text
+            hot: true
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: insert
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P9_FARMER_ID
+        }
+        
+    )
+    
+    button delete (
+        buttonName: DELETE
+        label: Delete
+        layout {
+            sequence: 3
+            region: @buttons
+            slot: delete
+        }
+        appearance {
+            buttonTemplate: @/text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            executeValidations: false
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: delete
+            requiresConfirmation: true
+        }
+        confirmation {
+            message: &APP_TEXT$DELETE_MSG!RAW.
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P9_FARMER_ID
+        }
+        
+    )
+    
+    
+    process close-dialog (
+        name: Close Dialog
+        type: closeDialog
+        settings {
+            itemsToReturn: P9_FARMER_ID
+        }
+        execution {
+            sequence: 20
+        }
+    )
+    
+    process initialize-form-farmer-form (
+        name: Initialize form Farmer Form
+        type: formInitialization
+        formRegion: @farmer-form
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+    )
+    
+    process process-form-farmer-form (
+        name: Process form Farmer Form
+        type: formAutoRowProcessing
+        formRegion: @farmer-form
+        execution {
+            sequence: 10
+        }
+    )
+    
+    
+)
+

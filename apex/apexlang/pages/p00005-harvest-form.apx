@@ -1,0 +1,499 @@
+page 5 (
+    name: Harvest Form
+    alias: HARVEST-FORM
+    title: Harvest Form
+    pageGroup: @marketplace
+    appearance {
+        pageMode: modalDialog
+        dialogTemplate: @/drawer
+        templateOptions: [
+            #DEFAULT#
+            js-dialog-class-t-Drawer--pullOutEnd
+        ]
+    }
+    dialog {
+        chained: false
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        authorizationScheme: mustNotBePublicUser
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+    advanced {
+        enableDuplicatePageSubmissions: false
+    }
+    comments {
+        comments: Maintains HL_HARVESTS rows; database triggers re-run matching after every save or delete.
+    }
+    
+    region buttons (
+        name: Buttons
+        type: staticContent
+        layout {
+            sequence: 20
+            slot: dialogFooter
+        }
+        appearance {
+            template: @/buttons-container
+            templateOptions: #DEFAULT#
+        }
+        settings {
+            outputAs: text
+        }
+    )
+    
+    region harvest-form (
+        name: Harvest Form
+        type: form
+        source {
+            location: localDatabase
+            tableName: HL_HARVESTS
+        }
+        layout {
+            sequence: 10
+            slot: contentBody
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+                t-Region--noBorder
+                t-Region--hideHeader js-addHiddenHeadingRoleDesc
+            ]
+        }
+        comments {
+            comments: Captures farmer, crop, grade, expected quantity and harvest window for an expected harvest.
+        }
+        edit {
+            enabled: true
+            allowedOperations: [
+                add
+                update
+                delete
+            ]
+        }
+    )
+    
+    
+    pageItem P5_CROP_ID (
+        type: selectList
+        label {
+            label: Crop
+            alignment: right
+        }
+        lov {
+            type: sharedComponent
+            lov: @lov-crops
+        }
+        layout {
+            sequence: 30
+            region: @harvest-form
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+        }
+        validation {
+            valueRequired: true
+        }
+        source {
+            formRegion: @harvest-form
+            column: CROP_ID
+            dataType: number
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+    
+    pageItem P5_EXPECTED_QTY_KG (
+        type: numberField
+        label {
+            label: Expected Quantity (kg)
+            alignment: right
+        }
+        layout {
+            sequence: 50
+            region: @harvest-form
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            valueRequired: true
+        }
+        source {
+            formRegion: @harvest-form
+            column: EXPECTED_QTY_KG
+            dataType: number
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+    
+    pageItem P5_FARMER_ID (
+        type: selectList
+        label {
+            label: Farmer
+            alignment: right
+        }
+        lov {
+            type: sharedComponent
+            lov: @lov-farmers
+        }
+        layout {
+            sequence: 20
+            region: @harvest-form
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+        }
+        validation {
+            valueRequired: true
+        }
+        source {
+            formRegion: @harvest-form
+            column: FARMER_ID
+            dataType: number
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+    
+    pageItem P5_GRADE (
+        type: radioGroup
+        label {
+            label: Grade
+            alignment: right
+        }
+        settings {
+            noOfCols: 10
+        }
+        lov {
+            type: sharedComponent
+            lov: @lov-grades
+            displayNullValue: false
+        }
+        layout {
+            sequence: 40
+            region: @harvest-form
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+        }
+        validation {
+            valueRequired: true
+        }
+        source {
+            formRegion: @harvest-form
+            column: GRADE
+            dataType: varchar2
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+    
+    pageItem P5_HARVEST_FROM (
+        type: datePicker
+        label {
+            label: Harvest From
+            alignment: right
+        }
+        layout {
+            sequence: 60
+            region: @harvest-form
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            valueRequired: true
+        }
+        source {
+            formRegion: @harvest-form
+            column: HARVEST_FROM
+            dataType: date
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+    
+    pageItem P5_HARVEST_ID (
+        type: displayOnly
+        label {
+            label: Harvest ID
+            alignment: right
+        }
+        layout {
+            sequence: 10
+            region: @harvest-form
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+        }
+        source {
+            formRegion: @harvest-form
+            column: HARVEST_ID
+            dataType: number
+            primaryKey: true
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+    
+    pageItem P5_HARVEST_TO (
+        type: datePicker
+        label {
+            label: Harvest To
+            alignment: right
+        }
+        layout {
+            sequence: 70
+            region: @harvest-form
+            slot: regionBody
+            alignment: left
+            startNewRow: false
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            valueRequired: true
+        }
+        source {
+            formRegion: @harvest-form
+            column: HARVEST_TO
+            dataType: date
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+    
+    pageItem P5_NOTES (
+        type: textarea
+        label {
+            label: Notes
+            alignment: right
+        }
+        layout {
+            sequence: 90
+            region: @harvest-form
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        source {
+            formRegion: @harvest-form
+            column: NOTES
+            dataType: varchar2
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+    
+    pageItem P5_STATUS (
+        type: selectList
+        label {
+            label: Status
+            alignment: right
+        }
+        lov {
+            type: sharedComponent
+            lov: @lov-harvest-status
+        }
+        layout {
+            sequence: 80
+            region: @harvest-form
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+        }
+        validation {
+            valueRequired: true
+        }
+        source {
+            formRegion: @harvest-form
+            column: STATUS
+            dataType: varchar2
+        }
+        security {
+            sessionStateProtection: checksumRequiredSessionLevel
+        }
+    )
+    
+    
+    button apply-changes (
+        buttonName: APPLY-CHANGES
+        label: Apply Changes
+        layout {
+            sequence: 2
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @/text
+            hot: true
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: update
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P5_HARVEST_ID
+        }
+        
+    )
+    
+    button cancel (
+        buttonName: CANCEL
+        label: Cancel
+        layout {
+            sequence: 4
+            region: @buttons
+            slot: close
+        }
+        appearance {
+            buttonTemplate: @/text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: triggerAction
+            executeValidations: false
+        }
+        
+        triggerAction cancel-dialog (
+            name: Cancel Dialog
+            action: cancelDialog
+            execution {
+                sequence: 10
+            }
+        )
+    )
+    
+    button create (
+        buttonName: CREATE
+        label: Create
+        layout {
+            sequence: 1
+            region: @buttons
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @/text
+            hot: true
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: insert
+        }
+        serverSideCondition {
+            type: itemIsNull
+            item: P5_HARVEST_ID
+        }
+        
+    )
+    
+    button delete (
+        buttonName: DELETE
+        label: Delete
+        layout {
+            sequence: 3
+            region: @buttons
+            slot: delete
+        }
+        appearance {
+            buttonTemplate: @/text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            executeValidations: false
+            warnOnUnsavedChanges: doNotCheck
+            databaseAction: delete
+            requiresConfirmation: true
+        }
+        confirmation {
+            message: &APP_TEXT$DELETE_MSG!RAW.
+        }
+        serverSideCondition {
+            type: itemIsNotNull
+            item: P5_HARVEST_ID
+        }
+        
+    )
+    
+    
+    process close-dialog (
+        name: Close Dialog
+        type: closeDialog
+        settings {
+            itemsToReturn: P5_HARVEST_ID
+        }
+        execution {
+            sequence: 20
+        }
+    )
+    
+    process initialize-form-harvest-form (
+        name: Initialize form Harvest Form
+        type: formInitialization
+        formRegion: @harvest-form
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+    )
+    
+    process process-form-harvest-form (
+        name: Process form Harvest Form
+        type: formAutoRowProcessing
+        formRegion: @harvest-form
+        execution {
+            sequence: 10
+        }
+    )
+    
+    
+)
+

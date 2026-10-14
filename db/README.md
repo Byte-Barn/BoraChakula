@@ -10,11 +10,14 @@ Oracle Autonomous Database / Oracle Database 23ai schema, matching engine and de
 | `02_match_pkg.sql` | `HL_MATCH_PKG`: scoring, aggregation, route planning, status updates |
 | `03_views.sql` | Views for APEX pages, maps and the impact dashboard |
 | `04_seed.sql` | Demo data (fictional farmers and buyers in Murang'a, Kiambu, Nairobi); runs matching |
+| `05_auto_match.sql` | Triggers that re-run matching after any change to demands, harvests or farm locations |
 | `install.sql` / `uninstall.sql` | Install everything / drop everything |
 
 ## Install
 
-**APEX (OCI Autonomous Database):** SQL Workshop → SQL Scripts → upload and run `01` to `04` in order.
+**APEX (OCI Autonomous Database):** SQL Workshop → SQL Scripts → upload and run `01` to `05` in order.
+
+**Scripted (OCI):** `python scripts/bootstrap_db.py --wallet infra/.wallet/wallet.zip` creates the schema user and APEX workspace and installs everything.
 
 **SQLcl / SQL\*Plus:** from this directory run `@install.sql`.
 
@@ -43,7 +46,9 @@ The best-scoring farmers are allocated volume until the order is filled. Each ma
 
 `plan_route` then builds one nearest-neighbour pickup tour from the buyer through all matched farms. It compares truck vs pickup fleets and uses the one that emits less. If pooling would not beat farmers delivering directly, it falls back to `DIRECT`. Savings are measured against every farmer hiring their own pickup.
 
-Other entry points: `run_all_open` (earliest deadline first), `accept_match`, `reject_match` (re-plans the route; re-running matching fills the gap from other farmers).
+Other entry points: `rematch_all` (clears proposals and re-matches all active demands, earliest deadline first; called by the triggers), `run_all_open`, `accept_match`, `reject_match`.
+
+Deleting a demand or harvest cascades to its matches and routes.
 
 ## Views for APEX
 
@@ -62,4 +67,4 @@ Update these with real figures before the pitch:
 - `hl_crops`: `typical_broker_price_kg`, `typical_market_price_kg`, `shelf_life_days`
 - `hl_settings`: `BASELINE_LOSS_RATE`, vehicle capacities and emission factors
 
-Then re-run `begin hl_match_pkg.run_all_open; commit; end;`.
+Then re-run `begin hl_match_pkg.rematch_all; commit; end;`.

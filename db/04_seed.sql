@@ -116,7 +116,7 @@ commit;
 
 -- Generate matches, routes and impact numbers for all demands
 begin
-  hl_match_pkg.run_all_open;
+  hl_match_pkg.rematch_all;
   commit;
 end;
 /

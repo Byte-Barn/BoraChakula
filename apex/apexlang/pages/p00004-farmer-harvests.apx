@@ -1,0 +1,403 @@
+page 4 (
+    name: Farmer Harvests
+    alias: FARMER-HARVESTS
+    title: Farmer Harvests
+    pageGroup: @marketplace
+    appearance {
+        pageTemplate: @/standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        authorizationScheme: mustNotBePublicUser
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+    advanced {
+        enableDuplicatePageSubmissions: false
+    }
+    comments {
+        comments: Farmers register expected harvests here before harvest; saving a harvest automatically re-runs matching.
+    }
+    
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @breadcrumb
+        }
+        layout {
+            sequence: 5
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @/title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @/breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+    
+    region farmer-harvests-report (
+        name: Farmer Harvests Report
+        type: interactiveReport
+        source {
+            location: localDatabase
+            tableName: HL_HARVEST_AVAILABILITY_V
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @/interactive-report
+            templateOptions: [
+                #DEFAULT#
+                t-IRR-region--hideHeader js-addHiddenHeadingRoleDesc
+            ]
+        }
+        advanced {
+            htmlDomId: farmer-harvests-report
+        }
+        comments {
+            comments: Lists expected harvests with available kilograms and opens the harvest form for editing.
+        }
+        link {
+            linkColumn: customTarget
+            target: {
+                page: 5
+                items: {
+                    P5_HARVEST_ID: \#HARVEST_ID#\
+                }
+            }
+            linkIcon: <span role="img" aria-label="Edit" class="fa fa-edit" title="Edit"></span>
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        genAI {
+            naturalLanguageSupport: true
+            reportContext: Expected farmer harvests registered before harvest with crop, grade, harvest window, expected and still-available kilograms.
+        }
+        
+        column AVAILABLE_KG (
+            type: plainText
+            heading {
+                heading: Available (kg)
+                alignment: end
+            }
+            layout {
+                sequence: 70
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+            genAI {
+                columnContext: Kilograms not yet allocated to any buyer demand
+            }
+        )
+        
+        column CROP_NAME (
+            type: plainText
+            heading {
+                heading: Crop
+            }
+            layout {
+                sequence: 40
+            }
+            source {
+                dataType: STRING
+            }
+            genAI {
+                columnContext: Crop being harvested
+            }
+        )
+        
+        column EXPECTED_QTY_KG (
+            type: plainText
+            heading {
+                heading: Expected (kg)
+                alignment: end
+            }
+            layout {
+                sequence: 60
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+            genAI {
+                columnContext: Expected harvest quantity in kilograms
+            }
+        )
+        
+        column FARMER_NAME (
+            type: plainText
+            heading {
+                heading: Farmer
+            }
+            layout {
+                sequence: 20
+            }
+            source {
+                dataType: STRING
+            }
+            genAI {
+                columnContext: Farmer who registered the expected harvest
+            }
+        )
+        
+        column GRADE (
+            type: plainText
+            heading {
+                heading: Grade
+            }
+            layout {
+                sequence: 50
+            }
+            source {
+                dataType: STRING
+            }
+            genAI {
+                columnContext: Expected produce grade where A is best and C is lowest
+            }
+        )
+        
+        column HARVEST_FROM (
+            type: plainText
+            heading {
+                heading: Harvest From
+            }
+            layout {
+                sequence: 80
+            }
+            appearance {
+                formatMask: DD-MON-YYYY
+            }
+            source {
+                dataType: DATE
+            }
+            genAI {
+                columnContext: First day of the expected harvest window
+            }
+        )
+        
+        column HARVEST_ID (
+            type: plainText
+            heading {
+                heading: Harvest ID
+                alignment: end
+            }
+            layout {
+                sequence: 10
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            genAI {
+                columnContext: Surrogate primary key of the expected harvest
+            }
+        )
+        
+        column HARVEST_TO (
+            type: plainText
+            heading {
+                heading: Harvest To
+            }
+            layout {
+                sequence: 90
+            }
+            appearance {
+                formatMask: DD-MON-YYYY
+            }
+            source {
+                dataType: DATE
+            }
+            genAI {
+                columnContext: Last day of the expected harvest window
+            }
+        )
+        
+        column LOCATION_NAME (
+            type: plainText
+            heading {
+                heading: Location
+            }
+            layout {
+                sequence: 30
+            }
+            source {
+                dataType: STRING
+            }
+            genAI {
+                columnContext: Farm location name such as a sub-county or town
+            }
+        )
+        
+        column STATUS (
+            type: plainText
+            heading {
+                heading: Status
+            }
+            layout {
+                sequence: 100
+            }
+            source {
+                dataType: STRING
+            }
+            genAI {
+                columnContext: Harvest allocation state OPEN, PARTIAL, COMMITTED, HARVESTED or CANCELLED
+            }
+        )
+        
+        
+        savedReport farmer-harvests-report-primary (
+            visibility: primaryDefault
+            
+            displayColumn AVAILABLE_KG (
+                sequence: 7
+            )
+            
+            displayColumn CROP_NAME (
+                sequence: 4
+            )
+            
+            displayColumn EXPECTED_QTY_KG (
+                sequence: 6
+            )
+            
+            displayColumn FARMER_NAME (
+                sequence: 2
+            )
+            
+            displayColumn GRADE (
+                sequence: 5
+            )
+            
+            displayColumn HARVEST_FROM (
+                sequence: 8
+            )
+            
+            displayColumn HARVEST_ID (
+                sequence: 1
+            )
+            
+            displayColumn HARVEST_TO (
+                sequence: 9
+            )
+            
+            displayColumn LOCATION_NAME (
+                sequence: 3
+            )
+            
+            displayColumn STATUS (
+                sequence: 10
+            )
+            
+            
+        )
+        
+    )
+    
+    
+    button register-harvest (
+        buttonName: REGISTER-HARVEST
+        label: Register Harvest
+        layout {
+            sequence: 1
+            region: @farmer-harvests-report
+            slot: rightOfInteractiveReportSearchBar
+        }
+        appearance {
+            buttonTemplate: @/text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 5
+            }
+        }
+        
+    )
+    
+    button reset-farmer-harvests-report (
+        buttonName: RESET-farmer-harvests-report
+        label: Reset
+        layout {
+            sequence: 2
+            region: @farmer-harvests-report
+            slot: rightOfInteractiveReportSearchBar
+        }
+        appearance {
+            buttonTemplate: @/text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-undo-alt
+        }
+        behavior {
+            action: triggerAction
+        }
+        
+        triggerAction reset (
+            name: Reset
+            action: executeJsCode
+            settings {
+                jsCode: apex.jQuery("#farmer-harvests-report_actions_menu").menu("find", "irReset").action();
+            }
+            execution {
+                sequence: 10
+            }
+        )
+    )
+    
+    
+    
+    dynamicAction dialog-refresh-farmer-harvests-report (
+        name: Refresh on dialog close Farmer Harvests Report
+        execution {
+            sequence: 10
+        }
+        when {
+            event: apexafterclosedialog
+            selectionType: region
+            region: @farmer-harvests-report
+        }
+        
+        action refresh (
+            action: refresh
+            settings {
+                maintainPagination: true
+            }
+            affectedElements {
+                selectionType: region
+                region: @farmer-harvests-report
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+        
+    )
+    
+    
+)
+

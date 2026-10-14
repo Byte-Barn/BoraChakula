@@ -1,0 +1,46 @@
+app HARVESTLINK (
+    name: HarvestLink
+    logo {
+        type: text
+        text: HarvestLink
+    }
+    navigation {
+        homeUrl: {
+            page: 1
+        }
+        loginUrl: {
+            page: LOGIN
+        }
+    }
+    navigationMenu {
+        listTemplate: @/side-navigation-menu
+        templateOptions: [
+            #DEFAULT#
+            t-TreeNav--styleA
+            js-navCollapsed--hidden
+        ]
+        list: @navigation-menu
+    }
+    navigationBar {
+        list: @navigation-bar
+        listTemplate: @/navigation-bar
+        templateOptions: #DEFAULT#
+    }
+    userInterface {
+        currentTheme: @universal-theme
+    }
+    authentication {
+        scheme: @oracle-apex-accounts
+    }
+    authorization {
+        scheme: mustNotBePublicUser
+    }
+    
+    substitution APP_NAME (
+        value {
+            staticValue: HarvestLink
+        }
+    )
+    
+)
+

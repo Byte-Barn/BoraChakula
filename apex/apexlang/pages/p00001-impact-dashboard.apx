@@ -1,0 +1,574 @@
+page 1 (
+    name: Impact Dashboard
+    alias: IMPACT-DASHBOARD
+    title: Impact Dashboard
+    pageGroup: @dashboard
+    appearance {
+        pageTemplate: @/standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        authorizationScheme: mustNotBePublicUser
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+    advanced {
+        enableDuplicatePageSubmissions: false
+    }
+    comments {
+        comments: Landing page summarising the green impact of demand-first matching for buyers, farmers and judges.
+    }
+    
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @breadcrumb
+        }
+        layout {
+            sequence: 5
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @/title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @/breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+    
+    region demands-by-status-chart (
+        name: Demands by Status Chart
+        type: chart
+        layout {
+            sequence: 80
+            slot: body
+            startNewRow: false
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--noBorder
+                t-Region--hideHeader js-addHiddenHeadingRoleDesc
+                t-Region--scrollBody
+            ]
+        }
+        comments {
+            comments: Shows how many buyer demands are open, partially filled or filled.
+        }
+        chart {
+            type: donut
+        }
+        title {
+            title: Demands by Status Chart
+        }
+        legend {
+            show: false
+        }
+        
+        series demands-by-status-chart (
+            name: Demands by Status Chart
+            execution {
+                sequence: 10
+            }
+            source {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    select d.STATUS as label
+                         , count(*) as value
+                    from HL_DEMANDS d
+                    group by d.STATUS
+                    order by label
+                    ```
+            }
+            columnMapping {
+                label: LABEL
+                value: VALUE
+            }
+            label {
+                show: true
+            }
+        )
+        
+        
+    )
+    
+    region emissions-saved-kpi (
+        name: name: Emissions Saved KPI
+        type: themeTemplateComponent/metricCard
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select v.CO2_SAVED_KG as CO2_SAVED_KG
+                from HL_IMPACT_V v
+                ```
+        }
+        layout {
+            sequence: 50
+            slot: body
+            startNewRow: false
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: [
+                #DEFAULT#
+                margin-top-md
+                margin-bottom-md
+            ]
+        }
+        accessibility {
+            landmarkType: region
+        }
+        comments {
+            comments: Shows kilograms of CO2 avoided by shared pickup routes.
+        }
+        componentAppearance {
+            display: report
+        }
+        settings {
+            title: CO2 Saved (kg)
+            metric: &CO2_SAVED_KG.
+            metricCssClasses: u-text-subheading-md
+            meta: Kilograms of CO2 avoided by shared logistics.
+            layout: stacked
+        }
+        plugin-avatar {
+            displayAvatar: true
+            icon: fa-leaf
+            style: subtle
+            size: medium
+            position: inline
+        }
+        
+        column CO2_SAVED_KG (
+            layout {
+                sequence: 10
+            }
+            source {
+                databaseColumn: CO2_SAVED_KG
+                dataType: number
+            }
+            appearance {
+                formatMask: 999G999G999G999G990
+            }
+        )
+        
+        
+        
+    )
+    
+    region farmer-income-uplift-kpi (
+        name: name: Farmer Income Uplift KPI
+        type: themeTemplateComponent/metricCard
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select v.FARMER_INCOME_UPLIFT_KES as FARMER_INCOME_UPLIFT_KES
+                from HL_IMPACT_V v
+                ```
+        }
+        layout {
+            sequence: 60
+            slot: body
+            startNewRow: false
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: [
+                #DEFAULT#
+                margin-top-md
+                margin-bottom-md
+            ]
+        }
+        accessibility {
+            landmarkType: region
+        }
+        comments {
+            comments: Shows extra farmer income from buyer prices compared with typical broker prices.
+        }
+        componentAppearance {
+            display: report
+        }
+        settings {
+            title: Farmer Income Uplift (KES)
+            metric: &FARMER_INCOME_UPLIFT_KES.
+            metricCssClasses: u-text-subheading-md
+            meta: Extra KES earned versus broker farm-gate prices.
+            layout: stacked
+        }
+        plugin-avatar {
+            displayAvatar: true
+            icon: fa-money
+            style: subtle
+            size: medium
+            position: inline
+        }
+        
+        column FARMER_INCOME_UPLIFT_KES (
+            layout {
+                sequence: 10
+            }
+            source {
+                databaseColumn: FARMER_INCOME_UPLIFT_KES
+                dataType: number
+            }
+            appearance {
+                formatMask: 999G999G999G999G990
+            }
+        )
+        
+        
+        
+    )
+    
+    region farmers-reached-kpi (
+        name: name: Farmers Reached KPI
+        type: themeTemplateComponent/metricCard
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select v.FARMERS_MATCHED as FARMERS_MATCHED
+                from HL_IMPACT_V v
+                ```
+        }
+        layout {
+            sequence: 20
+            slot: body
+            startNewRow: false
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: [
+                #DEFAULT#
+                margin-top-md
+                margin-bottom-md
+            ]
+        }
+        accessibility {
+            landmarkType: region
+        }
+        comments {
+            comments: Shows how many distinct smallholder farmers have a confirmed buyer.
+        }
+        componentAppearance {
+            display: report
+        }
+        settings {
+            title: Farmers Reached
+            metric: &FARMERS_MATCHED.
+            metricCssClasses: u-text-subheading-md
+            meta: Smallholder farmers with a buyer secured before harvest.
+            layout: stacked
+        }
+        plugin-avatar {
+            displayAvatar: true
+            icon: fa-users
+            style: subtle
+            size: medium
+            position: inline
+        }
+        
+        column FARMERS_MATCHED (
+            layout {
+                sequence: 10
+            }
+            source {
+                databaseColumn: FARMERS_MATCHED
+                dataType: number
+            }
+            appearance {
+                formatMask: 999G999G999G999G990
+            }
+        )
+        
+        
+        
+    )
+    
+    region matched-volume-by-crop-chart (
+        name: Matched Volume by Crop Chart
+        type: chart
+        layout {
+            sequence: 70
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--noBorder
+                t-Region--hideHeader js-addHiddenHeadingRoleDesc
+                t-Region--scrollBody
+            ]
+        }
+        comments {
+            comments: Compares matched kilograms across crops to show where demand-first sourcing is active.
+        }
+        title {
+            title: Matched Volume by Crop Chart
+        }
+        legend {
+            show: false
+        }
+        
+        series matched-volume-by-crop-chart (
+            name: Matched Volume by Crop Chart
+            execution {
+                sequence: 10
+            }
+            source {
+                type: sqlQuery
+                sqlQuery:
+                    ```sql
+                    select m.CROP_NAME as label
+                         , sum(m.ALLOCATED_KG) as value
+                    from HL_MATCH_DETAIL_V m
+                    where m.STATUS <> 'REJECTED'
+                    group by m.CROP_NAME
+                    order by value desc
+                    ```
+            }
+            columnMapping {
+                label: LABEL
+                value: VALUE
+            }
+        )
+        
+        axis x (
+            name: x
+            majorTicks {
+                show: false
+            }
+            
+        )
+        
+        axis y (
+            name: y
+            value {
+                format: decimal
+                decimalPlaces: 0
+                formatScaling: none
+            }
+            
+        )
+        
+        
+        
+    )
+    
+    region matched-volume-kpi (
+        name: name: Matched Volume KPI
+        type: themeTemplateComponent/metricCard
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select v.TOTAL_MATCHED_KG as TOTAL_MATCHED_KG
+                from HL_IMPACT_V v
+                ```
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: [
+                #DEFAULT#
+                margin-top-md
+                margin-bottom-md
+            ]
+        }
+        accessibility {
+            landmarkType: region
+        }
+        comments {
+            comments: Shows total kilograms of harvest committed to buyer demand before harvest.
+        }
+        componentAppearance {
+            display: report
+        }
+        settings {
+            title: Matched Volume (kg)
+            metric: &TOTAL_MATCHED_KG.
+            metricCssClasses: u-text-subheading-md
+            meta: Kilograms of produce matched to buyers before harvest.
+            layout: stacked
+        }
+        plugin-avatar {
+            displayAvatar: true
+            icon: fa-cubes
+            style: subtle
+            size: medium
+            position: inline
+        }
+        
+        column TOTAL_MATCHED_KG (
+            layout {
+                sequence: 10
+            }
+            source {
+                databaseColumn: TOTAL_MATCHED_KG
+                dataType: number
+            }
+            appearance {
+                formatMask: 999G999G999G999G990
+            }
+        )
+        
+        
+        
+    )
+    
+    region transport-saved-kpi (
+        name: name: Transport Saved KPI
+        type: themeTemplateComponent/metricCard
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select v.KM_SAVED as KM_SAVED
+                from HL_IMPACT_V v
+                ```
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: [
+                #DEFAULT#
+                margin-top-md
+                margin-bottom-md
+            ]
+        }
+        accessibility {
+            landmarkType: region
+        }
+        comments {
+            comments: Shows road kilometres saved by shared pickup routes versus farmers travelling alone.
+        }
+        componentAppearance {
+            display: report
+        }
+        settings {
+            title: Transport Saved (km)
+            metric: &KM_SAVED.
+            metricCssClasses: u-text-subheading-md
+            meta: Road km saved by aggregated pickups.
+            layout: stacked
+        }
+        plugin-avatar {
+            displayAvatar: true
+            icon: fa-truck
+            style: subtle
+            size: medium
+            position: inline
+        }
+        
+        column KM_SAVED (
+            layout {
+                sequence: 10
+            }
+            source {
+                databaseColumn: KM_SAVED
+                dataType: number
+            }
+            appearance {
+                formatMask: 999G999G999G999G990
+            }
+        )
+        
+        
+        
+    )
+    
+    region waste-avoided-kpi (
+        name: name: Waste Avoided KPI
+        type: themeTemplateComponent/metricCard
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select v.LOSS_AVOIDED_KG as LOSS_AVOIDED_KG
+                from HL_IMPACT_V v
+                ```
+        }
+        layout {
+            sequence: 30
+            slot: body
+            startNewRow: false
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: [
+                #DEFAULT#
+                margin-top-md
+                margin-bottom-md
+            ]
+        }
+        accessibility {
+            landmarkType: region
+        }
+        comments {
+            comments: Shows kilograms of post-harvest loss avoided using the baseline loss rate setting.
+        }
+        componentAppearance {
+            display: report
+        }
+        settings {
+            title: Waste Avoided (kg)
+            metric: &LOSS_AVOIDED_KG.
+            metricCssClasses: u-text-subheading-md
+            meta: Post-harvest loss avoided at the baseline loss rate.
+            layout: stacked
+        }
+        plugin-avatar {
+            displayAvatar: true
+            icon: fa-recycle
+            style: subtle
+            size: medium
+            position: inline
+        }
+        
+        column LOSS_AVOIDED_KG (
+            layout {
+                sequence: 10
+            }
+            source {
+                databaseColumn: LOSS_AVOIDED_KG
+                dataType: number
+            }
+            appearance {
+                formatMask: 999G999G999G999G990
+            }
+        )
+        
+        
+        
+    )
+    
+    
+    
+)
+

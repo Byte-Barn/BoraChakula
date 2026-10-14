@@ -1,0 +1,418 @@
+page 7 (
+    name: Grade Routing
+    alias: GRADE-ROUTING
+    title: Grade Routing
+    pageGroup: @matching-and-logistics
+    appearance {
+        pageTemplate: @/standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        authorizationScheme: mustNotBePublicUser
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+    advanced {
+        enableDuplicatePageSubmissions: false
+    }
+    comments {
+        comments: Ensures every grade has an outlet so lower grades go to processors, schools or markets instead of waste.
+    }
+    
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @breadcrumb
+        }
+        layout {
+            sequence: 5
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @/title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @/breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+    
+    region grade-routing-report (
+        name: Grade Routing Report
+        type: interactiveReport
+        source {
+            location: localDatabase
+            tableName: HL_GRADE_ROUTING_V
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @/interactive-report
+            templateOptions: [
+                #DEFAULT#
+                t-IRR-region--hideHeader js-addHiddenHeadingRoleDesc
+            ]
+        }
+        advanced {
+            htmlDomId: grade-routing-report
+        }
+        comments {
+            comments: Lists unallocated harvest volume with recommended channel and suggested buyer, and opens the harvest form.
+        }
+        link {
+            linkColumn: customTarget
+            target: {
+                page: 5
+                items: {
+                    P5_HARVEST_ID: \#HARVEST_ID#\
+                }
+            }
+            linkIcon: <span role="img" aria-label="Edit" class="fa fa-edit" title="Edit"></span>
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        genAI {
+            naturalLanguageSupport: true
+            reportContext: Unallocated farmer harvest volume with grade, recommended market channel and the suggested buyer that accepts that grade, including distance.
+        }
+        
+        column AVAILABLE_KG (
+            type: plainText
+            heading {
+                heading: Available (kg)
+                alignment: end
+            }
+            layout {
+                sequence: 60
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+            genAI {
+                columnContext: Kilograms not yet allocated to any demand
+            }
+        )
+        
+        column CROP_NAME (
+            type: plainText
+            heading {
+                heading: Crop
+            }
+            layout {
+                sequence: 40
+            }
+            source {
+                dataType: STRING
+            }
+            genAI {
+                columnContext: Crop of the unallocated produce
+            }
+        )
+        
+        column FARMER_NAME (
+            type: plainText
+            heading {
+                heading: Farmer
+            }
+            layout {
+                sequence: 20
+            }
+            source {
+                dataType: STRING
+            }
+            genAI {
+                columnContext: Farmer who owns the unallocated produce
+            }
+        )
+        
+        column GRADE (
+            type: plainText
+            heading {
+                heading: Grade
+            }
+            layout {
+                sequence: 50
+            }
+            source {
+                dataType: STRING
+            }
+            genAI {
+                columnContext: Produce grade where A is best and C is lowest
+            }
+        )
+        
+        column HARVEST_FROM (
+            type: plainText
+            heading {
+                heading: Harvest From
+            }
+            layout {
+                sequence: 70
+            }
+            appearance {
+                formatMask: DD-MON-YYYY
+            }
+            source {
+                dataType: DATE
+            }
+            genAI {
+                columnContext: First day of the expected harvest window
+            }
+        )
+        
+        column HARVEST_ID (
+            type: plainText
+            heading {
+                heading: Harvest ID
+                alignment: end
+            }
+            layout {
+                sequence: 10
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+            genAI {
+                columnContext: Surrogate primary key of the expected harvest
+            }
+        )
+        
+        column HARVEST_TO (
+            type: plainText
+            heading {
+                heading: Harvest To
+            }
+            layout {
+                sequence: 80
+            }
+            appearance {
+                formatMask: DD-MON-YYYY
+            }
+            source {
+                dataType: DATE
+            }
+            genAI {
+                columnContext: Last day of the expected harvest window
+            }
+        )
+        
+        column LOCATION_NAME (
+            type: plainText
+            heading {
+                heading: Location
+            }
+            layout {
+                sequence: 30
+            }
+            source {
+                dataType: STRING
+            }
+            genAI {
+                columnContext: Farm location name
+            }
+        )
+        
+        column RECOMMENDED_CHANNEL (
+            type: plainText
+            heading {
+                heading: Recommended Channel
+            }
+            layout {
+                sequence: 90
+            }
+            source {
+                dataType: STRING
+            }
+            genAI {
+                columnContext: Market channel suited to the grade, premium for A, markets and institutions for B, processors for C
+            }
+        )
+        
+        column SUGGESTED_BUYER (
+            type: plainText
+            heading {
+                heading: Suggested Buyer
+            }
+            layout {
+                sequence: 100
+            }
+            source {
+                dataType: STRING
+            }
+            genAI {
+                columnContext: Buyer in the recommended channel that accepts this grade, nearest first
+            }
+        )
+        
+        column SUGGESTED_BUYER_KM (
+            type: plainText
+            heading {
+                heading: Distance (km)
+                alignment: end
+            }
+            layout {
+                sequence: 120
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+            genAI {
+                columnContext: Estimated road kilometres from the farm to the suggested buyer
+            }
+        )
+        
+        column SUGGESTED_BUYER_TYPE (
+            type: plainText
+            heading {
+                heading: Buyer Type
+            }
+            layout {
+                sequence: 110
+            }
+            source {
+                dataType: STRING
+            }
+            genAI {
+                columnContext: Market channel of the suggested buyer
+            }
+        )
+        
+        
+        savedReport grade-routing-report-primary (
+            visibility: primaryDefault
+            
+            displayColumn AVAILABLE_KG (
+                sequence: 6
+            )
+            
+            displayColumn CROP_NAME (
+                sequence: 4
+            )
+            
+            displayColumn FARMER_NAME (
+                sequence: 2
+            )
+            
+            displayColumn GRADE (
+                sequence: 5
+            )
+            
+            displayColumn HARVEST_FROM (
+                sequence: 7
+            )
+            
+            displayColumn HARVEST_ID (
+                sequence: 1
+            )
+            
+            displayColumn LOCATION_NAME (
+                sequence: 3
+            )
+            
+            displayColumn RECOMMENDED_CHANNEL (
+                sequence: 9
+            )
+            
+            displayColumn SUGGESTED_BUYER (
+                sequence: 10
+            )
+            
+            displayColumn SUGGESTED_BUYER_KM (
+                sequence: 12
+            )
+            
+            displayColumn SUGGESTED_BUYER_TYPE (
+                sequence: 11
+            )
+            
+            
+        )
+        
+    )
+    
+    
+    button reset-grade-routing-report (
+        buttonName: RESET-grade-routing-report
+        label: Reset
+        layout {
+            sequence: 1
+            region: @grade-routing-report
+            slot: rightOfInteractiveReportSearchBar
+        }
+        appearance {
+            buttonTemplate: @/text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-undo-alt
+        }
+        behavior {
+            action: triggerAction
+        }
+        
+        triggerAction reset (
+            name: Reset
+            action: executeJsCode
+            settings {
+                jsCode: apex.jQuery("#grade-routing-report_actions_menu").menu("find", "irReset").action();
+            }
+            execution {
+                sequence: 10
+            }
+        )
+    )
+    
+    
+    
+    dynamicAction dialog-refresh-grade-routing-report (
+        name: Refresh on dialog close Grade Routing Report
+        execution {
+            sequence: 10
+        }
+        when {
+            event: apexafterclosedialog
+            selectionType: region
+            region: @grade-routing-report
+        }
+        
+        action refresh (
+            action: refresh
+            settings {
+                maintainPagination: true
+            }
+            affectedElements {
+                selectionType: region
+                region: @grade-routing-report
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+        
+    )
+    
+    
+)
+
