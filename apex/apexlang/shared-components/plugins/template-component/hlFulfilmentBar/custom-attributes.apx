@@ -1,0 +1,107 @@
+customAttribute SOURCED (
+    apexlangName: sourced
+    attribute: 1
+    name: Sourced kg (formatted)
+    appearance {
+        sequence: 10
+    }
+)
+
+customAttribute TARGET (
+    apexlangName: target
+    attribute: 2
+    name: Target kg (formatted)
+    appearance {
+        sequence: 20
+    }
+)
+
+customAttribute CONFIRMED_PCT (
+    apexlangName: confirmedPct
+    attribute: 3
+    name: Confirmed %
+    appearance {
+        sequence: 30
+    }
+)
+
+customAttribute MATCHED (
+    apexlangName: matched
+    attribute: 4
+    name: Matched kg (formatted)
+    appearance {
+        sequence: 40
+    }
+)
+
+customAttribute PENDING (
+    apexlangName: pending
+    attribute: 5
+    name: Pending kg (formatted)
+    appearance {
+        sequence: 50
+    }
+)
+
+customAttribute UNMATCHED (
+    apexlangName: unmatched
+    attribute: 6
+    name: Unmatched kg (formatted)
+    appearance {
+        sequence: 60
+    }
+)
+
+customAttribute MATCHED_WIDTH (
+    apexlangName: matchedWidth
+    attribute: 7
+    name: Matched width %
+    appearance {
+        sequence: 70
+    }
+)
+
+customAttribute PENDING_WIDTH (
+    apexlangName: pendingWidth
+    attribute: 8
+    name: Pending width %
+    appearance {
+        sequence: 80
+    }
+)
+
+customAttribute LEGEND (
+    apexlangName: legend
+    attribute: 9
+    name: Show legend (Y/N)
+    appearance {
+        sequence: 90
+    }
+)
+
+customAttribute MATCHED_LABEL (
+    apexlangName: matchedLabel
+    attribute: 10
+    name: Matched label
+    appearance {
+        sequence: 100
+    }
+)
+
+customAttribute PENDING_LABEL (
+    apexlangName: pendingLabel
+    attribute: 11
+    name: Pending label
+    appearance {
+        sequence: 110
+    }
+)
+
+customAttribute UNMATCHED_LABEL (
+    apexlangName: unmatchedLabel
+    attribute: 12
+    name: Unmatched label
+    appearance {
+        sequence: 120
+    }
+)

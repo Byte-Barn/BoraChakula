@@ -1,0 +1,29 @@
+plugin hlDemandCard (
+    name: HL Demand Card
+    staticId: COM.HARVESTLINK.DEMANDCARD
+    templateComponent {
+        availableAs: [
+            partial
+            report
+        ]
+        partial:
+            ```html
+            <article class="hlc-card hlc-demand"><div class="hlc-demand-img"><img src="#IMAGE_URL!ATTR#" alt="#CROP!ATTR#"><span class="hlc-demand-grade"><span class="hl-grade hl-grade-{case GRADE/}{when A/}a{when B/}b{otherwise/}c{endcase/}" title="Grade #GRADE!ATTR#"><b aria-hidden="true">#GRADE#</b>{if COMPACT/}<span class="hl-sr">Grade #GRADE#</span>{else/}<span>{case GRADE/}{when A/}Grade A · Premium{when B/}Grade B · Market{when C/}Grade C · Processing{otherwise/}Grade #GRADE#{endcase/}</span>{endif/}</span></span></div><div class="hlc-demand-body"><div><h3>#CROP#</h3><p class="hlc-muted">#BUYER#</p></div><div class="hlc-demand-row"><span class="hlc-demand-qty">#QTY#</span><span class="hlc-muted">#DATE#</span></div><div class="hlc-demand-track"><div style="width:#FILL_PCT#%"></div></div><p class="hlc-muted">#FILLED#</p></div></article>
+            ```
+        reportBody:
+            ```html
+            <div class="hlc-demand-grid #APEX$COMPONENT_CSS_CLASSES#">#APEX$ROWS#</div>
+            ```
+        reportRow:
+            ```html
+            <div #APEX$ROW_IDENTIFICATION#>#APEX$PARTIAL#</div>
+            ```
+        translateTemplates: false
+    }
+    component {
+        standardAttributes: regionTemplateAttr
+    }
+    information {
+        helpText: Open demand card with crop photo, grade, quantity and fill bar (canvas landing page).
+    }
+)

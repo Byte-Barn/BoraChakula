@@ -4,8 +4,9 @@ page 50 (
     title: HarvestLink: sell before you harvest
     pageGroup: @dashboard
     appearance {
-        pageTemplate: @/standard
+        pageTemplate: @/blank
         templateOptions: #DEFAULT#
+        cssClasses: hlc-page
     }
     navigation {
         cursorFocus: doNotFocusCursor
@@ -19,24 +20,114 @@ page 50 (
         enableDuplicatePageSubmissions: false
     }
     comments {
-        comments: Canvas screen 1, public (no login). Read-only figures from HL_IMPACT_METRICS_V and the featured demand in HL_FULFIL_V, labelled as illustrative.
+        comments: Canvas screen 1 (Main), public. Layout and copy from the HarvestLink design canvas; live figures from HL_FULFIL_V, HL_MATCH_V, HL_ROUTE_LINE_V and HL_IMPACT_METRICS_V, labelled as illustrative.
     }
 
     region hero (
-        name: Sell before you harvest
-        type: staticContent
+        name: Hero
+        type: dynamicContent
         source {
-            htmlCode:
-                ```html
-                <div class="hl-hero">
-                  <p class="hl-hero__eyebrow">HarvestLink by Bora Chakula</p>
-                  <h1 class="hl-hero__title">Sell before you harvest.</h1>
-                  <p class="hl-hero__lead">Buyers post what they need weeks before harvest. HarvestLink combines smallholder farms to fill each order, finds an outlet for every grade, and sends one truck instead of many.</p>
-                </div>
+            plsqlFunctionBody:
+                ```plsql
+                declare
+                  l_d     number := hl_demo.featured_demand_id;
+                  l_f     hl_fulfil_v%rowtype;
+                  l_farms number;
+                  function kg (n number) return varchar2 is begin return to_char(n, 'FM999G999G990'); end;
+                  function fill_bar (p_target number, p_matched number, p_pending number, p_legend boolean) return varchar2 is
+                    l_unmatched number := greatest(p_target - p_matched - p_pending, 0);
+                    l_html varchar2(4000);
+                  begin
+                    l_html := '<div class="hl-fill"><div class="hl-fill-head"><span class="hl-fill-total hl-num">' || kg(p_matched + p_pending)
+                      || '<small> of ' || kg(p_target) || ' kg sourced</small></span><span class="hl-help">'
+                      || round(p_matched / p_target * 100) || '% confirmed</span></div>'
+                      || '<div class="hl-fill-track" role="img" aria-label="' || kg(p_matched) || ' kg matched, ' || kg(p_pending)
+                      || ' pending, ' || kg(l_unmatched) || ' unmatched of ' || kg(p_target) || '">'
+                      || '<span class="hl-fill-seg hl-fill-matched" style="width:' || to_char(round(p_matched / p_target * 100, 2), 'FM990D00', 'NLS_NUMERIC_CHARACTERS=''.,''') || '%"></span>'
+                      || '<span class="hl-fill-seg hl-fill-pending" style="width:' || to_char(round(p_pending / p_target * 100, 2), 'FM990D00', 'NLS_NUMERIC_CHARACTERS=''.,''') || '%"></span></div>';
+                    if p_legend then
+                      l_html := l_html || '<ul class="hl-fill-legend"><li><span class="hl-key hl-key-matched"></span>Farmers confirmed <b class="hl-num">' || kg(p_matched)
+                        || ' kg</b></li><li><span class="hl-key hl-key-pending"></span>Awaiting farmers <b class="hl-num">' || kg(p_pending)
+                        || ' kg</b></li><li><span class="hl-key hl-key-unmatched"></span>Still open <b class="hl-num">' || kg(l_unmatched) || ' kg</b></li></ul>';
+                    end if;
+                    return l_html || '</div>';
+                  end;
+                begin
+                  select * into l_f from hl_fulfil_v where demand_id = l_d;
+                  select count(*) into l_farms from hl_match_v where demand_id = l_d and ui_status <> 'DECLINED';
+                  -- #APP_FILES# (photos) is only substituted in static regions; expand it here
+                  return apex_plugin_util.replace_substitutions(p_escape => false, p_value => q'~<div class="hlc-root"><section class="hlc-on-dark" style="position:relative;overflow:hidden;color:#fff;background:var(--forest-deep)"><img src="#APP_FILES#images/photo-farmer-crate.jpg" alt="A farmer carrying a crate of fresh carrots, beetroot and greens" class="hlc-photo" style="position:absolute;inset:0;object-position:70% 30%"><div class="hlc-shade" style="position:absolute;inset:0"></div><header class="hlc-pad" style="position:relative;padding:24px 40px"><div style="max-width:1240px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:16px 40px"><a class="hl-logo hl-logo-inverse" href="f?p=&APP_ID.:50:&SESSION." aria-label="HarvestLink home"><svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true" focusable="false"><path d="M16 29C8 26 3.5 18.5 4.5 8c8 2 12.5 8 11.5 21z" fill="currentColor"></path><path d="M16 29c8-3 12.5-10.5 11.5-21-8 2-12.5 8-11.5 21z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"></path><circle cx="16" cy="4.5" r="2.75" fill="currentColor"></circle></svg><span><span class="hl-logo-word" style="font-size:22px;line-height:24px;display:block">HarvestLink</span><span class="hl-logo-by">by Bora Chakula</span></span></a><nav class="hlc-topnav" aria-label="Main" style="display:flex;gap:32px;flex-grow:1;justify-content:center;font-weight:500;font-size:15px"><a href="#how" style="text-decoration:none">How it works</a><a href="#farmers" style="text-decoration:none">For farmers</a><a href="#buyers" style="text-decoration:none">For buyers</a><a href="#impact" style="text-decoration:none">Our impact</a></nav><div style="display:flex;flex-wrap:wrap;gap:10px;margin-left:auto"><a class="hl-btn hl-btn-secondary" href="f?p=&APP_ID.:9999:&SESSION.">Sign in</a><a class="hl-btn hl-btn-primary" href="f?p=&APP_ID.:31:&SESSION.">Post a demand</a></div></div></header><div class="hlc-pad" style="position:relative;padding:72px 40px 128px"><div style="max-width:1240px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:48px;align-items:end"><div style="display:flex;flex-direction:column;gap:28px;max-width:620px"><span class="hlc-chip" style="background:rgba(132,204,22,.16);color:var(--lime);width:fit-content">Demand-first marketplace · Kenya</span><h1 class="hlc-h1" style="margin:0;color:#fff">Sell before you <span class="hlc-lime">harvest.</span></h1><p style="margin:0;font-size:19px;line-height:30px;color:rgba(255,255,255,.88);max-width:52ch">Buyers post what they need before harvest. We bring smallholder farmers together to fill the order, find an outlet for every grade, and send one truck instead of many.</p><div style="display:flex;flex-wrap:wrap;gap:12px"><a class="hl-btn hl-btn-primary hl-btn-lg" href="f?p=&APP_ID.:31:&SESSION.">Post a demand<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 8h10M9 4l4 4-4 4"></path></svg></a><a class="hl-btn hl-btn-secondary hl-btn-lg" href="f?p=&APP_ID.:20:&SESSION.">Register your harvest</a></div></div><div class="hlc-card hlc-lift" style="justify-self:end;width:100%;max-width:420px;color:var(--ink);padding:24px;display:flex;flex-direction:column;gap:18px"><div style="display:flex;gap:14px;align-items:center"><img src="#APP_FILES#images/crop-tomato.jpg" alt="" style="width:64px;height:64px;border-radius:14px;border:1px solid var(--line);object-fit:contain;background:#fff"><div style="flex:1;min-width:0"><p style="margin:0;font:700 19px/26px var(--font-display)">~'
+                    || apex_escape.html(rtrim(rtrim(to_char(l_f.target_kg / 1000, 'FM990D0', 'NLS_NUMERIC_CHARACTERS=''.,'''), '0'), '.') || ' t Grade ' || l_f.grade_required || ' ' || l_f.crop_name)
+                    || '</p><p style="margin:0;font-size:13px;color:var(--ink-muted)">'
+                    || apex_escape.html(l_f.buyer_name || ' · ' || to_char(l_f.need_by_date, 'Dy DD Mon'))
+                    || '</p></div></div>'
+                    || fill_bar(l_f.target_kg, l_f.matched_kg, l_f.pending_kg, true)
+                    || q'~<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:13px;color:var(--ink-muted)">~'
+                    || l_farms || ' farms · 1 pickup route'
+                    || q'~</span><span class="hl-prov hl-prov-demo">Demo data</span></div></div></div></div></section></div>~');
+                end;
                 ```
         }
         layout {
             sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region example-in-numbers (
+        name: The example in numbers
+        type: dynamicContent
+        source {
+            plsqlFunctionBody:
+                ```plsql
+                declare
+                  l_d     number := hl_demo.featured_demand_id;
+                  l_f     hl_fulfil_v%rowtype;
+                  l_farms number;
+                  l_km    number;
+                  function stat (p_value varchar2, p_label varchar2) return varchar2 is
+                  begin
+                    return '<div><p style="margin:0;font:800 36px/40px var(--font-display);color:var(--forest)">' || apex_escape.html(p_value)
+                        || '</p><p style="margin:4px 0 0;font-size:14px;color:var(--ink-muted)">' || apex_escape.html(p_label) || '</p></div>';
+                  end;
+                begin
+                  select * into l_f from hl_fulfil_v where demand_id = l_d;
+                  select count(*) into l_farms from hl_match_v where demand_id = l_d and ui_status <> 'DECLINED';
+                  select nvl(max(km_saved), 0) into l_km from hl_route_line_v where demand_id = l_d;
+                  return q'~<div class="hlc-root"><section class="hlc-pad" aria-label="The example in numbers" style="position:relative;padding:0 40px;margin-top:-64px"><div class="hlc-card hlc-lift" style="max-width:1240px;margin:0 auto;padding:28px 32px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:24px">~'
+                    || stat(rtrim(rtrim(to_char(l_f.target_kg / 1000, 'FM990D0', 'NLS_NUMERIC_CHARACTERS=''.,'''), '0'), '.') || ' t', 'ordered before harvest')
+                    || stat(l_farms || ' farms', 'combined to fill it')
+                    || stat('3 grades', 'each sent to an outlet')
+                    || stat(to_char(round(l_km), 'FM999G990') || ' km', 'fewer truck kilometres, simulated')
+                    || '</div></section></div>';
+                end;
+                ```
+        }
+        layout {
+            sequence: 20
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region how-it-works (
+        name: How it works
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div class="hlc-root"><section id="how" class="hlc-pad" style="padding:96px 40px 80px"><div style="max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:48px"><div style="display:flex;flex-direction:column;gap:14px;max-width:680px"><p class="hlc-eyebrow">How it works</p><h2 class="hlc-h2" style="margin:0">One order, many farms, one delivery</h2><p style="margin:0;font-size:18px;line-height:28px;color:var(--ink-muted)">Small farms can't fill big orders alone. HarvestLink combines them, and shows exactly why each farm was chosen.</p></div><ol style="list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:20px"><li class="hlc-card" style="padding:28px;display:flex;flex-direction:column;gap:14px"><div style="display:flex;justify-content:space-between;align-items:center"><span class="hlc-icon-badge"><svg width="22" height="22" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2.25 3.5h11.5v10.25H2.25zM2.25 6.5h11.5M5 2v3M11 2v3"></path></svg></span><span style="font:800 15px var(--font-display);color:var(--ink-muted)">01</span></div><h3 style="margin:0;font:700 19px/26px var(--font-display)">Buyer posts a demand</h3><p style="margin:0;color:var(--ink-muted)">Crop, quantity, grade, date and place, weeks before harvest.</p></li><li class="hlc-card" style="padding:28px;display:flex;flex-direction:column;gap:14px"><div style="display:flex;justify-content:space-between;align-items:center"><span class="hlc-icon-badge"><svg width="22" height="22" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 2l6 3.25-6 3.25-6-3.25zM2 8.25l6 3.25 6-3.25M2 11.25l6 3.25 6-3.25"></path></svg></span><span style="font:800 15px var(--font-display);color:var(--ink-muted)">02</span></div><h3 style="margin:0;font:700 19px/26px var(--font-display)">Farmers are combined</h3><p style="margin:0;color:var(--ink-muted)">Ranked by quantity, grade, harvest window and distance, then added up until the order is full.</p></li><li class="hlc-card" style="padding:28px;display:flex;flex-direction:column;gap:14px"><div style="display:flex;justify-content:space-between;align-items:center"><span class="hlc-icon-badge"><svg width="22" height="22" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 2v12M3 14h10M2 6.5l2.5-4 2.5 4a2.5 2.5 0 0 1-5 0zM9 6.5l2.5-4 2.5 4a2.5 2.5 0 0 1-5 0zM4.5 2.5h7"></path></svg></span><span style="font:800 15px var(--font-display);color:var(--ink-muted)">03</span></div><h3 style="margin:0;font:700 19px/26px var(--font-display)">Every grade has a buyer</h3><p style="margin:0;color:var(--ink-muted)">Grade A to the buyer, B to local markets, C to processors instead of the bin.</p></li><li class="hlc-card" style="padding:28px;display:flex;flex-direction:column;gap:14px"><div style="display:flex;justify-content:space-between;align-items:center"><span class="hlc-icon-badge"><svg width="22" height="22" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M1.75 4h7.5v6.5h-7.5zM9.25 6.5h3l2 2.25v1.75h-5M4.5 12.5a1.25 1.25 0 1 0 0-.01M11.5 12.5a1.25 1.25 0 1 0 0-.01"></path></svg></span><span style="font:800 15px var(--font-display);color:var(--ink-muted)">04</span></div><h3 style="margin:0;font:700 19px/26px var(--font-display)">One truck collects it</h3><p style="margin:0;color:var(--ink-muted)">A single pickup route, with the distance, loss and emissions it saved.</p></li></ol></div></section></div>
+                ```
+        }
+        layout {
+            sequence: 30
             slot: body
         }
         appearance {
@@ -48,228 +139,13 @@ page 50 (
         }
     )
 
-    region numbers (
-        name: The demo in numbers
-        type: themeTemplateComponent/metricCard
-        source {
-            location: localDatabase
-            type: sqlQuery
-            sqlQuery:
-                ```sql
-                select m.METRIC_KEY as METRIC_KEY
-                     , m.SORT_ORDER as SORT_ORDER
-                     , m.LABEL as LABEL
-                     , to_char(m.VALUE, 'FM999G999G999G990') || ' ' || m.UNIT as METRIC
-                     , initcap(m.PROVENANCE) || ' figure · illustrative, from the demo dataset' as META
-                from HL_IMPACT_METRICS_V m
-                where m.METRIC_KEY in ('PRODUCE_SOURCED', 'FARMERS_REACHED', 'DISTANCE_SAVED', 'LOSS_AVOIDED')
-                order by m.SORT_ORDER
-                ```
-        }
-        layout {
-            sequence: 20
-            slot: body
-        }
-        appearance {
-            template: @/blank-with-attributes
-            templateOptions: [
-                #DEFAULT#
-                margin-top-md
-                margin-bottom-md
-            ]
-        }
-        accessibility {
-            landmarkType: region
-        }
-        componentAppearance {
-            display: report
-        }
-        settings {
-            title: &LABEL.
-            metric: &METRIC.
-            metricCssClasses: u-text-subheading-md
-            meta: &META.
-            layout: stacked
-        }
-
-        column LABEL (
-            layout {
-                sequence: 30
-            }
-            source {
-                databaseColumn: LABEL
-                dataType: varchar2
-            }
-        )
-
-        column META (
-            layout {
-                sequence: 50
-            }
-            source {
-                databaseColumn: META
-                dataType: varchar2
-            }
-        )
-
-        column METRIC (
-            layout {
-                sequence: 40
-            }
-            source {
-                databaseColumn: METRIC
-                dataType: varchar2
-            }
-        )
-
-        column METRIC_KEY (
-            layout {
-                sequence: 10
-            }
-            source {
-                databaseColumn: METRIC_KEY
-                dataType: varchar2
-                primaryKey: true
-            }
-        )
-
-        column SORT_ORDER (
-            layout {
-                sequence: 20
-            }
-            source {
-                databaseColumn: SORT_ORDER
-                dataType: number
-            }
-        )
-
-    )
-
-    region example-order (
-        name: An order no single farm could fill
-        type: themeTemplateComponent/contentRow
-        source {
-            location: localDatabase
-            type: sqlQuery
-            sqlQuery:
-                ```sql
-                select f.DEMAND_ID as DEMAND_ID
-                     , f.BUYER_NAME as OVERLINE
-                     , case when f.TARGET_KG >= 1000
-                            then to_char(f.TARGET_KG / 1000, 'FM999G990D0') || ' t'
-                            else to_char(f.TARGET_KG, 'FM999G990') || ' kg' end
-                       || ' of Grade ' || f.GRADE_REQUIRED || ' ' || f.CROP_NAME as TITLE
-                     , 'Illustrative figures from the demo dataset' as MISC
-                     , '<div class="hl-fulfil">'
-                       || '<div class="hl-fulfil__track" role="img" aria-label="'
-                       || f.FILL_PCT || '% of the order sourced">'
-                       || '<span class="hl-fulfil__seg hl-fulfil__seg--matched" style="width:'
-                       || to_char(least(100 * f.MATCHED_KG / f.TARGET_KG, 100), 'FM990D0', 'NLS_NUMERIC_CHARACTERS=''.,''') || '%"></span>'
-                       || '<span class="hl-fulfil__seg hl-fulfil__seg--pending" style="width:'
-                       || to_char(least(100 * f.PENDING_KG / f.TARGET_KG, 100), 'FM990D0', 'NLS_NUMERIC_CHARACTERS=''.,''') || '%"></span>'
-                       || '</div>'
-                       || '<ul class="hl-fulfil__legend">'
-                       || '<li><i class="hl-dot hl-dot--matched"></i>Farmers confirmed <b>'
-                       || to_char(f.MATCHED_KG, 'FM999G999G990') || ' kg</b></li>'
-                       || '<li><i class="hl-dot hl-dot--pending"></i>Awaiting farmers <b>'
-                       || to_char(f.PENDING_KG, 'FM999G999G990') || ' kg</b></li>'
-                       || '<li><i class="hl-dot hl-dot--open"></i>Still open <b>'
-                       || to_char(f.UNMATCHED_KG, 'FM999G999G990') || ' kg</b></li>'
-                       || '</ul></div>' as BODY_HTML
-                from HL_FULFIL_V f
-                where f.DEMAND_ID = hl_demo.featured_demand_id
-                ```
-        }
-        layout {
-            sequence: 30
-            slot: body
-        }
-        appearance {
-            template: @/standard
-            templateOptions: [
-                #DEFAULT#
-                t-Region--scrollBody
-            ]
-        }
-        accessibility {
-            landmarkType: region
-        }
-        componentAppearance {
-            display: report
-        }
-        settings {
-            overline: &OVERLINE.
-            title: &TITLE.
-            description: &BODY_HTML!RAW.
-            miscellaneous: &MISC.
-        }
-
-        column BODY_HTML (
-            layout {
-                sequence: 50
-            }
-            source {
-                databaseColumn: BODY_HTML
-                dataType: varchar2
-            }
-        )
-
-        column DEMAND_ID (
-            layout {
-                sequence: 10
-            }
-            source {
-                databaseColumn: DEMAND_ID
-                dataType: number
-                primaryKey: true
-            }
-        )
-
-        column MISC (
-            layout {
-                sequence: 40
-            }
-            source {
-                databaseColumn: MISC
-                dataType: varchar2
-            }
-        )
-
-        column OVERLINE (
-            layout {
-                sequence: 20
-            }
-            source {
-                databaseColumn: OVERLINE
-                dataType: varchar2
-            }
-        )
-
-        column TITLE (
-            layout {
-                sequence: 30
-            }
-            source {
-                databaseColumn: TITLE
-                dataType: varchar2
-            }
-        )
-
-    )
-
-    region how-it-works (
-        name: How HarvestLink works
+    region for-farmers (
+        name: For farmers
         type: staticContent
         source {
             htmlCode:
                 ```html
-                <ol class="hl-steps">
-                  <li><b>A buyer posts a demand</b>: crop, quantity, grade, price, date and place, weeks before harvest.</li>
-                  <li><b>Farmers are combined</b>: each farm is ranked on quantity, grade, harvest window and distance, and the order is filled from the best. Every match shows its reasons, never a score alone.</li>
-                  <li><b>Every grade has a buyer</b>: Grade A to the buyer, B to local markets and schools, C to processors instead of the bin.</li>
-                  <li><b>One truck collects it</b>: a shared pickup route, with the kilometres and CO₂ it saves.</li>
-                  <li><b>Agreements are tamper-evident</b>: each farmer's confirmation is written to an Oracle blockchain table.</li>
-                </ol>
+                <div class="hlc-root"><section id="farmers" class="hlc-pad" style="padding:0 40px 96px"><div style="max-width:1240px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,480px),1fr));gap:64px;align-items:center"><div style="position:relative"><div style="border-radius:28px;overflow:hidden;aspect-ratio:1/1;max-height:600px"><img src="#APP_FILES#images/photo-farmer-basket-field.jpg" alt="A smiling farmer holding a basket of tomatoes, peppers, maize and greens in his field" class="hlc-photo"></div><div class="hlc-card hlc-lift" style="position:absolute;left:24px;bottom:24px;padding:16px 18px;display:flex;gap:14px;align-items:center;max-width:320px"><img src="#APP_FILES#images/crop-tomato.jpg" alt="" style="width:48px;height:48px;border-radius:12px;object-fit:contain;background:#fff;border:1px solid var(--line)"><div style="display:flex;flex-direction:column;gap:4px"><span class="hl-badge hl-badge-matched"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 1.75a6.25 6.25 0 1 0 0 12.5A6.25 6.25 0 0 0 8 1.75zM5.25 8.25l2 2 3.5-4"></path></svg>Matched before harvest</span><span style="font-size:13px;color:var(--ink-muted)">650 kg Grade A · pickup the day before delivery</span></div></div></div><div style="display:flex;flex-direction:column;gap:24px"><p class="hlc-eyebrow">For farmers</p><h2 class="hlc-h2" style="margin:0">Know your buyer before you harvest.</h2><p style="margin:0;font-size:18px;line-height:28px;color:var(--ink-muted)">Register what you expect to harvest. We match you with buyers and neighbouring farms, and tell you when the truck comes.</p><ul style="margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:14px"><li style="display:flex;gap:10px;align-items:flex-start"><span style="color:var(--forest);padding-top:3px"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 1.75a6.25 6.25 0 1 0 0 12.5A6.25 6.25 0 0 0 8 1.75zM5.25 8.25l2 2 3.5-4"></path></svg></span><span>An agreed price before you pick</span></li><li style="display:flex;gap:10px;align-items:flex-start"><span style="color:var(--forest);padding-top:3px"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 1.75a6.25 6.25 0 1 0 0 12.5A6.25 6.25 0 0 0 8 1.75zM5.25 8.25l2 2 3.5-4"></path></svg></span><span>Fill big orders with your neighbours</span></li><li style="display:flex;gap:10px;align-items:flex-start"><span style="color:var(--forest);padding-top:3px"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 1.75a6.25 6.25 0 1 0 0 12.5A6.25 6.25 0 0 0 8 1.75zM5.25 8.25l2 2 3.5-4"></path></svg></span><span>Grade B and C still sell</span></li><li style="display:flex;gap:10px;align-items:flex-start"><span style="color:var(--forest);padding-top:3px"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 1.75a6.25 6.25 0 1 0 0 12.5A6.25 6.25 0 0 0 8 1.75zM5.25 8.25l2 2 3.5-4"></path></svg></span><span>Collection from your area</span></li></ul><div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center"><a class="hl-btn hl-btn-primary hl-btn-lg" href="f?p=&APP_ID.:20:&SESSION.">Register your harvest<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 8h10M9 4l4 4-4 4"></path></svg></a><span style="display:inline-flex;gap:8px;align-items:center;font-size:13px;color:var(--ink-muted)">SMS and USSD <span class="hl-prov hl-prov-roadmap">Roadmap</span></span></div></div></div></section></div>
                 ```
         }
         layout {
@@ -277,7 +153,398 @@ page 50 (
             slot: body
         }
         appearance {
-            template: @/standard
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+        settings {
+            outputAs: html
+        }
+    )
+
+    region open-demand-heading (
+        name: Open demand
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div class="hlc-root"><div class="hlc-pad" style="padding:88px 40px 40px"><div style="max-width:1240px;margin:0 auto;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:16px"><div style="display:flex;flex-direction:column;gap:12px;max-width:640px"><p class="hlc-eyebrow">Open demand</p><h2 class="hlc-h2" style="margin:0">Buyers waiting for this season's harvest</h2></div><span class="hl-prov hl-prov-demo">Demo marketplace data</span></div></div></div>
+                ```
+        }
+        layout {
+            sequence: 50
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-band-white
+        }
+        settings {
+            outputAs: html
+        }
+    )
+
+    region open-demand (
+        name: Open demand cards
+        type: appTemplateComponent/hlDemandCard
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select '#APP_FILES#images/' || case lower(f.crop_name)
+                         when 'roma tomatoes' then 'crop-tomato.jpg' when 'onions' then 'crop-onion.jpg'
+                         when 'green peppers' then 'crop-pepper.jpg' when 'carrots' then 'crop-carrot.jpg'
+                         else 'crop-tomato.jpg' end                                         as IMAGE_URL
+                     , f.CROP_NAME                                                         as CROP
+                     , f.BUYER_NAME                                                        as BUYER
+                     , f.GRADE_REQUIRED                                                    as GRADE
+                     , 'Y'                                                                 as COMPACT
+                     , case when f.TARGET_KG >= 1000
+                            then rtrim(rtrim(to_char(f.TARGET_KG / 1000, 'FM990D0', 'NLS_NUMERIC_CHARACTERS=''.,'''), '0'), '.') || ' t'
+                            else to_char(f.TARGET_KG, 'FM999G990') || ' kg' end            as QTY
+                     , to_char(f.NEED_BY_DATE, 'Dy DD Mon')                                as DATE_LABEL
+                     , to_char(f.FILL_PCT)                                                 as FILL_PCT
+                     , f.FILL_PCT || '% sourced from ' || (f.MATCHED_FARMERS + f.PENDING_FARMERS) || ' farms'  as FILLED
+                  from HL_FULFIL_V f
+                 where f.STATUS in ('OPEN', 'PARTIAL', 'FILLED')
+                 order by f.NEED_BY_DATE desc
+                 fetch first 4 rows only
+                ```
+        }
+        layout {
+            sequence: 60
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-band-white hlc-band-cards
+        }
+        componentAppearance {
+            display: report
+        }
+        settings {
+            imageUrl: &IMAGE_URL.
+            crop: &CROP.
+            buyer: &BUYER.
+            grade: &GRADE.
+            compact: &COMPACT.
+            qty: &QTY.
+            date: &DATE_LABEL.
+            fillPct: &FILL_PCT.
+            filled: &FILLED.
+        }
+
+        column IMAGE_URL (
+            layout {
+                sequence: 10
+            }
+            source {
+                databaseColumn: IMAGE_URL
+                dataType: varchar2
+            }
+        )
+
+        column CROP (
+            layout {
+                sequence: 20
+            }
+            source {
+                databaseColumn: CROP
+                dataType: varchar2
+            }
+        )
+
+        column BUYER (
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: BUYER
+                dataType: varchar2
+            }
+        )
+
+        column GRADE (
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: GRADE
+                dataType: varchar2
+            }
+        )
+
+        column COMPACT (
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: COMPACT
+                dataType: varchar2
+            }
+        )
+
+        column QTY (
+            layout {
+                sequence: 60
+            }
+            source {
+                databaseColumn: QTY
+                dataType: varchar2
+            }
+        )
+
+        column DATE_LABEL (
+            layout {
+                sequence: 70
+            }
+            source {
+                databaseColumn: DATE_LABEL
+                dataType: varchar2
+            }
+        )
+
+        column FILL_PCT (
+            layout {
+                sequence: 80
+            }
+            source {
+                databaseColumn: FILL_PCT
+                dataType: varchar2
+            }
+        )
+
+        column FILLED (
+            layout {
+                sequence: 90
+            }
+            source {
+                databaseColumn: FILLED
+                dataType: varchar2
+            }
+        )
+    )
+
+    region for-buyers (
+        name: For buyers
+        type: dynamicContent
+        source {
+            plsqlFunctionBody:
+                ```plsql
+                declare
+                  l_d   number := hl_demo.featured_demand_id;
+                  l_f   hl_fulfil_v%rowtype;
+                  function kg (n number) return varchar2 is begin return to_char(n, 'FM999G999G990'); end;
+                  function fill_bar (p_target number, p_matched number, p_pending number, p_legend boolean) return varchar2 is
+                    l_unmatched number := greatest(p_target - p_matched - p_pending, 0);
+                    l_html varchar2(4000);
+                  begin
+                    l_html := '<div class="hl-fill"><div class="hl-fill-head"><span class="hl-fill-total hl-num">' || kg(p_matched + p_pending)
+                      || '<small> of ' || kg(p_target) || ' kg sourced</small></span><span class="hl-help">'
+                      || round(p_matched / p_target * 100) || '% confirmed</span></div>'
+                      || '<div class="hl-fill-track" role="img" aria-label="' || kg(p_matched) || ' kg matched, ' || kg(p_pending)
+                      || ' pending, ' || kg(l_unmatched) || ' unmatched of ' || kg(p_target) || '">'
+                      || '<span class="hl-fill-seg hl-fill-matched" style="width:' || to_char(round(p_matched / p_target * 100, 2), 'FM990D00', 'NLS_NUMERIC_CHARACTERS=''.,''') || '%"></span>'
+                      || '<span class="hl-fill-seg hl-fill-pending" style="width:' || to_char(round(p_pending / p_target * 100, 2), 'FM990D00', 'NLS_NUMERIC_CHARACTERS=''.,''') || '%"></span></div>';
+                    if p_legend then
+                      l_html := l_html || '<ul class="hl-fill-legend"><li><span class="hl-key hl-key-matched"></span>Farmers confirmed <b class="hl-num">' || kg(p_matched)
+                        || ' kg</b></li><li><span class="hl-key hl-key-pending"></span>Awaiting farmers <b class="hl-num">' || kg(p_pending)
+                        || ' kg</b></li><li><span class="hl-key hl-key-unmatched"></span>Still open <b class="hl-num">' || kg(l_unmatched) || ' kg</b></li></ul>';
+                    end if;
+                    return l_html || '</div>';
+                  end;
+                begin
+                  select * into l_f from hl_fulfil_v where demand_id = l_d;
+                  return apex_plugin_util.replace_substitutions(p_escape => false, p_value => q'~<div class="hlc-root"><section id="buyers" class="hlc-pad" style="padding:96px 40px"><div style="max-width:1240px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,480px),1fr));gap:64px;align-items:center"><div style="display:flex;flex-direction:column;gap:24px"><p class="hlc-eyebrow">For buyers</p><h2 class="hlc-h2" style="margin:0">Steady supply from farms you can name.</h2><p style="margin:0;font-size:18px;line-height:28px;color:var(--ink-muted)">Grocers, schools, hotels and processors post demand weeks ahead. See who supplies you, how much, and why they qualify.</p><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:16px"><div class="hlc-card" style="padding:20px;display:flex;flex-direction:column;gap:10px"><span class="hlc-icon-badge"><svg width="22" height="22" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 2l6 3.25-6 3.25-6-3.25zM2 8.25l6 3.25 6-3.25M2 11.25l6 3.25 6-3.25"></path></svg></span><b style="font-weight:700">Matching you can read</b><span style="font-size:14px;color:var(--ink-muted)">Quantity, grade, timing and distance for every farm.</span></div><div class="hlc-card" style="padding:20px;display:flex;flex-direction:column;gap:10px"><span class="hlc-icon-badge"><svg width="22" height="22" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3.5 12.5a1.5 1.5 0 1 0 0-.01M12.5 3.5a1.5 1.5 0 1 0 0-.01M3.5 11V7.5a2 2 0 0 1 2-2h5M12.5 5v3.5a2 2 0 0 1-2 2h-5"></path></svg></span><b style="font-weight:700">One delivery</b><span style="font-size:14px;color:var(--ink-muted)">Many farms arrive on one truck on your date.</span></div></div><div><a class="hl-btn hl-btn-primary hl-btn-lg" href="f?p=&APP_ID.:31:&SESSION.">Post a demand<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 8h10M9 4l4 4-4 4"></path></svg></a></div></div><div style="position:relative"><div style="border-radius:28px;overflow:hidden;aspect-ratio:5/5.2;max-height:620px"><img src="#APP_FILES#images/photo-market-stall.jpg" alt="A market stall stacked with peppers, tomatoes, carrots, greens and fruit" class="hlc-photo"></div><div class="hlc-card hlc-lift" style="position:absolute;right:24px;bottom:24px;left:24px;max-width:380px;margin-left:auto;padding:18px 20px;display:flex;flex-direction:column;gap:12px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b style="font:700 15px var(--font-display)">~'
+                    || apex_escape.html('HL-D-' || lpad(l_f.demand_id, 4, '0') || ' · ' || l_f.crop_name)
+                    || '</b><span class="hl-badge hl-badge-pending"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 1.75a6.25 6.25 0 1 0 0 12.5A6.25 6.25 0 0 0 8 1.75zM8 4.5V8l2.5 1.5"></path></svg>Pending · ' || l_f.pending_farmers || '</span></div>'
+                    || fill_bar(l_f.target_kg, l_f.matched_kg, l_f.pending_kg, false)
+                    || '</div></div></div></section></div>');
+                end;
+                ```
+        }
+        layout {
+            sequence: 70
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region impact-heading (
+        name: Our impact
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div class="hlc-root"><div class="hlc-pad hlc-on-dark" id="impact" style="padding:96px 40px 40px;background:var(--forest-deep);color:#fff"><div style="max-width:1240px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:32px;align-items:end"><div style="display:flex;flex-direction:column;gap:14px"><p class="hlc-eyebrow">Illustrative figures from the demo dataset</p><h2 class="hlc-h2" style="margin:0;color:#fff">What one demand changes</h2></div><p style="margin:0;font-size:17px;line-height:27px;color:rgba(255,255,255,.82)">One order of 2 t Grade A tomatoes, filled by four farms in Kirinyaga. Every figure says where it comes from and how it is calculated.</p></div></div></div>
+                ```
+        }
+        layout {
+            sequence: 80
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+        settings {
+            outputAs: html
+        }
+    )
+
+    region impact-figures (
+        name: Impact figures
+        type: appTemplateComponent/hlStatCard
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select m.LABEL                                       as LABEL
+                     , to_char(m.VALUE, 'FM999G999G990')             as VALUE_LABEL
+                     , m.UNIT                                        as UNIT
+                     , m.PROVENANCE                                  as PROVENANCE
+                     , m.METHOD                                      as METHOD
+                  from HL_IMPACT_METRICS_V m
+                 where m.METRIC_KEY in ('PRODUCE_SOURCED', 'DISTANCE_SAVED', 'CO2_AVOIDED', 'FARMERS_REACHED')
+                 order by case m.METRIC_KEY when 'PRODUCE_SOURCED' then 1 when 'DISTANCE_SAVED' then 2 when 'CO2_AVOIDED' then 3 else 4 end
+                ```
+        }
+        layout {
+            sequence: 90
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-band-dark hlc-band-cards
+        }
+        componentAppearance {
+            display: report
+        }
+        settings {
+            label: &LABEL.
+            value: &VALUE_LABEL.
+            unit: &UNIT.
+            provenance: &PROVENANCE.
+            method: &METHOD.
+        }
+
+        column LABEL (
+            layout {
+                sequence: 10
+            }
+            source {
+                databaseColumn: LABEL
+                dataType: varchar2
+            }
+        )
+
+        column VALUE_LABEL (
+            layout {
+                sequence: 20
+            }
+            source {
+                databaseColumn: VALUE_LABEL
+                dataType: varchar2
+            }
+        )
+
+        column UNIT (
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: UNIT
+                dataType: varchar2
+            }
+        )
+
+        column PROVENANCE (
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: PROVENANCE
+                dataType: varchar2
+            }
+        )
+
+        column METHOD (
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: METHOD
+                dataType: varchar2
+            }
+        )
+    )
+
+    region impact-photo (
+        name: Impact photo
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div class="hlc-root"><div class="hlc-pad" style="padding:40px 40px 96px;background:var(--forest-deep)"><div style="max-width:1240px;margin:0 auto;border-radius:24px;overflow:hidden;height:260px;position:relative"><img src="#APP_FILES#images/photo-harvest-lettuce.jpg" alt="Farmers harvesting lettuce together in a green field" class="hlc-photo" style="object-position:50% 40%"></div></div></div>
+                ```
+        }
+        layout {
+            sequence: 100
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+        settings {
+            outputAs: html
+        }
+    )
+
+    region call-to-action (
+        name: Call to action
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div class="hlc-root"><section class="hlc-pad" style="padding:96px 40px"><div class="hlc-on-dark" style="max-width:1240px;margin:0 auto;position:relative;border-radius:28px;overflow:hidden;color:#fff;background:var(--forest-deep)"><img src="#APP_FILES#images/photo-farmer-sunhat.jpg" alt="A farmer in a sun hat holding a basket of vegetables" class="hlc-photo" style="position:absolute;inset:0;object-position:50% 30%"><div class="hlc-shade" style="position:absolute;inset:0"></div><div style="position:relative;padding:72px 56px;display:flex;flex-direction:column;gap:22px;max-width:560px"><h2 class="hlc-h2" style="margin:0;color:#fff">The next harvest is weeks away. <span class="hlc-lime">Sell it now.</span></h2><p style="margin:0;font-size:18px;line-height:28px;color:rgba(255,255,255,.88)">Join the pilot as a farmer or a buyer.</p><div style="display:flex;flex-wrap:wrap;gap:12px"><a class="hl-btn hl-btn-primary hl-btn-lg" href="f?p=&APP_ID.:20:&SESSION.">I'm a farmer</a><a class="hl-btn hl-btn-secondary hl-btn-lg" href="f?p=&APP_ID.:31:&SESSION.">I'm a buyer</a></div></div></div></section></div>
+                ```
+        }
+        layout {
+            sequence: 110
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+        settings {
+            outputAs: html
+        }
+    )
+
+    region footer (
+        name: Footer
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div class="hlc-root"><footer class="hlc-pad hlc-on-dark" style="background:#03241B;color:#fff;padding:56px 40px"><div style="max-width:1240px;margin:0 auto;display:flex;flex-wrap:wrap;gap:32px;justify-content:space-between;align-items:flex-start"><div style="display:flex;flex-direction:column;gap:12px"><a class="hl-logo hl-logo-inverse" href="f?p=&APP_ID.:50:&SESSION." aria-label="HarvestLink home"><svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true" focusable="false"><path d="M16 29C8 26 3.5 18.5 4.5 8c8 2 12.5 8 11.5 21z" fill="currentColor"></path><path d="M16 29c8-3 12.5-10.5 11.5-21-8 2-12.5 8-11.5 21z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"></path><circle cx="16" cy="4.5" r="2.75" fill="currentColor"></circle></svg><span><span class="hl-logo-word" style="font-size:22px;line-height:24px;display:block">HarvestLink</span><span class="hl-logo-by">by Bora Chakula</span></span></a><p style="margin:0;font-size:13px;line-height:20px;color:rgba(255,255,255,.75)">Green Tech Hackathon 2026 · Built on Oracle APEX and Autonomous Database</p></div><nav aria-label="Footer" style="display:flex;flex-wrap:wrap;gap:28px;font-size:15px"><a href="#how">About</a><a href="f?p=&APP_ID.:9999:&SESSION.">Sign in</a></nav></div></footer></div>
+                ```
+        }
+        layout {
+            sequence: 120
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
             templateOptions: #DEFAULT#
         }
         settings {
@@ -308,26 +575,4 @@ page 50 (
             point: beforeHeader
         }
     )
-
-    button sign-in (
-        buttonName: SIGN_IN
-        label: Sign in
-        layout {
-            sequence: 10
-            region: @how-it-works
-            slot: next
-        }
-        appearance {
-            buttonTemplate: @/text
-            hot: true
-            templateOptions: #DEFAULT#
-        }
-        behavior {
-            action: redirectThisApp
-            target: {
-                page: 9999
-            }
-        }
-    )
-
 )

@@ -1,0 +1,242 @@
+customAttribute RANK (
+    apexlangName: rank
+    attribute: 1
+    name: Rank
+    appearance {
+        sequence: 10
+    }
+)
+
+customAttribute STATUS (
+    apexlangName: status
+    attribute: 2
+    name: Status
+    appearance {
+        sequence: 20
+    }
+)
+
+customAttribute STATUS_TEXT (
+    apexlangName: statusText
+    attribute: 3
+    name: Status text
+    appearance {
+        sequence: 30
+    }
+)
+
+customAttribute FARMER (
+    apexlangName: farmer
+    attribute: 4
+    name: Farmer
+    appearance {
+        sequence: 40
+    }
+)
+
+customAttribute LOCATION (
+    apexlangName: location
+    attribute: 5
+    name: Location
+    appearance {
+        sequence: 50
+    }
+)
+
+customAttribute DISTANCE (
+    apexlangName: distance
+    attribute: 6
+    name: Distance text
+    appearance {
+        sequence: 60
+    }
+)
+
+customAttribute HARVEST (
+    apexlangName: harvest
+    attribute: 7
+    name: Harvest window
+    appearance {
+        sequence: 70
+    }
+)
+
+customAttribute QTY (
+    apexlangName: qty
+    attribute: 8
+    name: Quantity
+    appearance {
+        sequence: 80
+    }
+)
+
+customAttribute QTY_LABEL (
+    apexlangName: qtyLabel
+    attribute: 9
+    name: Quantity label
+    appearance {
+        sequence: 90
+    }
+)
+
+customAttribute GRADE (
+    apexlangName: grade
+    attribute: 10
+    name: Grade
+    appearance {
+        sequence: 100
+    }
+)
+
+customAttribute OPEN (
+    apexlangName: open
+    attribute: 11
+    name: Reasons open (Y/N)
+    appearance {
+        sequence: 110
+    }
+)
+
+customAttribute REASONS_TITLE (
+    apexlangName: reasonsTitle
+    attribute: 12
+    name: Reasons title
+    appearance {
+        sequence: 120
+    }
+)
+
+customAttribute REASON1_LABEL (
+    apexlangName: reason1Label
+    attribute: 13
+    name: Reason 1 label
+    appearance {
+        sequence: 130
+    }
+)
+
+customAttribute REASON1_DETAIL (
+    apexlangName: reason1Detail
+    attribute: 14
+    name: Reason 1 detail
+    appearance {
+        sequence: 140
+    }
+)
+
+customAttribute REASON1_STATE (
+    apexlangName: reason1State
+    attribute: 15
+    name: Reason 1 state
+    appearance {
+        sequence: 150
+    }
+)
+
+customAttribute REASON2_LABEL (
+    apexlangName: reason2Label
+    attribute: 16
+    name: Reason 2 label
+    appearance {
+        sequence: 160
+    }
+)
+
+customAttribute REASON2_DETAIL (
+    apexlangName: reason2Detail
+    attribute: 17
+    name: Reason 2 detail
+    appearance {
+        sequence: 170
+    }
+)
+
+customAttribute REASON2_STATE (
+    apexlangName: reason2State
+    attribute: 18
+    name: Reason 2 state
+    appearance {
+        sequence: 180
+    }
+)
+
+customAttribute REASON3_LABEL (
+    apexlangName: reason3Label
+    attribute: 19
+    name: Reason 3 label
+    appearance {
+        sequence: 190
+    }
+)
+
+customAttribute REASON3_DETAIL (
+    apexlangName: reason3Detail
+    attribute: 20
+    name: Reason 3 detail
+    appearance {
+        sequence: 200
+    }
+)
+
+customAttribute REASON3_STATE (
+    apexlangName: reason3State
+    attribute: 21
+    name: Reason 3 state
+    appearance {
+        sequence: 210
+    }
+)
+
+customAttribute REASON4_LABEL (
+    apexlangName: reason4Label
+    attribute: 22
+    name: Reason 4 label
+    appearance {
+        sequence: 220
+    }
+)
+
+customAttribute REASON4_DETAIL (
+    apexlangName: reason4Detail
+    attribute: 23
+    name: Reason 4 detail
+    appearance {
+        sequence: 230
+    }
+)
+
+customAttribute REASON4_STATE (
+    apexlangName: reason4State
+    attribute: 24
+    name: Reason 4 state
+    appearance {
+        sequence: 240
+    }
+)
+
+customAttribute ACTION_URL (
+    apexlangName: actionUrl
+    attribute: 25
+    name: Action URL
+    appearance {
+        sequence: 250
+    }
+)
+
+customAttribute ACTION_LABEL (
+    apexlangName: actionLabel
+    attribute: 26
+    name: Action label
+    appearance {
+        sequence: 260
+    }
+)
+
+customAttribute ACTION_NOTE (
+    apexlangName: actionNote
+    attribute: 27
+    name: Action note
+    appearance {
+        sequence: 270
+    }
+)
