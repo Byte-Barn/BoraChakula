@@ -1,0 +1,558 @@
+page 40 (
+    name: Grade Outlets
+    alias: GRADE-OUTLETS
+    title: Route by grade
+    pageGroup: @matching-and-logistics
+    appearance {
+        pageTemplate: @/standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        authorizationScheme: mustNotBePublicUser
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+    advanced {
+        enableDuplicatePageSubmissions: false
+    }
+    comments {
+        comments: Canvas screen 6, operations. Where each grade goes (HL_GRADE_ALLOCATION_V), lots still to place with a suggested outlet (HL_GRADE_ROUTING_V), allocations (HL_ALLOC_PKG) and the demo reset.
+    }
+
+    region grade-split (
+        name: Where each grade goes
+        type: themeTemplateComponent/contentRow
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select g.CROP_ID || '-' || g.GRADE as ROW_KEY
+                     , g.CROP_NAME as OVERLINE
+                     , 'Grade ' || g.GRADE || ' · ' || to_char(max(g.GRADE_TOTAL_KG), 'FM999G999G990') || ' kg' as TITLE
+                     , '<div class="hl-split" role="img" aria-label="Where Grade ' || g.GRADE || ' '
+                       || apex_escape.html(g.CROP_NAME) || ' goes">'
+                       || listagg('<span class="hl-split__seg hl-split__seg--' || lower(g.DESTINATION_TYPE)
+                                  || '" style="width:' || to_char(g.SHARE_PCT, 'FM990D0', 'NLS_NUMERIC_CHARACTERS=''.,''')
+                                  || '%"></span>', '')
+                            within group (order by decode(g.DESTINATION_TYPE, 'MATCHED', 1, 'ALLOCATED', 2, 3), g.KG desc)
+                       || '</div><ul class="hl-fulfil__legend">'
+                       || listagg('<li><i class="hl-dot hl-dot--' || lower(g.DESTINATION_TYPE) || '"></i>'
+                                  || apex_escape.html(g.DESTINATION) || ' <b>' || to_char(g.KG, 'FM999G999G990') || ' kg</b></li>', '')
+                            within group (order by decode(g.DESTINATION_TYPE, 'MATCHED', 1, 'ALLOCATED', 2, 3), g.KG desc)
+                       || '</ul>' as BODY_HTML
+                from HL_GRADE_ALLOCATION_V g
+                group by g.CROP_ID, g.CROP_NAME, g.GRADE
+                order by g.CROP_NAME, g.GRADE
+                ```
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+        accessibility {
+            landmarkType: region
+        }
+        componentAppearance {
+            display: report
+        }
+        settings {
+            overline: &OVERLINE.
+            title: &TITLE.
+            description: &BODY_HTML!RAW.
+        }
+
+        column BODY_HTML (
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: BODY_HTML
+                dataType: varchar2
+            }
+        )
+
+        column OVERLINE (
+            layout {
+                sequence: 20
+            }
+            source {
+                databaseColumn: OVERLINE
+                dataType: varchar2
+            }
+        )
+
+        column ROW_KEY (
+            layout {
+                sequence: 10
+            }
+            source {
+                databaseColumn: ROW_KEY
+                dataType: varchar2
+                primaryKey: true
+            }
+        )
+
+        column TITLE (
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: TITLE
+                dataType: varchar2
+            }
+        )
+
+    )
+
+    region lots (
+        name: Lots still to place
+        type: themeTemplateComponent/contentRow
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select g.HARVEST_ID as HARVEST_ID
+                     , g.FARMER_NAME || ' · ' || g.LOCATION_NAME as OVERLINE
+                     , to_char(g.AVAILABLE_KG, 'FM999G999G990') || ' kg of Grade ' || g.GRADE || ' ' || g.CROP_NAME as TITLE
+                     , g.RECOMMENDED_CHANNEL
+                       || case when g.SUGGESTED_BUYER is not null
+                               then ' · suggested: ' || g.SUGGESTED_BUYER || ' ('
+                                    || initcap(replace(g.SUGGESTED_BUYER_TYPE, '_', ' ')) || ', '
+                                    || round(g.SUGGESTED_BUYER_KM) || ' km)' end as MISC
+                     , case when b.BUYER_ID is not null
+                            then '<div class="hl-actions">'
+                                 || '<button type="button" class="t-Button t-Button--hot t-Button--small" '
+                                 || 'onclick="apex.submit({request:''ALLOCATE'',set:{P40_HARVEST_ID:''' || g.HARVEST_ID
+                                 || ''',P40_BUYER_ID:''' || b.BUYER_ID
+                                 || ''',P40_KG:''' || to_char(g.AVAILABLE_KG, 'FM9999999990D99', 'NLS_NUMERIC_CHARACTERS=''.,''') || '''}});">'
+                                 || 'Send ' || to_char(g.AVAILABLE_KG, 'FM999G999G990') || ' kg to '
+                                 || apex_escape.html(g.SUGGESTED_BUYER) || '</button></div>' end as BODY_HTML
+                from HL_GRADE_ROUTING_V g
+                left join HL_BUYERS b on b.BUYER_NAME = g.SUGGESTED_BUYER
+                order by g.CROP_NAME, g.GRADE, g.AVAILABLE_KG desc
+                ```
+        }
+        layout {
+            sequence: 20
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+        accessibility {
+            landmarkType: region
+        }
+        componentAppearance {
+            display: report
+        }
+        settings {
+            overline: &OVERLINE.
+            title: &TITLE.
+            description: &BODY_HTML!RAW.
+            miscellaneous: &MISC.
+        }
+
+        column BODY_HTML (
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: BODY_HTML
+                dataType: varchar2
+            }
+        )
+
+        column HARVEST_ID (
+            layout {
+                sequence: 10
+            }
+            source {
+                databaseColumn: HARVEST_ID
+                dataType: number
+                primaryKey: true
+            }
+        )
+
+        column MISC (
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: MISC
+                dataType: varchar2
+            }
+        )
+
+        column OVERLINE (
+            layout {
+                sequence: 20
+            }
+            source {
+                databaseColumn: OVERLINE
+                dataType: varchar2
+            }
+        )
+
+        column TITLE (
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: TITLE
+                dataType: varchar2
+            }
+        )
+
+    )
+
+    region allocate (
+        name: Allocate a lot to an outlet
+        type: staticContent
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: #DEFAULT#
+        }
+        settings {
+            outputAs: text
+        }
+    )
+
+    pageItem P40_HARVEST_ID (
+        type: selectList
+        label {
+            label: Lot
+            alignment: right
+        }
+        lov {
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select g.FARMER_NAME || ' · Grade ' || g.GRADE || ' ' || g.CROP_NAME || ' · '
+                       || to_char(g.AVAILABLE_KG, 'FM999G999G990') || ' kg left' as d
+                     , g.HARVEST_ID as r
+                from HL_GRADE_ROUTING_V g
+                order by 1
+                ```
+        }
+        layout {
+            sequence: 10
+            region: @allocate
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    pageItem P40_BUYER_ID (
+        type: selectList
+        label {
+            label: Outlet
+            alignment: right
+        }
+        lov {
+            type: sharedComponent
+            lov: @lov-buyers
+        }
+        layout {
+            sequence: 20
+            region: @allocate
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    pageItem P40_KG (
+        type: numberField
+        label {
+            label: Quantity (kg)
+            alignment: right
+        }
+        layout {
+            sequence: 30
+            region: @allocate
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+    )
+
+    pageItem P40_ALLOCATION_ID (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 40
+            region: @allocate
+            slot: regionBody
+        }
+    )
+
+    button allocate (
+        buttonName: ALLOCATE
+        label: Allocate
+        layout {
+            sequence: 10
+            region: @allocate
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @/text
+            hot: true
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    region allocations (
+        name: Sent to outlets
+        type: themeTemplateComponent/contentRow
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select a.ALLOCATION_ID as ALLOCATION_ID
+                     , a.FARMER_NAME || ' · Grade ' || a.GRADE || ' ' || a.CROP_NAME as OVERLINE
+                     , to_char(a.ALLOC_KG, 'FM999G999G990') || ' kg to ' || a.OUTLET_NAME as TITLE
+                     , initcap(replace(a.OUTLET_TYPE, '_', ' ')) || ' · by ' || a.CREATED_BY
+                       || ' · ' || to_char(a.CREATED_AT, 'DD Mon HH24:MI') as MISC
+                     , '<div class="hl-actions"><button type="button" class="t-Button t-Button--small" '
+                       || 'onclick="apex.submit({request:''REMOVE'',set:{P40_ALLOCATION_ID:''' || a.ALLOCATION_ID || '''}});">'
+                       || 'Remove</button></div>' as BODY_HTML
+                from HL_ALLOCATIONS_V a
+                order by a.CREATED_AT desc
+                ```
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+        accessibility {
+            landmarkType: region
+        }
+        componentAppearance {
+            display: report
+        }
+        settings {
+            overline: &OVERLINE.
+            title: &TITLE.
+            description: &BODY_HTML!RAW.
+            miscellaneous: &MISC.
+        }
+
+        column ALLOCATION_ID (
+            layout {
+                sequence: 10
+            }
+            source {
+                databaseColumn: ALLOCATION_ID
+                dataType: number
+                primaryKey: true
+            }
+        )
+
+        column BODY_HTML (
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: BODY_HTML
+                dataType: varchar2
+            }
+        )
+
+        column MISC (
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: MISC
+                dataType: varchar2
+            }
+        )
+
+        column OVERLINE (
+            layout {
+                sequence: 20
+            }
+            source {
+                databaseColumn: OVERLINE
+                dataType: varchar2
+            }
+        )
+
+        column TITLE (
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: TITLE
+                dataType: varchar2
+            }
+        )
+
+    )
+
+    region demo-data (
+        name: Demo data
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <p class="hl-method">Restores the demo story (Kijani Fresh Grocers and the Kirinyaga farms) before a rehearsal. Confirmations already written to the agreement ledger stay there.</p>
+                ```
+        }
+        layout {
+            sequence: 50
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: #DEFAULT#
+        }
+        settings {
+            outputAs: html
+        }
+    )
+
+    button reset-demo (
+        buttonName: RESET_DEMO
+        label: Reset demo data
+        layout {
+            sequence: 10
+            region: @demo-data
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @/text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            executeValidations: false
+            requiresConfirmation: true
+            warnOnUnsavedChanges: doNotCheck
+        }
+        confirmation {
+            message: Reset every demand, harvest, match and route to the demo story?
+            style: danger
+        }
+    )
+
+    process allocate (
+        name: Allocate a lot to an outlet
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                declare
+                  l_id number;
+                begin
+                  if not hl_auth.is_ops then
+                    raise_application_error(-20292, 'Only operations can allocate lots');
+                  end if;
+                  if :P40_HARVEST_ID is null or :P40_BUYER_ID is null or :P40_KG is null then
+                    raise_application_error(-20293, 'Choose a lot and an outlet, and give the quantity');
+                  end if;
+                  l_id := hl_alloc_pkg.allocate(
+                    p_harvest_id => to_number(:P40_HARVEST_ID),
+                    p_buyer_id   => to_number(:P40_BUYER_ID),
+                    p_kg         => to_number(:P40_KG));
+                  :P40_HARVEST_ID := null;
+                  :P40_BUYER_ID   := null;
+                  :P40_KG         := null;
+                end;
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :REQUEST = 'ALLOCATE'
+        }
+    )
+
+    process remove-allocation (
+        name: Remove an allocation
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                if not hl_auth.is_ops then
+                  raise_application_error(-20292, 'Only operations can change allocations');
+                end if;
+                hl_alloc_pkg.remove(p_allocation_id => to_number(:P40_ALLOCATION_ID));
+                ```
+        }
+        execution {
+            sequence: 20
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :REQUEST = 'REMOVE'
+        }
+    )
+
+    process reset-demo (
+        name: Reset demo data
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                if not hl_auth.is_ops then
+                  raise_application_error(-20292, 'Only operations can reset the demo data');
+                end if;
+                hl_demo.reset;
+                ```
+        }
+        execution {
+            sequence: 30
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :REQUEST = 'RESET_DEMO'
+        }
+    )
+
+)
