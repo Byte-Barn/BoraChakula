@@ -6,7 +6,7 @@ Steps (each can be skipped):
   2. As ADMIN: create the HARVESTLINK APEX workspace, a developer login, a
      judge login (HL_DEMO_USER) and buyer/farmer/ops demo logins
      (HL_ROLE_DEMO_PASSWORD).
-  3. As HARVESTLINK: install db/01..11 (optionally dropping existing objects).
+  3. As HARVESTLINK: install db/01..12 (12 only where APEX is installed) (optionally dropping existing objects).
 
 Secrets are read from the environment, never from arguments:
   HL_ADMIN_PASSWORD, HL_WALLET_PASSWORD, HL_SCHEMA_PASSWORD,
@@ -33,7 +33,8 @@ REPO = Path(__file__).resolve().parent.parent
 SQL_FILES = ["01_schema.sql", "02_match_pkg.sql", "03_views.sql", "04_seed.sql", "05_auto_match.sql",
              "06_agreements.sql", "07_api.sql",
              "08_demo.sql", "09_auth.sql",
-             "10_alloc.sql", "11_routes.sql"]
+             "10_alloc.sql", "11_routes.sql",
+             "12_apex_error.sql"]  # last one only where APEX is installed
 SCHEMA = "HARVESTLINK"
 PLSQL_START = re.compile(
     r"^\s*(create\s+or\s+replace\s+(package|trigger|procedure|function|type)|begin|declare)\b", re.I)
@@ -185,7 +186,12 @@ def install(conn, reset):
             print("HarvestLink objects already installed; use --reset to reinstall")
             return
 
+    cur.execute("select count(*) from all_objects where object_name = 'APEX_ERROR' and object_type = 'PACKAGE'")
+    has_apex = cur.fetchone()[0] > 0
     for name in SQL_FILES:
+        if name == "12_apex_error.sql" and not has_apex:
+            print(f"Skipped {name} (no APEX in this database)")
+            continue
         statements = split_sql((REPO / "db" / name).read_text())
         for stmt in statements:
             cur.execute(stmt)
