@@ -1,0 +1,309 @@
+page 50 (
+    name: Welcome
+    alias: WELCOME
+    title: HarvestLink: sell before you harvest
+    pageGroup: @dashboard
+    appearance {
+        pageTemplate: @/standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        authentication: public
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+    advanced {
+        enableDuplicatePageSubmissions: false
+    }
+    comments {
+        comments: Canvas screen 1, public (no login). Read-only figures from HL_IMPACT_METRICS_V and the featured demand in HL_FULFIL_V, labelled as illustrative.
+    }
+
+    region hero (
+        name: Sell before you harvest
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div class="hl-hero">
+                  <p class="hl-hero__eyebrow">HarvestLink by Bora Chakula</p>
+                  <h1 class="hl-hero__title">Sell before you harvest.</h1>
+                  <p class="hl-hero__lead">Buyers post what they need weeks before harvest. HarvestLink combines smallholder farms to fill each order, finds an outlet for every grade, and sends one truck instead of many.</p>
+                </div>
+                ```
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+        settings {
+            outputAs: html
+        }
+    )
+
+    region numbers (
+        name: The demo in numbers
+        type: themeTemplateComponent/metricCard
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select m.METRIC_KEY as METRIC_KEY
+                     , m.SORT_ORDER as SORT_ORDER
+                     , m.LABEL as LABEL
+                     , to_char(m.VALUE, 'FM999G999G999G990') || ' ' || m.UNIT as METRIC
+                     , initcap(m.PROVENANCE) || ' figure · illustrative, from the demo dataset' as META
+                from HL_IMPACT_METRICS_V m
+                where m.METRIC_KEY in ('PRODUCE_SOURCED', 'FARMERS_REACHED', 'DISTANCE_SAVED', 'LOSS_AVOIDED')
+                order by m.SORT_ORDER
+                ```
+        }
+        layout {
+            sequence: 20
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: [
+                #DEFAULT#
+                margin-top-md
+                margin-bottom-md
+            ]
+        }
+        accessibility {
+            landmarkType: region
+        }
+        componentAppearance {
+            display: report
+        }
+        settings {
+            title: &LABEL.
+            metric: &METRIC.
+            metricCssClasses: u-text-subheading-md
+            meta: &META.
+            layout: stacked
+        }
+
+        column LABEL (
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: LABEL
+                dataType: varchar2
+            }
+        )
+
+        column META (
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: META
+                dataType: varchar2
+            }
+        )
+
+        column METRIC (
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: METRIC
+                dataType: varchar2
+            }
+        )
+
+        column METRIC_KEY (
+            layout {
+                sequence: 10
+            }
+            source {
+                databaseColumn: METRIC_KEY
+                dataType: varchar2
+                primaryKey: true
+            }
+        )
+
+        column SORT_ORDER (
+            layout {
+                sequence: 20
+            }
+            source {
+                databaseColumn: SORT_ORDER
+                dataType: number
+            }
+        )
+
+    )
+
+    region example-order (
+        name: An order no single farm could fill
+        type: themeTemplateComponent/contentRow
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select f.DEMAND_ID as DEMAND_ID
+                     , f.BUYER_NAME as OVERLINE
+                     , case when f.TARGET_KG >= 1000
+                            then to_char(f.TARGET_KG / 1000, 'FM999G990D0') || ' t'
+                            else to_char(f.TARGET_KG, 'FM999G990') || ' kg' end
+                       || ' of Grade ' || f.GRADE_REQUIRED || ' ' || f.CROP_NAME as TITLE
+                     , 'Illustrative figures from the demo dataset' as MISC
+                     , '<div class="hl-fulfil">'
+                       || '<div class="hl-fulfil__track" role="img" aria-label="'
+                       || f.FILL_PCT || '% of the order sourced">'
+                       || '<span class="hl-fulfil__seg hl-fulfil__seg--matched" style="width:'
+                       || to_char(least(100 * f.MATCHED_KG / f.TARGET_KG, 100), 'FM990D0', 'NLS_NUMERIC_CHARACTERS=''.,''') || '%"></span>'
+                       || '<span class="hl-fulfil__seg hl-fulfil__seg--pending" style="width:'
+                       || to_char(least(100 * f.PENDING_KG / f.TARGET_KG, 100), 'FM990D0', 'NLS_NUMERIC_CHARACTERS=''.,''') || '%"></span>'
+                       || '</div>'
+                       || '<ul class="hl-fulfil__legend">'
+                       || '<li><i class="hl-dot hl-dot--matched"></i>Farmers confirmed <b>'
+                       || to_char(f.MATCHED_KG, 'FM999G999G990') || ' kg</b></li>'
+                       || '<li><i class="hl-dot hl-dot--pending"></i>Awaiting farmers <b>'
+                       || to_char(f.PENDING_KG, 'FM999G999G990') || ' kg</b></li>'
+                       || '<li><i class="hl-dot hl-dot--open"></i>Still open <b>'
+                       || to_char(f.UNMATCHED_KG, 'FM999G999G990') || ' kg</b></li>'
+                       || '</ul></div>' as BODY_HTML
+                from HL_FULFIL_V f
+                where f.DEMAND_ID = hl_demo.featured_demand_id
+                ```
+        }
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+        accessibility {
+            landmarkType: region
+        }
+        componentAppearance {
+            display: report
+        }
+        settings {
+            overline: &OVERLINE.
+            title: &TITLE.
+            description: &BODY_HTML!RAW.
+            miscellaneous: &MISC.
+        }
+
+        column BODY_HTML (
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: BODY_HTML
+                dataType: varchar2
+            }
+        )
+
+        column DEMAND_ID (
+            layout {
+                sequence: 10
+            }
+            source {
+                databaseColumn: DEMAND_ID
+                dataType: number
+                primaryKey: true
+            }
+        )
+
+        column MISC (
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: MISC
+                dataType: varchar2
+            }
+        )
+
+        column OVERLINE (
+            layout {
+                sequence: 20
+            }
+            source {
+                databaseColumn: OVERLINE
+                dataType: varchar2
+            }
+        )
+
+        column TITLE (
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: TITLE
+                dataType: varchar2
+            }
+        )
+
+    )
+
+    region how-it-works (
+        name: How HarvestLink works
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <ol class="hl-steps">
+                  <li><b>A buyer posts a demand</b>: crop, quantity, grade, price, date and place, weeks before harvest.</li>
+                  <li><b>Farmers are combined</b>: each farm is ranked on quantity, grade, harvest window and distance, and the order is filled from the best. Every match shows its reasons, never a score alone.</li>
+                  <li><b>Every grade has a buyer</b>: Grade A to the buyer, B to local markets and schools, C to processors instead of the bin.</li>
+                  <li><b>One truck collects it</b>: a shared pickup route, with the kilometres and CO₂ it saves.</li>
+                  <li><b>Agreements are tamper-evident</b>: each farmer's confirmation is written to an Oracle blockchain table.</li>
+                </ol>
+                ```
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: #DEFAULT#
+        }
+        settings {
+            outputAs: html
+        }
+    )
+
+    button sign-in (
+        buttonName: SIGN_IN
+        label: Sign in
+        layout {
+            sequence: 10
+            region: @how-it-works
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @/text
+            hot: true
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            action: redirectThisApp
+            target: {
+                page: 1
+            }
+        }
+    )
+
+)
