@@ -17,6 +17,7 @@ page 20 (
     }
     advanced {
         enableDuplicatePageSubmissions: false
+        reloadOnSubmit: always
     }
     comments {
         comments: Canvas screen 2, phone first. Offers to the signed-in farmer (accept or decline), registering a harvest (HL_HARVEST_API.register) and the farmer's harvests.
@@ -427,6 +428,183 @@ page 20 (
             }
         )
 
+    )
+
+    region your-data (
+        name: Your data
+        type: themeTemplateComponent/contentRow
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select c.CONSENT_VERSION as CONSENT_VERSION
+                     , 'Data protection notice ' || c.CONSENT_VERSION as OVERLINE
+                     , 'What you agreed to' as TITLE
+                     , '<p class="hl-method">' || apex_escape.html(c.CONSENT_TEXT) || '</p>'
+                       || '<p class="hl-method">Kenya Data Protection Act, 2019: download a copy of everything we hold about you, '
+                       || 'or delete your account. Agreements already on the ledger keep your name until they expire.</p>' as BODY_HTML
+                from HL_CONSENT_TEXTS c
+                order by c.PUBLISHED_AT desc
+                fetch first 1 row only
+                ```
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+        accessibility {
+            landmarkType: region
+        }
+        componentAppearance {
+            display: report
+        }
+        settings {
+            overline: &OVERLINE.
+            title: &TITLE.
+            description: &BODY_HTML!RAW.
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: hl_auth.is_farmer
+        }
+
+        column BODY_HTML (
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: BODY_HTML
+                dataType: varchar2
+            }
+        )
+
+        column CONSENT_VERSION (
+            layout {
+                sequence: 10
+            }
+            source {
+                databaseColumn: CONSENT_VERSION
+                dataType: varchar2
+                primaryKey: true
+            }
+        )
+
+        column OVERLINE (
+            layout {
+                sequence: 20
+            }
+            source {
+                databaseColumn: OVERLINE
+                dataType: varchar2
+            }
+        )
+
+        column TITLE (
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: TITLE
+                dataType: varchar2
+            }
+        )
+
+    )
+
+    button download-data (
+        buttonName: DOWNLOAD_DATA
+        label: Download my data
+        layout {
+            sequence: 10
+            region: @your-data
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @/text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            executeValidations: false
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button delete-account (
+        buttonName: DELETE_ACCOUNT
+        label: Delete my account
+        layout {
+            sequence: 20
+            region: @your-data
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @/text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            executeValidations: false
+            requiresConfirmation: true
+            warnOnUnsavedChanges: doNotCheck
+        }
+        confirmation {
+            message: Delete your HarvestLink account? Your harvests and open offers are removed and you are signed out. This cannot be undone.
+            style: danger
+        }
+    )
+
+    process download-data (
+        name: Download my data
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                declare
+                  l_json clob;
+                begin
+                  select DATA_JSON into l_json from HL_MY_DATA_V;
+                  sys.owa_util.mime_header('application/json', false, 'UTF-8');
+                  sys.htp.p('Content-Disposition: attachment; filename="harvestlink-my-data.json"');
+                  sys.owa_util.http_header_close;
+                  apex_util.prn(p_clob => l_json, p_escape => false);
+                  apex_application.stop_apex_engine;
+                end;
+                ```
+        }
+        execution {
+            sequence: 40
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :REQUEST = 'DOWNLOAD_DATA' and hl_auth.is_farmer
+        }
+    )
+
+    process delete-account (
+        name: Delete my account
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                hl_farmer_api.delete_account(p_farmer_id => hl_auth.farmer_id);
+                commit;
+                apex_authentication.logout(p_session_id => :APP_SESSION, p_app_id => :APP_ID);
+                ```
+        }
+        execution {
+            sequence: 50
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :REQUEST = 'DELETE_ACCOUNT' and hl_auth.is_farmer
+        }
     )
 
     process accept-offer (
