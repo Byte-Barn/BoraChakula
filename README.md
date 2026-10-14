@@ -79,6 +79,8 @@ Prerequisites, secrets and options are in [`infra/README.md`](infra/README.md).
 - **Frontend** (APEX pages built from the design canvas): read data from the contract views and change it only
   through the API procedures in `docs/backend-api.md`. Do not write SQL against the tables from pages.
 - **APEX app**: edit `apex/harvestlink-blueprint.md` and `apex/theme/`, not the generated `apex/apexlang/`.
+- **Tests**: `db/tests/run.sh` installs the schema into a throwaway user on Oracle 23ai Free in Docker and runs
+  the backend tests (60 checks); CI runs it on every pull request that touches `db/`.
 - **Demo data**: `begin hl_demo.reset; end;` restores the demo story before a rehearsal.
 - Never commit passwords, wallets, `terraform.tfvars` or Terraform state (all git-ignored).
 
