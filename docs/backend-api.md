@@ -263,7 +263,9 @@ so pages need no extra code: let the error propagate from the page process. To s
 raise it from a validation or use `apex_error.add_error` with the item name. Common constraint errors from forms
 (duplicate record, related record missing, record still in use) are reworded too.
 
-## Planned backend PRs
+## Changing the backend
 
-| PR | Adds | Unblocks |
-|---|---|---|
+- Open backend work is tracked as GitHub issues with the `backend` label.
+- Every change runs `db/tests/run.sh` (also in CI on pull requests that touch `db/`). Add a test in `db/tests/`
+  for any new view column, procedure or rule a page depends on.
+- Update this file in the same pull request when a contract view or procedure changes.
