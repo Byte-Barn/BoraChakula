@@ -28,7 +28,7 @@ change without a note in this file.
 | `HL_MATCH_V.UI_STATUS` | `PENDING` (awaiting farmer), `MATCHED` (farmer confirmed or delivered), `DECLINED` | StatusBadge `pending` / `matched` / `unmatched` |
 | `HL_FULFIL_V.STATUS`, demands | `OPEN`, `PARTIAL`, `FILLED` (proposals cover it), `CLOSED`, `CANCELLED` | |
 | `reason_*_state` | `ok`, `warn` (`HL_MATCH_V`), `no` (`HL_NEAR_MISS_V`) | MatchCard reason icon: check, warning, cross |
-| `provenance` | `live`, `simulated`, `demo` | ProvenanceTag of the same name |
+| `provenance` | `live`, `sourced` (records × a published factor, cited in `method`), `simulated`, `demo` | ProvenanceTag of the same name (`sourced` is new: give it its own style) |
 
 ## Roles and the signed-in party — Ready
 
