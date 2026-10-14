@@ -30,11 +30,15 @@ if ! docker ps --format '{{.Names}}' | grep -qx "$CONTAINER"; then
       "$IMAGE" >/dev/null
   fi
   log "Waiting for the database"
-  for _ in $(seq 1 120); do
-    if docker logs "$CONTAINER" 2>&1 | grep -q 'DATABASE IS READY TO USE'; then break; fi
+  # Read the logs into a variable: piping them into grep -q under pipefail can
+  # report failure (SIGPIPE) even when the line is there
+  ready=""
+  for _ in $(seq 1 150); do
+    logs="$(docker logs "$CONTAINER" 2>&1 || true)"
+    if [[ "$logs" == *"DATABASE IS READY TO USE"* ]]; then ready=1; break; fi
     sleep 2
   done
-  docker logs "$CONTAINER" 2>&1 | grep -q 'DATABASE IS READY TO USE' || { echo "Database did not start"; exit 1; }
+  [[ -n "$ready" ]] || { echo "Database did not start"; docker logs --tail 30 "$CONTAINER" 2>&1; exit 1; }
 fi
 
 docker cp "$DB_DIR" "$CONTAINER:$WORK" >/dev/null
