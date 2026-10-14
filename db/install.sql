@@ -8,4 +8,5 @@ set define off
 @03_views.sql
 @04_seed.sql
 @05_auto_match.sql
+@06_agreements.sql
 show errors package body hl_match_pkg

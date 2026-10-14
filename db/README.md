@@ -11,6 +11,7 @@ Oracle Autonomous Database / Oracle Database 23ai schema, matching engine and de
 | `03_views.sql` | Views for APEX pages, maps and the impact dashboard |
 | `04_seed.sql` | Demo data (fictional farmers and buyers in Murang'a, Kiambu, Nairobi); runs matching |
 | `05_auto_match.sql` | Triggers that re-run matching after any change to demands, harvests or farm locations |
+| `06_agreements.sql` | `HL_AGREEMENTS` blockchain table: tamper-evident ledger of confirmed, rejected and delivered farmer agreements |
 | `install.sql` / `uninstall.sql` | Install everything / drop everything |
 
 ## Install
@@ -51,6 +52,22 @@ The best-scoring farmers are allocated volume until the order is filled. Each ma
 Other entry points: `rematch_all` (clears proposals and re-matches all active demands, earliest deadline first; called by the triggers), `run_all_open`, `accept_match`, `reject_match`.
 
 Deleting a demand or harvest cascades to its matches and routes.
+
+## Agreement ledger (blockchain table)
+
+When a match becomes `ACCEPTED`, `DELIVERED`, or `REJECTED` after confirmation, a trigger appends the
+agreed terms (farmer, buyer, crop, grade, kg, price, value, who recorded it) to `HL_AGREEMENTS`.
+It is an Oracle blockchain table: rows cannot be updated, cannot be deleted for 16 days, and each
+row's SHA2-512 hash is chained to the previous one. `HL_AGREEMENTS_V` exposes the chain position and
+hash. Verify the chain with:
+
+```sql
+declare n number;
+begin
+  dbms_blockchain_table.verify_rows(user, 'HL_AGREEMENTS', number_of_rows_verified => n);
+  dbms_output.put_line(n || ' rows verified');
+end;
+```
 
 ## Views for APEX
 

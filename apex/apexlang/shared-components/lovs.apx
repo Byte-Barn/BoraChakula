@@ -184,6 +184,39 @@ lov lov-harvest-status (
     
 )
 
+lov lov-match-status (
+    name: LOV_MATCH_STATUS
+    source {
+        location: staticValues
+    }
+    
+    entry accepted (
+        sequence: 2
+        display: Confirmed by farmer
+        return: ACCEPTED
+    )
+    
+    entry delivered (
+        sequence: 4
+        display: Delivered
+        return: DELIVERED
+    )
+    
+    entry proposed (
+        sequence: 1
+        display: Proposed
+        return: PROPOSED
+    )
+    
+    entry rejected (
+        sequence: 3
+        display: Rejected
+        return: REJECTED
+    )
+    
+    
+)
+
 lov lov-yes-no (
     name: LOV_YES_NO
     source {

@@ -1,44 +1,51 @@
 /*
- * HarvestLink "Field Ledger" style over Universal Theme (Iris).
- * Values come from the HarvestLink design system tokens: forest green on warm
- * ivory, Fraunces for titles and headline numbers, IBM Plex for everything else,
- * hairline borders instead of shadows, small corners.
+ * HarvestLink look over Universal Theme (Iris), matching the design canvas
+ * (theme.css on the HarvestLink canvas): modern agritech greens with a lime
+ * accent on a light sage ground, Plus Jakarta Sans for titles and figures,
+ * Inter for text, rounded cards with soft shadows.
  *
  * Added to the generated app by scripts/install_app.py; edit this file, not
  * apex/apexlang/.
  */
-@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400&family=IBM+Plex+Sans:wght@400;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap");
 
 /* :root:root outranks the theme style (Iris), which loads after this file */
 :root:root {
-  /* Design tokens */
-  --hl-surface: #f7f3ea;
-  --hl-surface-raised: #fffdf8;
-  --hl-surface-sunken: #eee8da;
-  --hl-line: #ddd5c3;
-  --hl-line-strong: #857c69;
-  --hl-ink: #1d231f;
-  --hl-ink-muted: #565c55;
-  --hl-ink-inverse: #f7f3ea;
-  --hl-forest: #1d4d34;
-  --hl-forest-deep: #11301f;
-  --hl-forest-soft: #dfeadf;
-  --hl-on-forest: #ffffff;
+  /* Canvas tokens */
+  --hl-forest: #166534;
+  --hl-forest-hover: #14532d;
+  --hl-forest-deep: #064e3b;
+  --hl-forest-soft: #e8f3ea;
+  --hl-lime: #84cc16;
+  --hl-lime-hover: #a3e635;
+  --hl-lime-soft: #f0f9e0;
+  --hl-on-lime: #052e16;
+  --hl-amber: #d97706;
+  --hl-surface: #f8faf5;
+  --hl-surface-raised: #ffffff;
+  --hl-surface-sunken: #f1f5ee;
+  --hl-line: #e4e9e1;
+  --hl-line-strong: #8a948a;
+  --hl-input-line: #c9d1c6;
+  --hl-ink: #1f2937;
+  --hl-ink-muted: #5b6472;
+  --hl-ink-inverse: #f8faf5;
   --hl-leaf: #35702a;
   --hl-maize: #7d5200;
   --hl-clay: #a13a1f;
   --hl-sky: #245a7d;
   --hl-focus: #b06400;
-  --hl-font-display: Fraunces, Georgia, "Times New Roman", serif;
-  --hl-font-sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
-  --hl-font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
-  --hl-radius-sm: 4px;
-  --hl-radius-md: 6px;
-  --hl-shadow-float: 0 1px 2px rgba(29, 35, 31, .08), 0 8px 24px rgba(29, 35, 31, .10);
+  --hl-font-display: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
+  --hl-font-sans: Inter, system-ui, sans-serif;
+  --hl-font-mono: ui-monospace, Menlo, Consolas, monospace;
+  --hl-radius-sm: 10px;
+  --hl-radius-md: 16px;
+  --hl-shadow-card: 0 1px 2px rgba(16, 24, 40, .04), 0 8px 24px rgba(16, 24, 40, .06);
+  --hl-shadow-lift: 0 2px 4px rgba(16, 24, 40, .06), 0 20px 48px rgba(6, 78, 59, .18);
 
   /* Universal Theme palette */
   --ut-palette-primary: var(--hl-forest);
-  --ut-palette-primary-contrast: var(--hl-on-forest);
+  --ut-palette-primary-contrast: #ffffff;
   --ut-palette-primary-shade: var(--hl-forest-soft);
   --ut-palette-primary-text: var(--hl-forest);
   --ut-palette-primary-alt: var(--hl-forest-deep);
@@ -62,7 +69,6 @@
 
   /* Type */
   --a-base-font-family: var(--hl-font-sans);
-  --a-base-font-family-serif: var(--hl-font-display);
   --a-base-font-family-mono: var(--hl-font-mono);
   --ut-alternate-heading-font-family: var(--hl-font-display);
 
@@ -77,30 +83,30 @@
   --ut-link-text-color: var(--hl-forest);
   --ut-focus-outline-color: var(--hl-focus);
 
-  /* Header: deep forest identity band */
+  /* Header: deep green identity band */
   --ut-header-background-color: var(--hl-forest-deep);
-  --ut-header-text-color: var(--hl-ink-inverse);
+  --ut-header-text-color: #ffffff;
   --ut-header-border-color: var(--hl-forest-deep);
   --ut-header-box-shadow: none;
 
   /* Side navigation */
   --ut-nav-width: 248px;
   --ut-body-nav-background-color: var(--hl-forest-deep);
-  --ut-body-nav-text-color: var(--hl-ink-inverse);
+  --ut-body-nav-text-color: #ffffff;
   --ut-body-nav-border-color: var(--hl-forest-deep);
-  --a-treeview-node-text-color: var(--hl-ink-inverse);
-  --a-treeview-node-icon-color: var(--hl-ink-inverse);
-  --a-treeview-node-selected-background-color: var(--hl-forest);
-  --a-treeview-node-selected-text-color: var(--hl-on-forest);
-  --a-treeview-node-selected-icon-color: var(--hl-on-forest);
-  --a-treeview-node-focused-background-color: var(--hl-forest);
-  --a-treeview-node-focused-text-color: var(--hl-on-forest);
+  --a-treeview-node-text-color: rgba(255, 255, 255, .88);
+  --a-treeview-node-icon-color: rgba(255, 255, 255, .88);
+  --a-treeview-node-selected-background-color: #ffffff;
+  --a-treeview-node-selected-text-color: var(--hl-forest);
+  --a-treeview-node-selected-icon-color: var(--hl-forest);
+  --a-treeview-node-focused-background-color: rgba(255, 255, 255, .14);
+  --a-treeview-node-focused-text-color: #ffffff;
 
-  /* Panels: raised ivory, hairline border, no resting shadow */
+  /* Cards */
   --ut-component-background-color: var(--hl-surface-raised);
   --ut-component-border-color: var(--hl-line);
   --ut-component-border-radius: var(--hl-radius-md);
-  --ut-component-box-shadow: none;
+  --ut-component-box-shadow: var(--hl-shadow-card);
   --ut-component-text-default-color: var(--hl-ink);
   --ut-component-text-muted-color: var(--hl-ink-muted);
   --ut-component-text-title-color: var(--hl-ink);
@@ -110,32 +116,31 @@
   --ut-region-header-text-color: var(--hl-ink);
   --ut-region-header-border-color: var(--hl-line);
   --ut-region-text-color: var(--hl-ink);
-  --ut-region-box-shadow: none;
+  --ut-region-box-shadow: var(--hl-shadow-card);
   --ut-metric-card-background-color: var(--hl-surface-raised);
   --ut-metric-card-color: var(--hl-ink);
 
   /* Reports */
   --ut-report-header-background-color: var(--hl-surface-sunken);
   --ut-report-cell-border-color: var(--hl-line);
-  --ut-report-cell-hover-background-color: var(--hl-surface);
+  --ut-report-cell-hover-background-color: var(--hl-forest-soft);
   --ut-report-cell-alt-background-color: var(--hl-surface-raised);
   --a-gv-header-background-color: var(--hl-surface-sunken);
   --a-gv-header-cell-border-color: var(--hl-line);
 
   /* Controls */
   --a-button-border-radius: var(--hl-radius-sm);
-  --a-button-box-shadow: none;
-  --a-field-input-background-color: var(--hl-surface-raised);
-  --a-field-input-border-color: var(--hl-line-strong);
+  --a-field-input-background-color: #ffffff;
+  --a-field-input-border-color: var(--hl-input-line);
   --a-field-input-border-radius: var(--hl-radius-sm);
   --a-field-input-focus-border-color: var(--hl-forest);
   --ut-field-label-text-color: var(--hl-ink-muted);
-  --a-chip-border-radius: 2px;
+  --a-chip-border-radius: 999px;
 
   /* Login */
-  --ut-login-page-background-color: var(--hl-forest-deep);
+  --ut-login-page-background-color: var(--hl-surface);
   --ut-login-region-background-color: var(--hl-surface-raised);
-  --ut-login-region-box-shadow: var(--hl-shadow-float);
+  --ut-login-region-box-shadow: var(--hl-shadow-lift);
 }
 
 body {
@@ -150,56 +155,62 @@ body {
 .t-Header-logo-link span,
 .t-Login-title {
   font-family: var(--hl-font-display);
-  font-weight: 600;
-  letter-spacing: -.01em;
+  font-weight: 800;
+  letter-spacing: -.02em;
 }
 
-/* The one page title, set in the display serif */
+/* Page titles */
 .t-BreadcrumbRegion-titleText,
 .t-Body-titleHeading,
 h1 {
   font-family: var(--hl-font-display);
-  font-size: 30px;
-  line-height: 36px;
-  font-weight: 600;
-  letter-spacing: -.01em;
+  font-size: 32px;
+  line-height: 40px;
+  font-weight: 700;
+  letter-spacing: -.02em;
   color: var(--hl-ink);
 }
 
-/* Panels */
+/* Cards */
 .t-Region,
 .t-IRR-region,
 .t-MetricCard,
 .t-Login-region {
   border: 1px solid var(--hl-line);
   border-radius: var(--hl-radius-md);
-  box-shadow: none;
+  box-shadow: var(--hl-shadow-card);
 }
-.t-Region--noBorder > .t-Region-bodyWrap,
+.t-Login-region {
+  box-shadow: var(--hl-shadow-lift);
+}
 .t-Region--noBorder.t-Region {
   border-color: transparent;
+  box-shadow: none;
 }
 .t-Region-title {
-  font-size: 21px;
+  font-family: var(--hl-font-display);
+  font-size: 20px;
   line-height: 28px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
-/* Metric cards: label, then a big Fraunces figure */
+/* Metric cards: label, then a big figure */
+.t-MetricCard {
+  padding: 8px;
+}
 .t-MetricCard-title {
   font-size: 13px;
-  line-height: 16px;
-  font-weight: 600;
-  letter-spacing: .01em;
+  line-height: 18px;
+  font-weight: 500;
   color: var(--hl-ink-muted);
 }
 .t-MetricCard-metric {
   font-family: var(--hl-font-display);
-  font-size: 40px;
-  line-height: 44px;
-  font-weight: 500;
+  font-size: 34px;
+  line-height: 40px;
+  font-weight: 700;
+  letter-spacing: -.02em;
   color: var(--hl-ink);
-  font-variant-numeric: lining-nums;
 }
 .t-MetricCard-meta {
   font-size: 13px;
@@ -210,10 +221,10 @@ h1 {
 .t-MetricCard-avatar--subtle {
   background-color: var(--hl-forest-soft);
   color: var(--hl-forest);
-  border-radius: var(--hl-radius-sm);
+  border-radius: 12px;
 }
 
-/* Tables: sunken header, hairlines, tabular numbers */
+/* Tables */
 .t-Report-report th,
 .a-IRR-header,
 .a-GV-header {
@@ -228,31 +239,40 @@ h1 {
   font-variant-numeric: tabular-nums;
 }
 
-/* Buttons: forest primary, outlined secondary, no shadows */
+/* Buttons: green primary, white secondary that turns green on hover */
 .t-Button {
-  box-shadow: none;
   border-radius: var(--hl-radius-sm);
   font-weight: 600;
+  transition: background-color .15s ease-out, border-color .15s ease-out, color .15s ease-out;
 }
 .t-Button--hot {
   background-color: var(--hl-forest);
   border-color: var(--hl-forest);
-  color: var(--hl-on-forest);
+  color: #ffffff;
+  box-shadow: none;
 }
 .t-Button--hot:hover {
-  background-color: var(--hl-forest-deep);
-  border-color: var(--hl-forest-deep);
+  background-color: var(--hl-forest-hover);
+  border-color: var(--hl-forest-hover);
 }
 .t-Button:not(.t-Button--hot):not(.t-Button--noUI):not(.t-Button--link) {
-  background-color: var(--hl-surface-raised);
-  border: 1px solid var(--hl-line-strong);
+  background-color: #ffffff;
+  border: 1px solid var(--hl-line);
   color: var(--hl-ink);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, .05);
 }
 .t-Button:not(.t-Button--hot):not(.t-Button--noUI):not(.t-Button--link):hover {
-  background-color: var(--hl-forest-soft);
+  border-color: var(--hl-forest);
+  color: var(--hl-forest);
 }
 
-/* Focus: solid 2px ring with a 2px gap, on every ground */
+/* Active navigation item: white pill with a lime edge */
+.t-TreeNav .a-TreeView-node--topLevel > .a-TreeView-content.is-current,
+.t-TreeNav .a-TreeView-node--topLevel > .a-TreeView-content.is-current--top {
+  box-shadow: inset 3px 0 0 var(--hl-lime);
+}
+
+/* Focus ring on every interactive element */
 a:focus-visible,
 button:focus-visible,
 input:focus-visible,
@@ -261,18 +281,17 @@ textarea:focus-visible,
 [tabindex]:focus-visible {
   outline: 2px solid var(--hl-focus);
   outline-offset: 2px;
-  box-shadow: none;
 }
 
-/* Floating layers keep the one shadow the system allows */
+/* Floating layers */
 .ui-dialog,
 .a-Menu,
 .a-Popup {
-  box-shadow: var(--hl-shadow-float);
+  box-shadow: var(--hl-shadow-lift);
   border-radius: var(--hl-radius-md);
 }
 
-/* IDs, coordinates and formulas */
+/* IDs and hashes */
 code,
 kbd,
 .hl-mono {
@@ -280,16 +299,16 @@ kbd,
   font-size: 13px;
 }
 
-/* Grade tags: square-cornered letter blocks, usable from report HTML */
+/* Grade tags */
 .hl-grade {
   display: inline-block;
   min-width: 1.6em;
-  padding: 0 4px;
-  border-radius: 2px;
-  font-weight: 600;
+  padding: 0 6px;
+  border-radius: 8px;
+  font-weight: 700;
   text-align: center;
 }
-.hl-grade--A { background: #1d4d34; color: #ffffff; }
+.hl-grade--A { background: #166534; color: #ffffff; }
 .hl-grade--B { background: #637619; color: #ffffff; }
 .hl-grade--C { background: #c9a77e; color: #2b1d10; }
 

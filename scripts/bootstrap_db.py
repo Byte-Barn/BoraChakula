@@ -5,7 +5,7 @@ Steps (each can be skipped):
   1. As ADMIN: create the HARVESTLINK schema user.
   2. As ADMIN: create the HARVESTLINK APEX workspace, a developer login and
      (if HL_DEMO_USER is set) an end-user login for judges.
-  3. As HARVESTLINK: install db/01..04 (optionally dropping existing objects).
+  3. As HARVESTLINK: install db/01..06 (optionally dropping existing objects).
 
 Secrets are read from the environment, never from arguments:
   HL_ADMIN_PASSWORD, HL_WALLET_PASSWORD, HL_SCHEMA_PASSWORD,
@@ -28,7 +28,8 @@ from pathlib import Path
 import oracledb
 
 REPO = Path(__file__).resolve().parent.parent
-SQL_FILES = ["01_schema.sql", "02_match_pkg.sql", "03_views.sql", "04_seed.sql", "05_auto_match.sql"]
+SQL_FILES = ["01_schema.sql", "02_match_pkg.sql", "03_views.sql", "04_seed.sql", "05_auto_match.sql",
+             "06_agreements.sql"]
 SCHEMA = "HARVESTLINK"
 PLSQL_START = re.compile(
     r"^\s*(create\s+or\s+replace\s+(package|trigger|procedure|function|type)|begin|declare)\b", re.I)

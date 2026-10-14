@@ -111,6 +111,22 @@
       - Entry:
         - Display: No
         - Return: N
+  - LOV
+    - Name: LOV_MATCH_STATUS
+    - Type: Static
+    - Entries:
+      - Entry:
+        - Display: Proposed
+        - Return: PROPOSED
+      - Entry:
+        - Display: Confirmed by farmer
+        - Return: ACCEPTED
+      - Entry:
+        - Display: Rejected
+        - Return: REJECTED
+      - Entry:
+        - Display: Delivered
+        - Return: DELIVERED
 - Page Groups
   - Page Group
     - Name: Dashboard
@@ -153,6 +169,11 @@
       - Action: Navigate
       - Target: Page 7
     - Entry
+      - Label: Agreement Ledger
+      - Icon: fa-link
+      - Action: Navigate
+      - Target: Page 13
+    - Entry
       - Label: Farmers
       - Icon: fa-users
       - Action: Navigate
@@ -180,6 +201,9 @@
     - Entry
       - Name: Grade Routing
       - Page: Page 7
+    - Entry
+      - Name: Agreement Ledger
+      - Page: Page 13
     - Entry
       - Name: Farmers
       - Page: Page 8
@@ -1041,6 +1065,11 @@ select m.MATCH_ID as MATCH_ID
      , m.SCORE_TOTAL as SCORE_TOTAL
      , m.STATUS as STATUS
      , m.MATCH_REASON as MATCH_REASON
+     , (select a.ROW_HASH_SHORT
+          from HL_AGREEMENTS_V a
+         where a.MATCH_ID = m.MATCH_ID
+         order by a.CHAIN_SEQ desc
+         fetch first 1 row only) as AGREEMENT_HASH
 from HL_MATCH_DETAIL_V m
 where m.DEMAND_ID = to_number(:P6_DEMAND_ID)
 order by m.STOP_ORDER
@@ -1094,13 +1123,17 @@ order by m.STOP_ORDER
     - Label: Why Matched
     - Datatype: varchar2
     - Render As: plainText
+  - Column Name: AGREEMENT_HASH
+    - Label: Agreement Hash
+    - Datatype: varchar2
+    - Render As: plainText
 - Links: 
   - Link:
-    - Link To: Page 5
-    - Link Passing: HARVEST_ID
-    - Link Target Items: P5_HARVEST_ID
-    - Label: Edit Harvest
-    - Link Icon: fa-edit
+    - Link To: Page 12
+    - Link Passing: MATCH_ID
+    - Link Target Items: P12_MATCH_ID
+    - Label: Confirm Match
+    - Link Icon: fa-handshake-o
 ### Page 7: Grade Routing
 - Description: Interactive report routing unallocated produce to the right market channel and nearest suitable buyer by grade.
 - Comments: Ensures every grade has an outlet so lower grades go to processors, schools or markets instead of waste.
@@ -1635,3 +1668,139 @@ order by m.STOP_ORDER
     - slot: CLOSE
     - Action Type: navigate
     - Process: cancelDialog
+### Page 12: Confirm Match
+- Description: Modal form where a field agent records a farmer's answer to a proposed match.
+- Comments: Updates HL_MATCHES.STATUS; a database trigger appends each confirmation, rejection or delivery to the HL_AGREEMENTS blockchain table.
+- Pattern: modal-drawer
+- Page Mode: modalDialog
+- Menu: false
+- Page Group: Matching and Logistics
+#### Regions
+##### Region: Match Confirmation
+- Comments: Shows the allocated quantity and records whether the farmer confirmed, rejected or delivered.
+- Position: body
+- Colstart: 1
+- Colspan: 12
+- Component:
+  - Component Type: Form
+- Data Source:
+  - Type: Table
+  - Name: HL_MATCHES
+  - Primary Keys: MATCH_ID
+  - Summary: Form source for recording the farmer's answer to a match.
+- Columns:
+  - Column Name: MATCH_ID
+    - Label: Match ID
+    - Datatype: number
+    - Page Item Name: P12_MATCH_ID
+    - Render As: displayOnly
+  - Column Name: ALLOCATED_KG
+    - Label: Allocated (kg)
+    - Datatype: number
+    - Page Item Name: P12_ALLOCATED_KG
+    - Render As: displayOnly
+  - Column Name: MATCH_REASON
+    - Label: Why Matched
+    - Datatype: varchar2
+    - Page Item Name: P12_MATCH_REASON
+    - Render As: displayOnly
+  - Column Name: STATUS
+    - Label: Farmer Answer
+    - Datatype: varchar2
+    - Page Item Name: P12_STATUS
+    - Render As: radioGroup
+    - LOV: LOV_MATCH_STATUS
+    - Required: true
+- Actions:
+  - Action
+    - Label: Record Answer
+    - slot: CHANGE
+    - Action Type: submit
+    - Process: Apply
+  - Action
+    - Label: Cancel
+    - slot: CLOSE
+    - Action Type: navigate
+    - Process: cancelDialog
+### Page 13: Agreement Ledger
+- Description: Tamper-evident ledger of farmer agreements stored in an Oracle blockchain table.
+- Comments: Rows cannot be changed or deleted; each row hash is chained to the previous row so tampering is detectable.
+- Pattern: vertical-stack
+- Page Mode: standard
+- Menu: true
+- Page Group: Matching and Logistics
+#### Regions
+##### Region: Agreement Ledger Report
+- Comments: Lists every recorded confirmation, rejection and delivery with its position in the hash chain.
+- Position: body
+- Colstart: 1
+- Colspan: 12
+- Component:
+  - Component Type: Interactive Report
+- Report Context: Append-only record of agreed terms between farmers and buyers, each row hashed and chained in an Oracle blockchain table.
+- Data Source:
+  - Type: View
+  - Name: HL_AGREEMENTS_V
+  - Primary Keys: CHAIN_ID, CHAIN_SEQ
+  - Summary: Blockchain table rows with chain position and row hash.
+- Columns:
+  - Column Name: CHAIN_SEQ
+    - Label: Seq
+    - Datatype: number
+    - Render As: plainText
+  - Column Name: RECORDED_AT
+    - Label: Recorded
+    - Datatype: timestamp
+    - Render As: plainText
+    - Format Mask: DD-MON-YYYY HH24:MI
+  - Column Name: EVENT
+    - Label: Event
+    - Datatype: varchar2
+    - Render As: plainText
+  - Column Name: FARMER_NAME
+    - Label: Farmer
+    - Datatype: varchar2
+    - Render As: plainText
+  - Column Name: BUYER_NAME
+    - Label: Buyer
+    - Datatype: varchar2
+    - Render As: plainText
+  - Column Name: CROP_NAME
+    - Label: Crop
+    - Datatype: varchar2
+    - Render As: plainText
+  - Column Name: GRADE
+    - Label: Grade
+    - Datatype: varchar2
+    - Render As: plainText
+  - Column Name: QUANTITY_KG
+    - Label: Quantity (kg)
+    - Datatype: number
+    - Render As: plainText
+    - Format Mask: 999G999G999G999G990
+  - Column Name: PRICE_PER_KG
+    - Label: Price (KES/kg)
+    - Datatype: number
+    - Render As: plainText
+    - Format Mask: 999G999G999G999G990
+  - Column Name: VALUE_KES
+    - Label: Value (KES)
+    - Datatype: number
+    - Render As: plainText
+    - Format Mask: 999G999G999G999G990
+  - Column Name: RECORDED_BY
+    - Label: Recorded By
+    - Datatype: varchar2
+    - Render As: plainText
+  - Column Name: ROW_HASH_SHORT
+    - Label: Row Hash
+    - Datatype: varchar2
+    - Render As: plainText
+  - Column Name: CHAIN_ID
+    - Label: Chain
+    - Datatype: number
+    - Render As: hidden
+  - Column Name: MATCH_ID
+    - Label: Match ID
+    - Datatype: number
+    - Render As: hidden

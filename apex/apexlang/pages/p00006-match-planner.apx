@@ -267,6 +267,11 @@ page 6 (
                      , m.SCORE_TOTAL as SCORE_TOTAL
                      , m.STATUS as STATUS
                      , m.MATCH_REASON as MATCH_REASON
+                     , (select a.ROW_HASH_SHORT
+                          from HL_AGREEMENTS_V a
+                         where a.MATCH_ID = m.MATCH_ID
+                         order by a.CHAIN_SEQ desc
+                         fetch first 1 row only) as AGREEMENT_HASH
                 from HL_MATCH_DETAIL_V m
                 where m.DEMAND_ID = to_number(:P6_DEMAND_ID)
                 order by m.STOP_ORDER
@@ -304,6 +309,17 @@ page 6 (
             type: nextAndPreviousLinks
         }
         
+        column AGREEMENT_HASH (
+            reportColumnQueryId: 13
+            derivedColumn: N
+            heading {
+                heading: Agreement Hash
+            }
+            layout {
+                sequence: 130
+            }
+        )
+        
         column ALLOCATED_KG (
             reportColumnQueryId: 8
             derivedColumn: N
@@ -334,12 +350,12 @@ page 6 (
             }
             link {
                 target: {
-                    page: 5
+                    page: 12
                     items: {
-                        P5_HARVEST_ID: \#HARVEST_ID#\
+                        P12_MATCH_ID: \#MATCH_ID#\
                     }
                 }
-                linkText: <span role="img" aria-label="Edit Harvest" class="fa fa-edit" title="Edit Harvest"></span>
+                linkText: <span role="img" aria-label="Confirm Match" class="fa fa-handshake-o" title="Confirm Match"></span>
             }
             sorting {
                 sortable: false

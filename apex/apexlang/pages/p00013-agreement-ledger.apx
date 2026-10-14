@@ -1,0 +1,404 @@
+page 13 (
+    name: Agreement Ledger
+    alias: AGREEMENT-LEDGER
+    title: Agreement Ledger
+    pageGroup: @matching-and-logistics
+    appearance {
+        pageTemplate: @/standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        authorizationScheme: mustNotBePublicUser
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+    advanced {
+        enableDuplicatePageSubmissions: false
+    }
+    comments {
+        comments: Rows cannot be changed or deleted; each row hash is chained to the previous row so tampering is detectable.
+    }
+    
+    region agreement-ledger-report (
+        name: Agreement Ledger Report
+        type: interactiveReport
+        source {
+            location: localDatabase
+            tableName: HL_AGREEMENTS_V
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @/interactive-report
+            templateOptions: [
+                #DEFAULT#
+                t-IRR-region--hideHeader js-addHiddenHeadingRoleDesc
+            ]
+        }
+        advanced {
+            htmlDomId: agreement-ledger-report
+        }
+        comments {
+            comments: Lists every recorded confirmation, rejection and delivery with its position in the hash chain.
+        }
+        pagination {
+            type: rowRangesXToY
+        }
+        genAI {
+            naturalLanguageSupport: true
+            reportContext: Append-only record of agreed terms between farmers and buyers, each row hashed and chained in an Oracle blockchain table.
+        }
+        
+        column BUYER_NAME (
+            type: plainText
+            heading {
+                heading: Buyer
+            }
+            layout {
+                sequence: 50
+            }
+            source {
+                dataType: STRING
+            }
+        )
+        
+        column CHAIN_ID (
+            type: hidden
+            heading {
+                heading: Chain
+            }
+            layout {
+                sequence: 130
+            }
+            source {
+                dataType: NUMBER
+            }
+        )
+        
+        column CHAIN_SEQ (
+            type: plainText
+            heading {
+                heading: Seq
+                alignment: end
+            }
+            layout {
+                sequence: 10
+                columnAlignment: end
+            }
+            source {
+                dataType: NUMBER
+            }
+        )
+        
+        column CROP_NAME (
+            type: plainText
+            heading {
+                heading: Crop
+            }
+            layout {
+                sequence: 60
+            }
+            source {
+                dataType: STRING
+            }
+        )
+        
+        column EVENT (
+            type: plainText
+            heading {
+                heading: Event
+            }
+            layout {
+                sequence: 30
+            }
+            source {
+                dataType: STRING
+            }
+        )
+        
+        column FARMER_NAME (
+            type: plainText
+            heading {
+                heading: Farmer
+            }
+            layout {
+                sequence: 40
+            }
+            source {
+                dataType: STRING
+            }
+        )
+        
+        column GRADE (
+            type: plainText
+            heading {
+                heading: Grade
+            }
+            layout {
+                sequence: 70
+            }
+            source {
+                dataType: STRING
+            }
+        )
+        
+        column MATCH_ID (
+            type: hidden
+            heading {
+                heading: Match ID
+            }
+            layout {
+                sequence: 140
+            }
+            source {
+                dataType: NUMBER
+            }
+        )
+        
+        column PRICE_PER_KG (
+            type: plainText
+            heading {
+                heading: Price (KES/kg)
+                alignment: end
+            }
+            layout {
+                sequence: 90
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+        )
+        
+        column QUANTITY_KG (
+            type: plainText
+            heading {
+                heading: Quantity (kg)
+                alignment: end
+            }
+            layout {
+                sequence: 80
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+        )
+        
+        column RECORDED_AT (
+            type: plainText
+            heading {
+                heading: Recorded
+            }
+            layout {
+                sequence: 20
+            }
+            appearance {
+                formatMask: DD-MON-YYYY HH24:MI
+            }
+            source {
+                dataType: DATE
+            }
+        )
+        
+        column RECORDED_BY (
+            type: plainText
+            heading {
+                heading: Recorded By
+            }
+            layout {
+                sequence: 110
+            }
+            source {
+                dataType: STRING
+            }
+        )
+        
+        column ROW_HASH_SHORT (
+            type: plainText
+            heading {
+                heading: Row Hash
+            }
+            layout {
+                sequence: 120
+            }
+            source {
+                dataType: STRING
+            }
+        )
+        
+        column VALUE_KES (
+            type: plainText
+            heading {
+                heading: Value (KES)
+                alignment: end
+            }
+            layout {
+                sequence: 100
+                columnAlignment: end
+            }
+            appearance {
+                formatMask: 999G999G999G999G990
+            }
+            source {
+                dataType: NUMBER
+            }
+        )
+        
+        
+        savedReport agreement-ledger-report-primary (
+            visibility: primaryDefault
+            
+            displayColumn BUYER_NAME (
+                sequence: 5
+            )
+            
+            displayColumn CHAIN_SEQ (
+                sequence: 1
+            )
+            
+            displayColumn CROP_NAME (
+                sequence: 6
+            )
+            
+            displayColumn EVENT (
+                sequence: 3
+            )
+            
+            displayColumn FARMER_NAME (
+                sequence: 4
+            )
+            
+            displayColumn GRADE (
+                sequence: 7
+            )
+            
+            displayColumn PRICE_PER_KG (
+                sequence: 9
+            )
+            
+            displayColumn QUANTITY_KG (
+                sequence: 8
+            )
+            
+            displayColumn RECORDED_AT (
+                sequence: 2
+            )
+            
+            displayColumn RECORDED_BY (
+                sequence: 11
+            )
+            
+            displayColumn ROW_HASH_SHORT (
+                sequence: 12
+            )
+            
+            displayColumn VALUE_KES (
+                sequence: 10
+            )
+            
+            
+        )
+        
+    )
+    
+    region breadcrumb (
+        name: Breadcrumb
+        type: breadcrumb
+        source {
+            breadcrumb: @breadcrumb
+        }
+        layout {
+            sequence: 5
+            slot: breadcrumbBar
+        }
+        appearance {
+            template: @/title-bar
+            templateOptions: [
+                #DEFAULT#
+                t-BreadcrumbRegion--useBreadcrumbTitle
+            ]
+        }
+        componentAppearance {
+            breadcrumbTemplate: @/breadcrumb
+            templateOptions: #DEFAULT#
+        }
+    )
+    
+    
+    button reset-agreement-ledger-report (
+        buttonName: RESET-agreement-ledger-report
+        label: Reset
+        layout {
+            sequence: 1
+            region: @agreement-ledger-report
+            slot: rightOfInteractiveReportSearchBar
+        }
+        appearance {
+            buttonTemplate: @/text-with-icon
+            templateOptions: [
+                #DEFAULT#
+                t-Button--iconLeft
+            ]
+            icon: fa-undo-alt
+        }
+        behavior {
+            action: triggerAction
+        }
+        
+        triggerAction reset (
+            name: Reset
+            action: executeJsCode
+            settings {
+                jsCode: apex.jQuery("#agreement-ledger-report_actions_menu").menu("find", "irReset").action();
+            }
+            execution {
+                sequence: 10
+            }
+        )
+    )
+    
+    
+    
+    dynamicAction dialog-refresh-agreement-ledger-report (
+        name: Refresh on dialog close Agreement Ledger Report
+        execution {
+            sequence: 10
+        }
+        when {
+            event: apexafterclosedialog
+            selectionType: region
+            region: @agreement-ledger-report
+        }
+        
+        action refresh (
+            action: refresh
+            settings {
+                maintainPagination: true
+            }
+            affectedElements {
+                selectionType: region
+                region: @agreement-ledger-report
+            }
+            execution {
+                sequence: 10
+                fireOnInit: false
+            }
+        )
+        
+    )
+    
+    
+)
+
