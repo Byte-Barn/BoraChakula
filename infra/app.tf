@@ -13,10 +13,13 @@ locals {
     [for f in sort(fileset(local.repo_root, "db/*.sql")) : "${local.repo_root}/${f}"],
     ["${local.repo_root}/scripts/bootstrap_db.py"],
   )
-  app_sources = [
-    "${local.repo_root}/apex/harvestlink-blueprint.md",
-    "${local.repo_root}/scripts/install_app.py",
-  ]
+  app_sources = concat(
+    [
+      "${local.repo_root}/apex/harvestlink-blueprint.md",
+      "${local.repo_root}/scripts/install_app.py",
+    ],
+    [for f in sort(fileset(local.repo_root, "apex/theme/**")) : "${local.repo_root}/${f}"],
+  )
 }
 
 # Schema user, APEX workspace, developer and judge logins, tables, matching

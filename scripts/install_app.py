@@ -5,6 +5,7 @@ Pipeline (all through the database, no App Builder session needed):
   apex/harvestlink-blueprint.md
     -> APEX_GENDEV.PROCESS_BLUEPRINT        (validates, generates APEXlang)
     -> apex/apexlang/                        (generated source, kept in git)
+    + apex/theme/harvestlink.css             (HarvestLink styling, added as a static file)
     -> SQLcl "apex validate" + "apex import"  (installs into the workspace)
 
 APEX 26.1 cannot import APEXlang through APEX_APPLICATION_INSTALL, so the
@@ -32,6 +33,8 @@ import oracledb
 REPO = Path(__file__).resolve().parent.parent
 BLUEPRINT = REPO / "apex" / "harvestlink-blueprint.md"
 APEXLANG_DIR = REPO / "apex" / "apexlang"
+THEME_CSS = REPO / "apex" / "theme" / "harvestlink.css"
+THEME_ICONS = REPO / "apex" / "theme" / "icons"
 WORKSPACE = "HARVESTLINK"
 
 GENERATE = """
@@ -68,6 +71,35 @@ def connect(wallet, wallet_dir):
     )
 
 
+def apply_theme():
+    """Add the HarvestLink stylesheet and app icons to the generated app.
+
+    Blueprints cannot carry CSS, so the file is added as a static application
+    file and loaded after Universal Theme's own CSS. The generated icons keep
+    their names and are replaced with the HarvestLink mark.
+    """
+    shared = APEXLANG_DIR / "shared-components"
+    for icon in THEME_ICONS.glob("*.png"):
+        shutil.copyfile(icon, shared / "static-files" / "icons" / icon.name)
+    target = shared / "static-files" / "css" / THEME_CSS.name
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(THEME_CSS, target)
+    with open(shared / "static-files.apx", "a") as f:
+        f.write(f'\nfile "css/{THEME_CSS.name}" (\n    mimeType: text/css\n    charSet: utf-8\n)\n')
+
+    theme = shared / "themes" / "universal-theme" / "theme.apx"
+    text = theme.read_text()
+    core = "fileUrls: #THEME_FILES#css/Core#MIN#.css?v=#APEX_VERSION#"
+    if core not in text:
+        sys.exit(f"Unexpected theme CSS block in {theme}; cannot add {THEME_CSS.name}")
+    theme.write_text(text.replace(core, (
+        "fileUrls: [\n"
+        "            #THEME_FILES#css/Core#MIN#.css?v=#APEX_VERSION#\n"
+        f"            #APP_FILES#css/{THEME_CSS.name}\n"
+        "        ]")))
+    print(f"Added {THEME_CSS.relative_to(REPO)} and the HarvestLink icons to the app")
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--wallet", required=True, help="Path to the ADB client wallet zip")
@@ -92,6 +124,7 @@ def main():
         with zipfile.ZipFile(io.BytesIO(zip_bytes)) as z:
             z.extractall(APEXLANG_DIR)
             print(f"Generated {len(z.namelist())} APEXlang files in {APEXLANG_DIR.relative_to(REPO)}")
+        apply_theme()
 
     if args.check_only:
         return

@@ -6,6 +6,8 @@ The app is defined as an Oracle APEX 26.1 **Application Blueprint** and built wi
 |---|---|
 | `harvestlink-blueprint.md` | Source of truth: pages, regions, forms, LOVs, menu (Oracle blueprint grammar v26.1) |
 | `apexlang/` | APEXlang application generated from the blueprint by `APEX_GENDEV.PROCESS_BLUEPRINT` |
+| `theme/harvestlink.css` | HarvestLink "Field Ledger" styling over Universal Theme: forest on ivory, Fraunces and IBM Plex, hairline panels |
+| `theme/icons/` | App icons drawn from the HarvestLink leaf mark |
 
 ## Pages
 
@@ -33,4 +35,5 @@ python scripts/install_app.py --wallet infra/.wallet/wallet.zip --app-id 100   #
 ```
 
 Install uses SQLcl 26.x (`apex validate` / `apex import`), because APEX 26.1 cannot import
-APEXlang through `APEX_APPLICATION_INSTALL`. Edit the blueprint, not the generated files.
+APEXlang through `APEX_APPLICATION_INSTALL`. Edit the blueprint and `theme/`, not the generated files: the installer adds the stylesheet
+(as a static application file loaded after the theme CSS) and the icons on every build.

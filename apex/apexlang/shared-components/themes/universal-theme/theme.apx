@@ -12,7 +12,10 @@ theme universal-theme (
         ]
     }
     css {
-        fileUrls: #THEME_FILES#css/Core#MIN#.css?v=#APEX_VERSION#
+        fileUrls: [
+            #THEME_FILES#css/Core#MIN#.css?v=#APEX_VERSION#
+            #APP_FILES#css/harvestlink.css
+        ]
     }
     componentDefaults {
         page: @/standard

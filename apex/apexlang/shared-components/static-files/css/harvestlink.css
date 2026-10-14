@@ -1,0 +1,298 @@
+/*
+ * HarvestLink "Field Ledger" style over Universal Theme (Iris).
+ * Values come from the HarvestLink design system tokens: forest green on warm
+ * ivory, Fraunces for titles and headline numbers, IBM Plex for everything else,
+ * hairline borders instead of shadows, small corners.
+ *
+ * Added to the generated app by scripts/install_app.py; edit this file, not
+ * apex/apexlang/.
+ */
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400&family=IBM+Plex+Sans:wght@400;600&display=swap");
+
+/* :root:root outranks the theme style (Iris), which loads after this file */
+:root:root {
+  /* Design tokens */
+  --hl-surface: #f7f3ea;
+  --hl-surface-raised: #fffdf8;
+  --hl-surface-sunken: #eee8da;
+  --hl-line: #ddd5c3;
+  --hl-line-strong: #857c69;
+  --hl-ink: #1d231f;
+  --hl-ink-muted: #565c55;
+  --hl-ink-inverse: #f7f3ea;
+  --hl-forest: #1d4d34;
+  --hl-forest-deep: #11301f;
+  --hl-forest-soft: #dfeadf;
+  --hl-on-forest: #ffffff;
+  --hl-leaf: #35702a;
+  --hl-maize: #7d5200;
+  --hl-clay: #a13a1f;
+  --hl-sky: #245a7d;
+  --hl-focus: #b06400;
+  --hl-font-display: Fraunces, Georgia, "Times New Roman", serif;
+  --hl-font-sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --hl-font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --hl-radius-sm: 4px;
+  --hl-radius-md: 6px;
+  --hl-shadow-float: 0 1px 2px rgba(29, 35, 31, .08), 0 8px 24px rgba(29, 35, 31, .10);
+
+  /* Universal Theme palette */
+  --ut-palette-primary: var(--hl-forest);
+  --ut-palette-primary-contrast: var(--hl-on-forest);
+  --ut-palette-primary-shade: var(--hl-forest-soft);
+  --ut-palette-primary-text: var(--hl-forest);
+  --ut-palette-primary-alt: var(--hl-forest-deep);
+  --ut-palette-primary-alt-contrast: var(--hl-ink-inverse);
+  --ut-palette-success: var(--hl-leaf);
+  --ut-palette-success-contrast: #ffffff;
+  --ut-palette-success-shade: #e2efd5;
+  --ut-palette-success-text: var(--hl-leaf);
+  --ut-palette-warning: var(--hl-maize);
+  --ut-palette-warning-contrast: #ffffff;
+  --ut-palette-warning-shade: #f5e6c4;
+  --ut-palette-warning-text: var(--hl-maize);
+  --ut-palette-danger: var(--hl-clay);
+  --ut-palette-danger-contrast: #ffffff;
+  --ut-palette-danger-shade: #f6dfd5;
+  --ut-palette-danger-text: var(--hl-clay);
+  --ut-palette-info: var(--hl-sky);
+  --ut-palette-info-contrast: #ffffff;
+  --ut-palette-info-shade: #dcebf3;
+  --ut-palette-info-text: var(--hl-sky);
+
+  /* Type */
+  --a-base-font-family: var(--hl-font-sans);
+  --a-base-font-family-serif: var(--hl-font-display);
+  --a-base-font-family-mono: var(--hl-font-mono);
+  --ut-alternate-heading-font-family: var(--hl-font-display);
+
+  /* Page frame */
+  --ut-body-background-color: var(--hl-surface);
+  --ut-body-text-color: var(--hl-ink);
+  --ut-body-title-background-color: var(--hl-surface);
+  --ut-body-title-text-color: var(--hl-ink);
+  --ut-body-title-box-shadow: none;
+  --ut-body-title-border-width: 0;
+  --ut-body-content-max-width: 1240px;
+  --ut-link-text-color: var(--hl-forest);
+  --ut-focus-outline-color: var(--hl-focus);
+
+  /* Header: deep forest identity band */
+  --ut-header-background-color: var(--hl-forest-deep);
+  --ut-header-text-color: var(--hl-ink-inverse);
+  --ut-header-border-color: var(--hl-forest-deep);
+  --ut-header-box-shadow: none;
+
+  /* Side navigation */
+  --ut-nav-width: 248px;
+  --ut-body-nav-background-color: var(--hl-forest-deep);
+  --ut-body-nav-text-color: var(--hl-ink-inverse);
+  --ut-body-nav-border-color: var(--hl-forest-deep);
+  --a-treeview-node-text-color: var(--hl-ink-inverse);
+  --a-treeview-node-icon-color: var(--hl-ink-inverse);
+  --a-treeview-node-selected-background-color: var(--hl-forest);
+  --a-treeview-node-selected-text-color: var(--hl-on-forest);
+  --a-treeview-node-selected-icon-color: var(--hl-on-forest);
+  --a-treeview-node-focused-background-color: var(--hl-forest);
+  --a-treeview-node-focused-text-color: var(--hl-on-forest);
+
+  /* Panels: raised ivory, hairline border, no resting shadow */
+  --ut-component-background-color: var(--hl-surface-raised);
+  --ut-component-border-color: var(--hl-line);
+  --ut-component-border-radius: var(--hl-radius-md);
+  --ut-component-box-shadow: none;
+  --ut-component-text-default-color: var(--hl-ink);
+  --ut-component-text-muted-color: var(--hl-ink-muted);
+  --ut-component-text-title-color: var(--hl-ink);
+  --ut-component-highlight-background-color: var(--hl-forest-soft);
+  --ut-region-background-color: var(--hl-surface-raised);
+  --ut-region-header-background-color: var(--hl-surface-raised);
+  --ut-region-header-text-color: var(--hl-ink);
+  --ut-region-header-border-color: var(--hl-line);
+  --ut-region-text-color: var(--hl-ink);
+  --ut-region-box-shadow: none;
+  --ut-metric-card-background-color: var(--hl-surface-raised);
+  --ut-metric-card-color: var(--hl-ink);
+
+  /* Reports */
+  --ut-report-header-background-color: var(--hl-surface-sunken);
+  --ut-report-cell-border-color: var(--hl-line);
+  --ut-report-cell-hover-background-color: var(--hl-surface);
+  --ut-report-cell-alt-background-color: var(--hl-surface-raised);
+  --a-gv-header-background-color: var(--hl-surface-sunken);
+  --a-gv-header-cell-border-color: var(--hl-line);
+
+  /* Controls */
+  --a-button-border-radius: var(--hl-radius-sm);
+  --a-button-box-shadow: none;
+  --a-field-input-background-color: var(--hl-surface-raised);
+  --a-field-input-border-color: var(--hl-line-strong);
+  --a-field-input-border-radius: var(--hl-radius-sm);
+  --a-field-input-focus-border-color: var(--hl-forest);
+  --ut-field-label-text-color: var(--hl-ink-muted);
+  --a-chip-border-radius: 2px;
+
+  /* Login */
+  --ut-login-page-background-color: var(--hl-forest-deep);
+  --ut-login-region-background-color: var(--hl-surface-raised);
+  --ut-login-region-box-shadow: var(--hl-shadow-float);
+}
+
+body {
+  font-family: var(--hl-font-sans);
+  font-size: 15px;
+  color: var(--hl-ink);
+  background-color: var(--hl-surface);
+}
+
+/* Wordmark */
+.t-Header-logo-link,
+.t-Header-logo-link span,
+.t-Login-title {
+  font-family: var(--hl-font-display);
+  font-weight: 600;
+  letter-spacing: -.01em;
+}
+
+/* The one page title, set in the display serif */
+.t-BreadcrumbRegion-titleText,
+.t-Body-titleHeading,
+h1 {
+  font-family: var(--hl-font-display);
+  font-size: 30px;
+  line-height: 36px;
+  font-weight: 600;
+  letter-spacing: -.01em;
+  color: var(--hl-ink);
+}
+
+/* Panels */
+.t-Region,
+.t-IRR-region,
+.t-MetricCard,
+.t-Login-region {
+  border: 1px solid var(--hl-line);
+  border-radius: var(--hl-radius-md);
+  box-shadow: none;
+}
+.t-Region--noBorder > .t-Region-bodyWrap,
+.t-Region--noBorder.t-Region {
+  border-color: transparent;
+}
+.t-Region-title {
+  font-size: 21px;
+  line-height: 28px;
+  font-weight: 600;
+}
+
+/* Metric cards: label, then a big Fraunces figure */
+.t-MetricCard-title {
+  font-size: 13px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: .01em;
+  color: var(--hl-ink-muted);
+}
+.t-MetricCard-metric {
+  font-family: var(--hl-font-display);
+  font-size: 40px;
+  line-height: 44px;
+  font-weight: 500;
+  color: var(--hl-ink);
+  font-variant-numeric: lining-nums;
+}
+.t-MetricCard-meta {
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--hl-ink-muted);
+}
+.t-MetricCard-avatar,
+.t-MetricCard-avatar--subtle {
+  background-color: var(--hl-forest-soft);
+  color: var(--hl-forest);
+  border-radius: var(--hl-radius-sm);
+}
+
+/* Tables: sunken header, hairlines, tabular numbers */
+.t-Report-report th,
+.a-IRR-header,
+.a-GV-header {
+  background-color: var(--hl-surface-sunken);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--hl-ink);
+}
+.t-Report-cell,
+.a-IRR-table td,
+.a-GV-cell {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Buttons: forest primary, outlined secondary, no shadows */
+.t-Button {
+  box-shadow: none;
+  border-radius: var(--hl-radius-sm);
+  font-weight: 600;
+}
+.t-Button--hot {
+  background-color: var(--hl-forest);
+  border-color: var(--hl-forest);
+  color: var(--hl-on-forest);
+}
+.t-Button--hot:hover {
+  background-color: var(--hl-forest-deep);
+  border-color: var(--hl-forest-deep);
+}
+.t-Button:not(.t-Button--hot):not(.t-Button--noUI):not(.t-Button--link) {
+  background-color: var(--hl-surface-raised);
+  border: 1px solid var(--hl-line-strong);
+  color: var(--hl-ink);
+}
+.t-Button:not(.t-Button--hot):not(.t-Button--noUI):not(.t-Button--link):hover {
+  background-color: var(--hl-forest-soft);
+}
+
+/* Focus: solid 2px ring with a 2px gap, on every ground */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--hl-focus);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+/* Floating layers keep the one shadow the system allows */
+.ui-dialog,
+.a-Menu,
+.a-Popup {
+  box-shadow: var(--hl-shadow-float);
+  border-radius: var(--hl-radius-md);
+}
+
+/* IDs, coordinates and formulas */
+code,
+kbd,
+.hl-mono {
+  font-family: var(--hl-font-mono);
+  font-size: 13px;
+}
+
+/* Grade tags: square-cornered letter blocks, usable from report HTML */
+.hl-grade {
+  display: inline-block;
+  min-width: 1.6em;
+  padding: 0 4px;
+  border-radius: 2px;
+  font-weight: 600;
+  text-align: center;
+}
+.hl-grade--A { background: #1d4d34; color: #ffffff; }
+.hl-grade--B { background: #637619; color: #ffffff; }
+.hl-grade--C { background: #c9a77e; color: #2b1d10; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}

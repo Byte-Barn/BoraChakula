@@ -23,3 +23,8 @@ file "icons/app-icon-512.png" (
     charSet: utf-8
 )
 
+
+file "css/harvestlink.css" (
+    mimeType: text/css
+    charSet: utf-8
+)
