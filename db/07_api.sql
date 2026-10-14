@@ -288,9 +288,20 @@ select m.match_id,
                  else ', overlaps delivery on ' || to_char(d.need_by_date, 'Dy DD Mon') end
                                                              as reason_window,
        -- Distance
-       case when m.score_distance >= 0.5 then 'ok' else 'warn' end
-                                                             as reason_dist_state,
+       -- Warn on the farthest farm of a multi-farm pickup (it stretches the route)
+       case when m.status <> 'REJECTED'
+             and count(case when m.status <> 'REJECTED' then 1 end)
+                   over (partition by m.demand_id) > 1
+             and m.distance_km = max(case when m.status <> 'REJECTED' then m.distance_km end)
+                   over (partition by m.demand_id)
+            then 'warn' else 'ok' end                       as reason_dist_state,
        round(m.distance_km) || ' km by road to the delivery point'
+         || case when m.status <> 'REJECTED'
+                  and count(case when m.status <> 'REJECTED' then 1 end)
+                        over (partition by m.demand_id) > 1
+                  and m.distance_km = max(case when m.status <> 'REJECTED' then m.distance_km end)
+                        over (partition by m.demand_id)
+                 then ', the farthest farm on this pickup' end
                                                              as reason_dist,
        (select a.row_hash_short
           from hl_agreements_v a
@@ -302,6 +313,68 @@ select m.match_id,
   join hl_harvests h on h.harvest_id = m.harvest_id
   join hl_farmers f on f.farmer_id = h.farmer_id
   join hl_crops c on c.crop_id = h.crop_id;
+
+-- Farms that grow the crop but were not matched to an active demand, with the
+-- criterion that ruled each out ("Not matched" card). Same reason columns as
+-- HL_MATCH_V; a failing criterion has state 'no'.
+create or replace view hl_near_miss_v as
+with c as (
+  select d.demand_id, d.need_by_date, d.grade_required, d.quantity_kg,
+         h.harvest_id, h.grade, h.expected_qty_kg, h.harvest_from, h.harvest_to,
+         f.farmer_id, f.full_name, f.location_name, f.county, f.latitude, f.longitude,
+         cr.shelf_life_days,
+         hl_match_pkg.distance_km(f.latitude, f.longitude,
+                                  nvl(d.delivery_lat, b.latitude),
+                                  nvl(d.delivery_lon, b.longitude)) as dist,
+         hl_match_pkg.available_kg(h.harvest_id) as avail
+    from hl_demands d
+    join hl_buyers b on b.buyer_id = d.buyer_id
+    join hl_crops cr on cr.crop_id = d.crop_id
+    join hl_harvests h on h.crop_id = d.crop_id
+                      and h.status in ('OPEN', 'PARTIAL', 'COMMITTED')
+    join hl_farmers f on f.farmer_id = h.farmer_id
+   where d.status in ('OPEN', 'PARTIAL', 'FILLED')
+     and h.grade = d.grade_required
+     and not exists (select 1 from hl_matches m
+                      where m.demand_id = d.demand_id and m.harvest_id = h.harvest_id)
+), r as (
+  select c.*,
+         case when avail <= 0 then 'no' else 'ok' end as qty_state,
+         case when harvest_from > need_by_date
+                or need_by_date - harvest_to > shelf_life_days then 'no' else 'ok' end as window_state,
+         case when dist > hl_match_pkg.get_setting('MAX_DISTANCE_KM') then 'no' else 'ok' end as dist_state
+    from c
+)
+select demand_id,
+       harvest_id,
+       farmer_id,
+       full_name                                         as farmer_name,
+       location_name || ', ' || county                   as farmer_location,
+       latitude                                          as farmer_lat,
+       longitude                                         as farmer_lon,
+       grade,
+       expected_qty_kg                                   as available_kg,
+       harvest_from,
+       harvest_to,
+       round(dist)                                       as distance_km,
+       qty_state                                         as reason_qty_state,
+       case when qty_state = 'no' then 'All ' || expected_qty_kg || ' kg already promised to other buyers'
+            else greatest(avail, 0) || ' kg available' end as reason_qty,
+       'ok'                                              as reason_grade_state,
+       'Grade ' || grade || ' meets the Grade ' || grade_required || ' request' as reason_grade,
+       window_state                                      as reason_window_state,
+       case when harvest_from > need_by_date
+            then 'Harvest starts ' || to_char(harvest_from, 'Dy DD Mon')
+                 || ', after delivery on ' || to_char(need_by_date, 'Dy DD Mon')
+            when need_by_date - harvest_to > shelf_life_days
+            then 'Harvest ends ' || to_char(harvest_to, 'Dy DD Mon') || ', too early to stay fresh'
+            else to_char(harvest_from, 'DD Mon') || '–' || to_char(harvest_to, 'DD Mon') end
+                                                         as reason_window,
+       dist_state                                        as reason_dist_state,
+       round(dist) || ' km by road to the delivery point'
+         || case when dist_state = 'no' then ', beyond the matching radius' end as reason_dist
+  from r
+ where qty_state = 'no' or window_state = 'no' or dist_state = 'no';
 
 -- Fulfilment per demand: matched (farmer confirmed), pending (awaiting the
 -- farmer) and unmatched kg, as the FulfilmentBar draws them

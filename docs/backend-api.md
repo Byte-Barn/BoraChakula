@@ -6,7 +6,7 @@ Tables behind them may change; the names, parameters and columns here will not
 change without a note in this file.
 
 - Database: Oracle Autonomous AI Database 26ai, schema `HARVESTLINK` (APEX parsing schema).
-- Source: `db/02_match_pkg.sql` (matching), `db/06_agreements.sql` (ledger), `db/07_api.sql` (APIs and contract views).
+- Source: `db/02_match_pkg.sql` (matching), `db/06_agreements.sql` (ledger), `db/07_api.sql` (APIs and contract views), `db/08_demo.sql` (demo dataset and reset).
 - Status of each item: **Ready** (in this PR) or **Planned** (a later backend PR, listed at the end).
 
 ## Conventions
@@ -27,7 +27,7 @@ change without a note in this file.
 |---|---|---|
 | `HL_MATCH_V.UI_STATUS` | `PENDING` (awaiting farmer), `MATCHED` (farmer confirmed or delivered), `DECLINED` | StatusBadge `pending` / `matched` / `unmatched` |
 | `HL_FULFIL_V.STATUS`, demands | `OPEN`, `PARTIAL`, `FILLED` (proposals cover it), `CLOSED`, `CANCELLED` | |
-| `reason_*_state` | `ok`, `warn` | MatchCard reason icon |
+| `reason_*_state` | `ok`, `warn` (`HL_MATCH_V`), `no` (`HL_NEAR_MISS_V`) | MatchCard reason icon: check, warning, cross |
 | `provenance` | `live`, `simulated`, `demo` | ProvenanceTag of the same name |
 
 ## Screen by screen
@@ -37,7 +37,7 @@ change without a note in this file.
 | Needs | Source |
 |---|---|
 | Example-in-numbers strip | `HL_IMPACT_METRICS_V` rows `PRODUCE_SOURCED`, `FARMERS_REACHED`, `DISTANCE_SAVED`, `LOSS_AVOIDED` (`value`, `unit`, `provenance`) |
-| Example demand card and fulfilment bar | `HL_FULFIL_V` for one demand (`target_kg`, `matched_kg`, `pending_kg`, `unmatched_kg`) |
+| Example demand card and fulfilment bar | `HL_FULFIL_V` where `demand_id = hl_demo.featured_demand_id` (`target_kg`, `matched_kg`, `pending_kg`, `unmatched_kg`) |
 
 The page must be public (no login): read-only queries only, label figures "Illustrative figures from the demo dataset".
 
@@ -97,7 +97,7 @@ Review panel values are computed in the page (`qty × price` = order value). Rec
 |---|---|
 | Header and fulfilment bar | `HL_FULFIL_V` where `demand_id = :P12_DEMAND_ID` |
 | Ranked farmer cards | `HL_MATCH_V` where `demand_id = :P12_DEMAND_ID and ui_status <> 'DECLINED' order by rank_no` |
-| "Not matched" card | `HL_MATCH_V` where `ui_status = 'DECLINED'` (farmers who said no) |
+| "Not matched" card | `HL_NEAR_MISS_V` where `demand_id = :P12_DEMAND_ID`: farms that grow the crop but were ruled out, with the same four reason columns (a failing criterion has state `no`). Farmers who said no are in `HL_MATCH_V` with `ui_status = 'DECLINED'`. |
 | Agreement recorded | `HL_MATCH_V.AGREEMENT_HASH` (16 hex digits) once confirmed |
 
 `HL_MATCH_V` columns for MatchCard: `rank_no`, `ui_status`, `farmer_name`, `farmer_location`, `farmer_phone` (masked until confirmed), `distance_km`, `harvest_from`, `harvest_to`, `available_kg`, `allocated_kg`, `grade`, and four reasons, each a sentence plus a state:
@@ -137,6 +137,22 @@ Read `HL_GRADE_ROUTING_V`: unallocated produce per harvest with the recommended 
 | `provenance` | ProvenanceTag |
 | `method` | "How this is calculated" note |
 
+### Demo dataset and reset — Ready
+
+The database ships with the canvas story (fictional people, dates relative to today):
+
+| Order (Kijani Fresh Grocers, Westlands) | State after a reset |
+|---|---|
+| 2 t Grade A Roma tomatoes, KES 75/kg, in 14 days (`hl_demo.featured_demand_id`) | 1,200 kg confirmed (Wanjiru Muthoni, Peter Kariuki), 700 kg pending (Grace Wambui, Esther Wangui), 100 kg open; Joseph Mugo not matched (harvest starts after delivery) |
+| 1.2 t Grade A onions in 19 days | Filled and confirmed |
+| 400 kg Grade A green peppers in 9 days | Filled and confirmed |
+| 800 kg Grade B carrots in 2 days | Confirmed, route `DISPATCHED` (in transit) |
+| 600 kg Grade A Roma tomatoes, 2 days ago | Delivered, `CLOSED` |
+
+The four tomato farms also hold 640 kg of Grade B and 310 kg of Grade C, which appear in grade routing with suggested outlets.
+
+Before a rehearsal or the pitch: `begin hl_demo.reset; end;` (commits). A "Reset demo data" button on an operations page can call the same. The agreement ledger is never cleared, so earlier rehearsal confirmations remain in it.
+
 ### Agreement ledger — Ready
 
 `HL_AGREEMENTS_V`: `chain_seq`, `recorded_at`, `event` (`ACCEPTED`, `REJECTED`, `DELIVERED`), `farmer_name`, `buyer_name`, `crop_name`, `grade`, `quantity_kg`, `price_per_kg`, `value_kes`, `recorded_by`, `row_hash`, `row_hash_short`. Read only; rows cannot be changed.
@@ -161,6 +177,7 @@ Read `HL_GRADE_ROUTING_V`: unallocated produce per harvest with the recommended 
 | -20214 | `register` | Grade must be A, B or C |
 | -20215 | `update_estimate` | Harvest already promised to a buyer |
 | -20216 | `update_estimate` | Harvest does not exist |
+| -20301 | `hl_demo.seed` | Demo tables are not empty; use `hl_demo.reset` |
 
 In APEX, map these to inline errors with an Error Handling Function, or let the default handler show the message.
 
@@ -169,7 +186,6 @@ In APEX, map these to inline errors with an Error Handling Function, or let the 
 | PR | Adds | Unblocks |
 |---|---|---|
 | Roles and demo users | Buyer, farmer and operations logins linked to `buyer_id` / `farmer_id`; `G_PARTY_ID`; authorization helpers | Per-role navigation, "my demands", "my harvests" |
-| Demo dataset and reset | Kirinyaga story from the canvas (Kijani Fresh Grocers, 2 t Roma tomatoes); `hl_demo.reset` | Rehearsals that start clean; numbers that match the slides |
 | Grade allocation | Lots, outlets, allocations, `HL_ALLOC_PKG.allocate` with the sum ≤ lot guard | Grade routing screen edits |
 | Route stops | `HL_ROUTE_STOP` with order, times and per-leg km; separate-trip lines for the map | Logistics screen table and map |
 | Demand extras | Receiving time window, draft demands | Post-a-demand form fields |
