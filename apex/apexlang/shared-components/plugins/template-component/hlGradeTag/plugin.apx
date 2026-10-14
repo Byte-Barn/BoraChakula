@@ -1,0 +1,20 @@
+plugin hlGradeTag (
+    name: HL Grade Tag
+    staticId: COM.HARVESTLINK.GRADETAG
+    templateComponent {
+        availableAs: [
+            partial
+        ]
+        partial:
+            ```html
+            <span class="hl-grade hl-grade-{case GRADE/}{when A/}a{when B/}b{otherwise/}c{endcase/}" title="Grade #GRADE!ATTR#"><b aria-hidden="true">#GRADE#</b>{if COMPACT/}<span class="hl-sr">Grade #GRADE#</span>{else/}<span>{case GRADE/}{when A/}Grade A · Premium{when B/}Grade B · Market{when C/}Grade C · Processing{otherwise/}Grade #GRADE#{endcase/}</span>{endif/}</span>
+            ```
+        translateTemplates: false
+    }
+    component {
+        standardAttributes: regionTemplateAttr
+    }
+    information {
+        helpText: Produce grade letter with its outlet class (HarvestLink design system GradeTag).
+    }
+)

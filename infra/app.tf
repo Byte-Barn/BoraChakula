@@ -20,6 +20,7 @@ locals {
     ],
     [for f in sort(fileset(local.repo_root, "apex/theme/**")) : "${local.repo_root}/${f}"],
     [for f in sort(fileset(local.repo_root, "apex/pages/**")) : "${local.repo_root}/${f}"],
+    [for f in sort(fileset(local.repo_root, "apex/components/**")) : "${local.repo_root}/${f}"],
   )
 }
 

@@ -1,0 +1,115 @@
+/*
+ * HarvestLink design system: tokens (CSS variables only)
+ * Copied from the HarvestLink design canvas (project/ds/harvestlink) so APEX pages
+ * use the same classes as the canvas. Update from the canvas, not by hand.
+ */
+:root, [data-theme="light"] {
+  --surface: #f7f3ea; /* Page background (warm ivory). Default ground for every page. */
+  --surface-raised: #fffdf8; /* Panels, tables, form cards and menus that sit on surface. */
+  --surface-sunken: #eee8da; /* Wells: table header rows, map canvas ground, read-only fields, code. */
+  --line: #ddd5c3; /* Hairline dividers and panel outlines — decorative only, never a control's sole boundary. */
+  --line-strong: #857c69; /* Input, checkbox and select borders; the boundary of anything you can operate (≥3:1 on surface and surface-raised). */
+  --ink: #1d231f; /* Primary text, on surface, surface-raised, surface-sunken and every -soft tint. */
+  --ink-muted: #565c55; /* Secondary text, helper text, table metadata, units — on surface, surface-raised and surface-sunken. */
+  --ink-inverse: #f7f3ea; /* Text on forest-deep and ink fills (hero bands, operations sidebar in light theme). */
+  --forest: #1d4d34; /* Primary brand green: primary buttons, active nav, links, Grade A, the matched segment. As text: on surface, surface-raised and forest-soft. */
+  --forest-deep: #11301f; /* Deepest brand field: landing hero band, operations sidebar, footer. Text on it is ink-inverse (light) or ink (dark). */
+  --forest-soft: #dfeadf; /* Tinted ground behind forest text: selected table rows, active nav item, info panels. */
+  --on-forest: #ffffff; /* Text and icons on a forest fill (primary button label). */
+  --leaf: #35702a; /* Positive states: confirmed match, success, savings deltas. As text: on surface, surface-raised and leaf-soft. */
+  --leaf-soft: #e2efd5; /* Tinted ground behind leaf text: success alerts, Matched badges. */
+  --on-leaf: #ffffff; /* Text on a leaf fill. */
+  --maize: #7d5200; /* Pending and attention: awaiting confirmation, harvest window not yet open, demo-data label. As text: on surface, surface-raised and maize-soft. */
+  --maize-soft: #f5e6c4; /* Tinted ground behind maize text: Pending badges, warnings, the Demo data chip. */
+  --on-maize: #ffffff; /* Text on a maize fill. */
+  --clay: #a13a1f; /* Errors and unmatched supply/demand; destructive actions. As text: on surface, surface-raised and clay-soft. */
+  --clay-soft: #f6dfd5; /* Tinted ground behind clay text: field errors, Unmatched badges, error alerts. */
+  --on-clay: #ffffff; /* Text on a clay fill (destructive button). */
+  --soil: #6a4c35; /* Earth accent: Grade C and processor outlets, secondary illustration fields. As text: on surface, surface-raised and soil-soft. */
+  --soil-soft: #efe2d3; /* Tinted ground behind soil text. */
+  --sky: #245a7d; /* Logistics only: the consolidated route line, buyer destination pin, info notes about routing. As text: on surface, surface-raised and sky-soft. */
+  --sky-soft: #dcebf3; /* Tinted ground behind sky text; pickup-cluster halo on the map. */
+  --grade-a: #1d4d34; /* Grade A fill (premium buyers). Always paired with the letter A; text on it is on-grade-a. */
+  --on-grade-a: #ffffff; /* Letter on a grade-a fill. */
+  --grade-b: #637619; /* Grade B fill (local markets, secondary buyers). Mid-lightness between A and C; letter B on it is on-grade-b. */
+  --on-grade-b: #ffffff; /* Letter on a grade-b fill. */
+  --grade-c: #c9a77e; /* Grade C fill (processors, value-addition outlets). Lightest in light theme; letter C on it is on-grade-c. */
+  --on-grade-c: #2b1d10; /* Letter on a grade-c fill. */
+  --focus: #b06400; /* Keyboard focus ring: a 2px surface gap then a solid 2px focus ring, on every interactive element and every surface including forest-deep. */
+  --link: var(--forest); /* Inline links — an alias of forest. */
+  --shadow-float: 0 1px 2px rgba(29,35,31,0.08), 0 8px 24px rgba(29,35,31,0.10); /* Menus, popovers, map tooltips, dialogs — never on resting panels. */
+}
+
+[data-theme="dark"] {
+  --surface: #111814;
+  --surface-raised: #18221c;
+  --surface-sunken: #0c120e;
+  --line: #2c3830;
+  --line-strong: #6c7f72;
+  --ink: #ebe7dc;
+  --ink-muted: #a7ada4;
+  --ink-inverse: #111814;
+  --forest: #8dcfa6;
+  --forest-deep: #0a1d12;
+  --forest-soft: #19301f;
+  --on-forest: #0b1a11;
+  --leaf: #9fd77f;
+  --leaf-soft: #1a2e15;
+  --on-leaf: #0b1a11;
+  --maize: #ecb84f;
+  --maize-soft: #33270e;
+  --on-maize: #1a1305;
+  --clay: #f2927a;
+  --clay-soft: #3a1a12;
+  --on-clay: #1f0b06;
+  --soil: #d0ae8c;
+  --soil-soft: #2f2219;
+  --sky: #8ec6ea;
+  --sky-soft: #14283a;
+  --grade-a: #8dcfa6;
+  --on-grade-a: #0b1a11;
+  --grade-b: #cbd97a;
+  --on-grade-b: #1a1f05;
+  --grade-c: #7a5a3f;
+  --on-grade-c: #fff4e6;
+  --focus: #f2b84b;
+  --link: #93d6ac;
+  --shadow-float: 0 1px 2px rgba(0,0,0,0.5), 0 8px 24px rgba(0,0,0,0.45);
+}
+
+:root {
+  --space-1: 4px; /* Icon-to-label gap, badge padding. */
+  --space-2: 8px; /* Gap between related controls; tight stacks. */
+  --space-3: 12px; /* Table cell padding (vertical 12, horizontal 16); input padding. */
+  --space-4: 16px; /* Panel padding on mobile; mobile page gutter; form field gap. */
+  --space-5: 24px; /* Panel padding on desktop; gap between panels. */
+  --space-6: 32px; /* Gap between page sections; desktop gutter. */
+  --space-7: 48px; /* Landing section padding (mobile). */
+  --space-8: 64px; /* Landing section padding (desktop). */
+  --space-9: 96px; /* Landing hero vertical padding. */
+  --radius-xs: 2px; /* Badges, grade tags, chips — tags, not pills. */
+  --radius-sm: 4px; /* Buttons, inputs, selects, table containers. */
+  --radius-md: 6px; /* Panels, cards, map frame, dialogs. The largest corner in the system. */
+  --radius-round: 999px; /* Only true circles: map pins, avatar initials, stepper dots. Never on buttons or cards. */
+  --control-sm: 32px; /* Dense operations tables: inline buttons and filters. */
+  --control-md: 40px; /* Default button and input height on desktop. */
+  --control-lg: 48px; /* Farmer mobile flows and primary CTAs: minimum touch target. */
+  --measure: 68ch; /* Maximum width of reading text. */
+  --page-max: 1240px; /* Maximum content width of app and landing pages. */
+  --sidebar: 248px; /* Operations / buyer sidebar width on desktop. */
+  --font-display: Fraunces, Georgia, "Times New Roman", serif;
+  --font-sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --text-display-xl: 600 56px/60px var(--font-display); /* Landing hero headline only. 36px/40px below 640px. */
+  --text-display-lg: 600 40px/44px var(--font-display); /* Landing section heads; page heroes on matching results. */
+  --text-heading-1: 600 30px/36px var(--font-display); /* The one page title per page (h1). */
+  --text-figure-xl: 500 40px/44px var(--font-display); /* The headline number of a StatCard or fulfilment summary. Pair with a label and a unit. */
+  --text-heading-2: 600 21px/28px var(--font-sans); /* Panel and section titles (h2). */
+  --text-heading-3: 600 17px/24px var(--font-sans); /* Card titles, form section titles (h3). */
+  --text-body-lg: 400 18px/28px var(--font-sans); /* Landing lead paragraphs; farmer mobile body copy. */
+  --text-body: 400 15px/24px var(--font-sans); /* Default UI and reading text. */
+  --text-body-sm: 400 13px/20px var(--font-sans); /* Helper text, table metadata, metric method notes. */
+  --text-label: 600 13px/16px var(--font-sans); /* Form labels, button text at small size, table headers. */
+  --text-overline: 600 11px/16px var(--font-sans); /* Eyebrows above titles, legend headings. Set uppercase in CSS. */
+  --text-mono: 400 13px/20px var(--font-mono); /* IDs, coordinates, route codes, calculation formulas. */
+}
