@@ -186,7 +186,8 @@ def install(conn, reset):
             print("HarvestLink objects already installed; use --reset to reinstall")
             return
 
-    cur.execute("select count(*) from all_objects where object_name = 'APEX_ERROR' and object_type = 'PACKAGE'")
+    # Autonomous Database exposes APEX packages to schemas only as public synonyms
+    cur.execute("select count(*) from all_objects where object_name = 'APEX_ERROR'")
     has_apex = cur.fetchone()[0] > 0
     for name in SQL_FILES:
         if name == "12_apex_error.sql" and not has_apex:
