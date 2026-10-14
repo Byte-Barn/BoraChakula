@@ -202,7 +202,7 @@ page 32 (
         appearance {
             template: @/blank-with-attributes
             templateOptions: #DEFAULT#
-            cssClasses: hlc-right
+            cssClasses: hlc-right hlc-rows-4
         }
     )
     region ranked-farmers (
