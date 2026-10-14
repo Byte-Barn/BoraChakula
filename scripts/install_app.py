@@ -185,6 +185,8 @@ def apply_frontend_pages():
     # pages, which would block the public landing page. Every other page carries
     # the check itself (verified here), so the app-wide one is dropped.
     for page in (APEXLANG_DIR / "pages").glob("*.apx"):
+        if page.name.startswith("p00000-"):
+            continue  # global page: shared regions only, shown on pages that carry their own check
         source = page.read_text(encoding="utf-8")
         if "authentication: public" not in source and "authorizationScheme:" not in source:
             sys.exit(f"{page.name} has no authorization scheme; cannot drop the app-wide one")

@@ -4,8 +4,9 @@ page 42 (
     title: Sustainability impact
     pageGroup: @dashboard
     appearance {
-        pageTemplate: @/standard
+        pageTemplate: @/blank
         templateOptions: #DEFAULT#
+        cssClasses: hlc-app
     }
     navigation {
         cursorFocus: doNotFocusCursor
@@ -19,27 +20,43 @@ page 42 (
         enableDuplicatePageSubmissions: false
     }
     comments {
-        comments: Canvas screen 8. One card per HL_IMPACT_METRICS_V row, with its provenance (live, simulated or demo) and how it is calculated.
+        comments: Canvas screen 8. StatCard Template Components over HL_IMPACT_METRICS_V, each with its provenance and how it is calculated.
     }
 
-    region market-access (
-        name: Market access
-        type: themeTemplateComponent/contentRow
+    region hero (
+        name: Impact hero
+        type: dynamicContent
         source {
-            location: localDatabase
-            type: sqlQuery
-            sqlQuery:
-                ```sql
-                select m.METRIC_KEY as METRIC_KEY
-                     , m.SORT_ORDER as SORT_ORDER
-                     , m.LABEL as OVERLINE
-                     , to_char(m.VALUE, 'FM999G999G999G990') || ' ' || m.UNIT as TITLE
-                     , '<span class="hl-prov hl-prov--' || m.PROVENANCE || '">' || initcap(m.PROVENANCE) || '</span>'
-                       || '<p class="hl-method"><b>How this is calculated.</b> '
-                       || apex_escape.html(m.METHOD) || '</p>' as BODY_HTML
-                from HL_IMPACT_METRICS_V m
-                where m.METRIC_GROUP = 'MARKET_ACCESS'
-                order by m.SORT_ORDER
+            plsqlFunctionBody:
+                ```plsql
+                declare
+                  l_d   number := hl_demo.featured_demand_id;
+                  l_f   hl_fulfil_v%rowtype;
+                  l_km  number;
+                  l_low number;
+                  function fig (p_value varchar2, p_label varchar2) return varchar2 is
+                  begin
+                    return '<div><p class="hlc-lime" style="margin:0;font:800 30px/34px var(--font-display)">' || apex_escape.html(p_value)
+                        || '</p><p style="margin:0;font-size:13px;color:rgba(255,255,255,.8)">' || apex_escape.html(p_label) || '</p></div>';
+                  end;
+                begin
+                  select * into l_f from hl_fulfil_v where demand_id = l_d;
+                  select nvl(max(km_saved), 0) into l_km from hl_route_line_v where demand_id = l_d;
+                  select nvl(sum(kg), 0) into l_low from hl_grade_allocation_v where crop_id = l_f.crop_id and grade in ('B', 'C');
+                  return apex_plugin_util.replace_substitutions(p_escape => false, p_value =>
+                       '<section class="hlc-root hlc-on-dark" style="position:relative;overflow:hidden;border-radius:24px;background:var(--forest-deep);color:#fff;min-height:260px">'
+                    || '<img src="#APP_FILES#images/photo-harvest-lettuce.jpg" alt="Farmers harvesting lettuce together" class="hlc-photo" style="position:absolute;inset:0;object-position:60% 40%">'
+                    || '<div style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(3,36,27,.95) 0%,rgba(3,36,27,.8) 50%,rgba(3,36,27,.2) 100%)"></div>'
+                    || '<div style="position:relative;padding:40px;display:flex;flex-direction:column;gap:14px;max-width:620px">'
+                    || '<p class="hlc-eyebrow">' || apex_escape.html('Demand HL-D-' || lpad(l_d, 4, '0') || ' · delivery ' || to_char(l_f.need_by_date, 'Dy DD Mon')) || '</p>'
+                    || '<h1 style="margin:0;font:800 38px/44px var(--font-display);letter-spacing:-0.02em;color:#fff">Sustainability impact</h1>'
+                    || '<p style="margin:0;font-size:16px;line-height:25px;color:rgba(255,255,255,.88)">What one demand changes for the farms that fill it. Each figure says where it comes from and how it is calculated.</p>'
+                    || '<div style="display:flex;flex-wrap:wrap;gap:24px;margin-top:6px">'
+                    || fig(to_char(l_f.matched_kg + l_f.pending_kg, 'FM999G990') || ' kg', 'sourced before harvest')
+                    || fig(to_char(round(l_km), 'FM999G990') || ' km', 'fewer truck km, simulated')
+                    || fig(to_char(l_low, 'FM999G990') || ' kg', 'lower grades with an outlet')
+                    || '</div></div></section>');
+                end;
                 ```
         }
         layout {
@@ -47,95 +64,18 @@ page 42 (
             slot: body
         }
         appearance {
-            template: @/standard
-            templateOptions: [
-                #DEFAULT#
-                t-Region--scrollBody
-            ]
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-full
         }
-        accessibility {
-            landmarkType: region
-        }
-        componentAppearance {
-            display: report
-        }
-        settings {
-            overline: &OVERLINE.
-            title: &TITLE.
-            description: &BODY_HTML!RAW.
-        }
-
-        column BODY_HTML (
-            layout {
-                sequence: 50
-            }
-            source {
-                databaseColumn: BODY_HTML
-                dataType: varchar2
-            }
-        )
-
-        column METRIC_KEY (
-            layout {
-                sequence: 10
-            }
-            source {
-                databaseColumn: METRIC_KEY
-                dataType: varchar2
-                primaryKey: true
-            }
-        )
-
-        column OVERLINE (
-            layout {
-                sequence: 30
-            }
-            source {
-                databaseColumn: OVERLINE
-                dataType: varchar2
-            }
-        )
-
-        column SORT_ORDER (
-            layout {
-                sequence: 20
-            }
-            source {
-                databaseColumn: SORT_ORDER
-                dataType: number
-            }
-        )
-
-        column TITLE (
-            layout {
-                sequence: 40
-            }
-            source {
-                databaseColumn: TITLE
-                dataType: varchar2
-            }
-        )
-
     )
-
-    region waste-emissions (
-        name: Waste and emissions
-        type: themeTemplateComponent/contentRow
+    region legend (
+        name: Provenance legend
+        type: staticContent
         source {
-            location: localDatabase
-            type: sqlQuery
-            sqlQuery:
-                ```sql
-                select m.METRIC_KEY as METRIC_KEY
-                     , m.SORT_ORDER as SORT_ORDER
-                     , m.LABEL as OVERLINE
-                     , to_char(m.VALUE, 'FM999G999G999G990') || ' ' || m.UNIT as TITLE
-                     , '<span class="hl-prov hl-prov--' || m.PROVENANCE || '">' || initcap(m.PROVENANCE) || '</span>'
-                       || '<p class="hl-method"><b>How this is calculated.</b> '
-                       || apex_escape.html(m.METHOD) || '</p>' as BODY_HTML
-                from HL_IMPACT_METRICS_V m
-                where m.METRIC_GROUP = 'WASTE_EMISSIONS'
-                order by m.SORT_ORDER
+            htmlCode:
+                ```html
+                <div class="hlc-root" style="display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;font-size:13px;color:var(--ink-muted)"><span style="display:inline-flex;gap:8px;align-items:center"><span class="hl-prov hl-prov-live">Live data</span> computed from database records</span><span style="display:inline-flex;gap:8px;align-items:center"><span class="hl-prov hl-prov-sourced">Sourced</span> records × a published factor</span><span style="display:inline-flex;gap:8px;align-items:center"><span class="hl-prov hl-prov-simulated">Simulated</span> prototype stand-in</span><span style="display:inline-flex;gap:8px;align-items:center"><span class="hl-prov hl-prov-demo">Demo data</span> illustrative factor</span><span style="display:inline-flex;gap:8px;align-items:center"><span class="hl-prov hl-prov-roadmap">Roadmap</span> not built yet</span></div>
                 ```
         }
         layout {
@@ -143,75 +83,258 @@ page 42 (
             slot: body
         }
         appearance {
-            template: @/standard
-            templateOptions: [
-                #DEFAULT#
-                t-Region--scrollBody
-            ]
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-full
         }
-        accessibility {
-            landmarkType: region
+        settings {
+            outputAs: html
+        }
+    )
+    region market-access-heading (
+        name: Market access heading
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <h2 class="hlc-section-title">Market access</h2>
+                ```
+        }
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-full hlc-root
+        }
+        settings {
+            outputAs: html
+        }
+    )
+    region market-access (
+        name: Market access
+        type: appTemplateComponent/hlStatCard
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select m.LABEL                              as LABEL
+                     , case when m.UNIT = 'KES' then 'KES ' || to_char(m.VALUE, 'FM999G999G990')
+                            else to_char(m.VALUE, 'FM999G999G990') end      as VALUE_LABEL
+                     , case when m.UNIT = 'KES' then null else m.UNIT end   as UNIT
+                     , m.PROVENANCE                         as PROVENANCE
+                     , m.METHOD                             as METHOD
+                  from HL_IMPACT_METRICS_V m
+                 where m.METRIC_GROUP = 'MARKET_ACCESS'
+                 order by m.SORT_ORDER
+                ```
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-full
         }
         componentAppearance {
             display: report
         }
         settings {
-            overline: &OVERLINE.
-            title: &TITLE.
-            description: &BODY_HTML!RAW.
+            label: &LABEL.
+            value: &VALUE_LABEL.
+            unit: &UNIT.
+            provenance: &PROVENANCE.
+            method: &METHOD.
         }
 
-        column BODY_HTML (
-            layout {
-                sequence: 50
-            }
-            source {
-                databaseColumn: BODY_HTML
-                dataType: varchar2
-            }
-        )
-
-        column METRIC_KEY (
+        column LABEL (
             layout {
                 sequence: 10
             }
             source {
-                databaseColumn: METRIC_KEY
-                dataType: varchar2
-                primaryKey: true
-            }
-        )
-
-        column OVERLINE (
-            layout {
-                sequence: 30
-            }
-            source {
-                databaseColumn: OVERLINE
+                databaseColumn: LABEL
                 dataType: varchar2
             }
         )
 
-        column SORT_ORDER (
+        column VALUE_LABEL (
             layout {
                 sequence: 20
             }
             source {
-                databaseColumn: SORT_ORDER
-                dataType: number
+                databaseColumn: VALUE_LABEL
+                dataType: varchar2
             }
         )
 
-        column TITLE (
+        column UNIT (
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: UNIT
+                dataType: varchar2
+            }
+        )
+
+        column PROVENANCE (
             layout {
                 sequence: 40
             }
             source {
-                databaseColumn: TITLE
+                databaseColumn: PROVENANCE
+                dataType: varchar2
+            }
+        )
+
+        column METHOD (
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: METHOD
                 dataType: varchar2
             }
         )
 
     )
+    region waste-heading (
+        name: Waste and emissions heading
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <h2 class="hlc-section-title">Waste and emissions</h2>
+                ```
+        }
+        layout {
+            sequence: 50
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-full hlc-root
+        }
+        settings {
+            outputAs: html
+        }
+    )
+    region waste-emissions (
+        name: Waste and emissions
+        type: appTemplateComponent/hlStatCard
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select m.LABEL                              as LABEL
+                     , case when m.UNIT = 'KES' then 'KES ' || to_char(m.VALUE, 'FM999G999G990')
+                            else to_char(m.VALUE, 'FM999G999G990') end      as VALUE_LABEL
+                     , case when m.UNIT = 'KES' then null else m.UNIT end   as UNIT
+                     , m.PROVENANCE                         as PROVENANCE
+                     , m.METHOD                             as METHOD
+                  from HL_IMPACT_METRICS_V m
+                 where m.METRIC_GROUP = 'WASTE_EMISSIONS'
+                 order by m.SORT_ORDER
+                ```
+        }
+        layout {
+            sequence: 60
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-full
+        }
+        componentAppearance {
+            display: report
+        }
+        settings {
+            label: &LABEL.
+            value: &VALUE_LABEL.
+            unit: &UNIT.
+            provenance: &PROVENANCE.
+            method: &METHOD.
+        }
 
+        column LABEL (
+            layout {
+                sequence: 10
+            }
+            source {
+                databaseColumn: LABEL
+                dataType: varchar2
+            }
+        )
+
+        column VALUE_LABEL (
+            layout {
+                sequence: 20
+            }
+            source {
+                databaseColumn: VALUE_LABEL
+                dataType: varchar2
+            }
+        )
+
+        column UNIT (
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: UNIT
+                dataType: varchar2
+            }
+        )
+
+        column PROVENANCE (
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: PROVENANCE
+                dataType: varchar2
+            }
+        )
+
+        column METHOD (
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: METHOD
+                dataType: varchar2
+            }
+        )
+
+    )
+    region what-is-real (
+        name: What is real in this demo
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <section class="hlc-root hlc-card" style="padding:24px;display:flex;flex-direction:column;gap:16px"><div style="display:flex;flex-direction:column;gap:4px"><h2 style="margin:0;font:700 20px/28px var(--font-display)">What is real in this demo</h2><p style="margin:0;font-size:13px;line-height:20px;color:var(--ink-muted)">We label every estimate. Nothing on this page is a verified outcome yet.</p></div><div class="hl-table-wrap"><table class="hl-table"><caption class="hl-sr">What is real in this demo</caption><thead><tr><th scope="col">Feature</th><th scope="col">Status</th></tr></thead><tbody><tr><td>Demand and harvest forms, records in Autonomous Database</td><td><span class="hl-prov hl-prov-live">Live data</span></td></tr><tr><td>Explainable matching: quantity, grade, harvest window, distance (PL/SQL)</td><td><span class="hl-prov hl-prov-live">Live data</span></td></tr><tr><td>Grade allocation with the no-double-count rule</td><td><span class="hl-prov hl-prov-live">Live data</span></td></tr><tr><td>Agreements recorded in an Oracle blockchain table</td><td><span class="hl-prov hl-prov-live">Live data</span></td></tr><tr><td>Loss rate and emission factors from published sources</td><td><span class="hl-prov hl-prov-sourced">Sourced</span></td></tr><tr><td>Route geometry and distances</td><td><span class="hl-prov hl-prov-simulated">Simulated</span></td></tr><tr><td>Broker prices for peppers, beans and kale</td><td><span class="hl-prov hl-prov-demo">Demo data</span></td></tr><tr><td>M-Pesa payouts, live GPS, SMS and USSD for farmers</td><td><span class="hl-prov hl-prov-roadmap">Roadmap</span></td></tr></tbody></table></div></section>
+                ```
+        }
+        layout {
+            sequence: 70
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-full
+        }
+        settings {
+            outputAs: html
+        }
+    )
 )

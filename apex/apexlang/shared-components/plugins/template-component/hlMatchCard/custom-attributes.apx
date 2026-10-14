@@ -240,3 +240,30 @@ customAttribute ACTION_NOTE (
         sequence: 270
     }
 )
+
+customAttribute ACTION2_URL (
+    apexlangName: action2Url
+    attribute: 28
+    name: Second action URL
+    appearance {
+        sequence: 280
+    }
+)
+
+customAttribute ACTION2_LABEL (
+    apexlangName: action2Label
+    attribute: 29
+    name: Second action label
+    appearance {
+        sequence: 290
+    }
+)
+
+customAttribute FOOTNOTE (
+    apexlangName: footnote
+    attribute: 30
+    name: Footnote
+    appearance {
+        sequence: 300
+    }
+)
