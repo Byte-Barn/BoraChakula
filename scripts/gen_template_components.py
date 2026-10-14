@@ -77,14 +77,17 @@ C["hlMatchCard"] = dict(name="HL Match Card", help="One farmer's supply against 
            '<div class="hl-match-qty"><strong>#QTY#</strong><span>#QTY_LABEL#</span></div>'
            '<div class="hl-match-tags">' + grade_tag("GRADE") + '{if ?STATUS/}<span class="hl-badge hl-badge-#STATUS!ATTR#">' + status_badge("STATUS", "{if ?STATUS_TEXT/}#STATUS_TEXT#{else/}" + STATUS_TEXT % ("STATUS","STATUS") + "{endif/}") + '</span>{endif/}</div>'
            '<details{if OPEN/} open{endif/}><summary>#REASONS_TITLE#</summary><ul class="hl-reasons">' + "".join(reason(i) for i in range(1,5)) + '</ul></details>'
-           '{if ?ACTION_URL/}<div class="hlc-match-action"><a class="hl-btn hl-btn-secondary hl-btn-sm" href="#ACTION_URL!ATTR#">' + icon("check") + '#ACTION_LABEL#</a>{if ?ACTION_NOTE/}<span>#ACTION_NOTE#</span>{endif/}</div>{endif/}'
+           '{if ?ACTION_URL/}<div class="hlc-match-action"><a class="hl-btn hl-btn-secondary hl-btn-sm" href="#ACTION_URL!ATTR#">' + icon("check") + '#ACTION_LABEL#</a>'
+           '{if ?ACTION2_URL/}<a class="hl-btn hl-btn-ghost hl-btn-sm" href="#ACTION2_URL!ATTR#">#ACTION2_LABEL#</a>{endif/}{if ?ACTION_NOTE/}<span>#ACTION_NOTE#</span>{endif/}</div>{endif/}'
+           '{if ?FOOTNOTE/}<p class="hlc-match-foot">#FOOTNOTE#</p>{endif/}'
            '</article>'),
   report_body='<div class="hlc-match-list #APEX$COMPONENT_CSS_CLASSES#">#APEX$ROWS#</div>', report_row='<div #APEX$ROW_IDENTIFICATION#>#APEX$PARTIAL#</div>',
   attrs=[("RANK","rank","Rank"),("STATUS","status","Status"),("STATUS_TEXT","statusText","Status text"),("FARMER","farmer","Farmer"),("LOCATION","location","Location"),
          ("DISTANCE","distance","Distance text"),("HARVEST","harvest","Harvest window"),("QTY","qty","Quantity"),("QTY_LABEL","qtyLabel","Quantity label"),("GRADE","grade","Grade"),
          ("OPEN","open","Reasons open (Y/N)"),("REASONS_TITLE","reasonsTitle","Reasons title")] +
         [(f"REASON{i}_{p}", f"reason{i}{p.title()}", f"Reason {i} {p.lower()}") for i in range(1,5) for p in ("LABEL","DETAIL","STATE")] +
-        [("ACTION_URL","actionUrl","Action URL"),("ACTION_LABEL","actionLabel","Action label"),("ACTION_NOTE","actionNote","Action note")])
+        [("ACTION_URL","actionUrl","Action URL"),("ACTION_LABEL","actionLabel","Action label"),("ACTION_NOTE","actionNote","Action note"),
+         ("ACTION2_URL","action2Url","Second action URL"),("ACTION2_LABEL","action2Label","Second action label"),("FOOTNOTE","footnote","Footnote")])
 C["hlPageHeader"] = dict(name="HL Page Header", help="Top of an app page: back link, eyebrow, the page's h1 and a description (HarvestLink design system PageHeader).",
   partial=('<header class="hl-ph">{if ?BACK_URL/}<a class="hl-ph-back hl-link" href="#BACK_URL!ATTR#" style="text-decoration:none">' + icon("arrowLeft",14) + '#BACK_LABEL#</a>{endif/}'
            '{if ?EYEBROW/}<span class="hl-overline">#EYEBROW#</span>{endif/}<div class="hl-ph-row"><div class="hl-stack" style="gap:4px"><h1>#TITLE#</h1>{if ?DESCRIPTION/}<p>#DESCRIPTION#</p>{endif/}</div></div></header>'),
