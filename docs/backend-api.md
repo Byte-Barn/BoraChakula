@@ -6,7 +6,7 @@ Tables behind them may change; the names, parameters and columns here will not
 change without a note in this file.
 
 - Database: Oracle Autonomous AI Database 26ai, schema `HARVESTLINK` (APEX parsing schema).
-- Source: `db/02_match_pkg.sql` (matching), `db/06_agreements.sql` (ledger), `db/07_api.sql` (APIs and contract views), `db/08_demo.sql` (demo dataset and reset), `db/09_auth.sql` (roles and "my" views), `db/10_alloc.sql` (grade allocation), `db/11_routes.sql` (route stops and map views), `db/13_farmer_api.sql` (farmer consent, data export and account deletion).
+- Source: `db/02_match_pkg.sql` (matching), `db/06_agreements.sql` (ledger), `db/07_api.sql` (APIs and contract views), `db/08_demo.sql` (demo dataset and reset), `db/09_auth.sql` (roles and "my" views), `db/10_alloc.sql` (grade allocation), `db/11_routes.sql` (route stops and map views), `db/13_farmer_api.sql` (farmer consent, data export and account deletion), `db/14_ai.sql` (Select AI match sentences).
 - Status of each item: **Ready** (in this PR) or **Planned** (a later backend PR, listed at the end).
 
 ## Conventions
@@ -156,6 +156,25 @@ Buttons:
 | Farmer declined | `hl_match_pkg.decline(p_match_id => :MATCH_ID)` — skips that farm for this demand and re-matches the gap |
 | Run matching again | `hl_match_pkg.run(p_demand_id => :P12_DEMAND_ID)` |
 
+**One-sentence explanation (Select AI, optional).** Show it above or beside the four reasons, never instead of them:
+
+```sql
+select m.*,
+       hl_ai.explain_match(m.match_id, 'en') as why_sentence,   -- 'sw' for Kiswahili (farmer pages)
+       hl_ai.explained_by(m.match_id, 'en')  as why_source      -- 'AI' or 'RULES'
+  from hl_match_v m
+ where m.demand_id = :P12_DEMAND_ID and m.ui_status <> 'DECLINED'
+ order by m.rank_no
+```
+
+- With AI switched off (the default), not set up, or failing, `why_sentence` is the four reasons joined into one
+  sentence and `why_source` is `RULES`, so the page works the same either way. Show a small "AI" tag only when
+  `why_source = 'AI'`, or hide the sentence when it is `RULES` to avoid repeating the reasons.
+- Sentences are stored per match and language and reused until the match's reasons change, so the provider is
+  called once per card, not on every page view. After a failed call the session uses the rules for 5 minutes.
+- The prompt holds only the reasons, crop, grade and status: never names or phone numbers.
+- Switch on or off: `scripts/enable_select_ai.py` (see `db/README.md`), or `hl_ai.set_enabled(true | false)`.
+
 ### 6 · Grade routing — Ready
 
 | Needs | Source |
@@ -295,6 +314,8 @@ In the demo, `hl_demo.reset` brings deleted demo farmers back and re-maps `FARME
 | -20603 | `hl_farmer_api` | You can only see or delete your own farmer account |
 | -20604 | Saving consent on `HL_FARMERS` | No consent notice has been published |
 | -20605 | `purge_ledger` | Only operations can purge the agreement ledger |
+| -20611 | `hl_ai` | Match does not exist |
+| -20612 | `hl_ai` | Language must be en (English) or sw (Kiswahili) |
 
 The app's error handling function, `hl_apex_error.handle` (`db/12_apex_error.sql`), shows these messages without
 the `ORA-20xxx:` prefix or stack, in the page notification. It is set on every build by `scripts/install_app.py`,

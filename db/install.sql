@@ -15,6 +15,7 @@ set define off
 @10_alloc.sql
 @11_routes.sql
 @13_farmer_api.sql
+@14_ai.sql
 -- APEX environments only (needs APEX_ERROR): @12_apex_error.sql
 -- The seed's ALTER TABLE statements leave dependent views needing recompilation
 exec dbms_utility.compile_schema(schema => user, compile_all => false)
@@ -22,3 +23,4 @@ show errors package body hl_match_pkg
 show errors package body hl_demand_api
 show errors package body hl_harvest_api
 show errors package body hl_farmer_api
+show errors package body hl_ai
