@@ -1,0 +1,91 @@
+    entry my-farm (
+        label: My farm
+        icon {
+            imageIconCssClasses: fa-leaf
+        }
+        layout {
+            sequence: 1
+        }
+        link {
+            target: {
+                page: 20
+            }
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: hl_auth.is_farmer or hl_auth.is_ops
+        }
+    )
+
+    entry my-demands (
+        label: My demands
+        icon {
+            imageIconCssClasses: fa-shopping-basket
+        }
+        layout {
+            sequence: 2
+        }
+        link {
+            target: {
+                page: 30
+            }
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: hl_auth.is_buyer or hl_auth.is_ops
+        }
+    )
+
+    entry post-a-demand (
+        label: Post a demand
+        icon {
+            imageIconCssClasses: fa-plus
+        }
+        layout {
+            sequence: 3
+        }
+        link {
+            target: {
+                page: 31
+            }
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: hl_auth.is_buyer or hl_auth.is_ops
+        }
+    )
+
+    entry matches (
+        label: Matches
+        icon {
+            imageIconCssClasses: fa-users
+        }
+        layout {
+            sequence: 4
+        }
+        link {
+            target: {
+                page: 32
+            }
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: hl_auth.is_buyer or hl_auth.is_ops
+        }
+    )
+
+    entry impact (
+        label: Impact
+        icon {
+            imageIconCssClasses: fa-globe
+        }
+        layout {
+            sequence: 5
+        }
+        link {
+            target: {
+                page: 42
+            }
+        }
+    )
+
