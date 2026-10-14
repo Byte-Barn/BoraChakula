@@ -538,7 +538,9 @@ select 4, 'MARKET_ACCESS', 'AGREEMENTS_RECORDED', 'Agreements recorded', a.confi
 union all
 select 5, 'MARKET_ACCESS', 'INCOME_UPLIFT', 'Estimated farmer income uplift', i.farmer_income_uplift_kes, 'KES', 'demo',
        'Allocated kg × (buyer price − typical broker price). Grade C counts against KES 0, '
-       || 'because it usually goes unsold. Broker prices are placeholders until market interviews.'
+       || 'because it usually goes unsold. Broker prices are FAO farm-gate producer prices for Kenya '
+       || '(FAOSTAT, January 2024) for tomatoes, onions, carrots, cabbage and avocado; team estimates '
+       || 'for peppers, French beans and kale until the market interviews.'
   from i
 union all
 select 6, 'WASTE_EMISSIONS', 'LOSS_AVOIDED', 'Estimated post-harvest loss avoided', i.loss_avoided_kg, 'kg', 'sourced',

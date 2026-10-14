@@ -1,9 +1,10 @@
 -- =============================================================================
 -- HarvestLink reference data: matching settings and crops.
 -- The loss rate and emission factors are published figures; each setting's
--- description names its source. Crop prices are still placeholders: replace
--- them with figures from the market interviews (form: Appendix A of
--- docs/HarvestLink_Hackathon_Plan.pdf) and note the source beside each crop.
+-- description names its source. Crop farm-gate prices are FAOSTAT producer
+-- prices where FAO publishes one, otherwise team estimates; replace them with
+-- figures from the market interviews (form: Appendix A of
+-- docs/HarvestLink_Hackathon_Plan.pdf) when available.
 -- Sources:
 --   [IFPRI 2022] Gatere, Hoffmann, Murphy & Scollard, "Post-harvest Losses and
 --     Food Safety in Tomatoes Produced in Laikipia County", IFPRI, 2022:
@@ -15,6 +16,9 @@
 --     "Freighting goods", diesel, kg CO2e per km. UK fleet averages, used as a
 --     proxy until Kenyan factors are available.
 --     https://www.gov.uk/government/publications/greenhouse-gas-reporting-conversion-factors-2024
+--   [FAOSTAT 2024] FAO, FAOSTAT Producer Prices, Kenya, as republished in KES/kg
+--     (price as of January 2024) by Selina Wamucii market insights, e.g.
+--     https://www.selinawamucii.com/insights/prices/kenya/tomatoes/
 -- The demo farmers, buyers, harvests and demands are loaded by HL_DEMO
 -- (db/08_demo.sql), which can also reset them before a rehearsal.
 -- =============================================================================
@@ -39,17 +43,23 @@ insert into hl_settings values ('STOP_MINUTES',         30,   'Loading time at e
 
 -- ---------------------------------------------------------------------------
 -- Crops (KES per kg at farm gate from brokers, and at wholesale market).
--- Prices are placeholders until the market interviews; shelf lives are
--- team estimates.
+-- Broker price: the farm-gate producer price [FAOSTAT 2024] for tomatoes,
+--   onions, carrots, cabbage and avocado (the republisher marks avocado as
+--   estimated); peppers, French beans and kale have none, so those are team
+--   estimates.
+-- Market price: team estimate, farm-gate + 50% for broker margin and
+--   transport (rounded to KES 5); the original estimates for crops without a
+--   FAOSTAT price. Not used in any metric.
+-- Shelf lives are team estimates.
 -- ---------------------------------------------------------------------------
-insert into hl_crops (crop_id, crop_name, shelf_life_days, typical_broker_price_kg, typical_market_price_kg) values (1, 'Roma tomatoes',      10, 35, 60);
-insert into hl_crops (crop_id, crop_name, shelf_life_days, typical_broker_price_kg, typical_market_price_kg) values (2, 'Onions',             30, 30, 55);
-insert into hl_crops (crop_id, crop_name, shelf_life_days, typical_broker_price_kg, typical_market_price_kg) values (3, 'Green peppers',      10, 45, 80);
-insert into hl_crops (crop_id, crop_name, shelf_life_days, typical_broker_price_kg, typical_market_price_kg) values (4, 'Carrots',            21, 25, 45);
-insert into hl_crops (crop_id, crop_name, shelf_life_days, typical_broker_price_kg, typical_market_price_kg) values (5, 'Cabbage',            21, 10, 25);
-insert into hl_crops (crop_id, crop_name, shelf_life_days, typical_broker_price_kg, typical_market_price_kg) values (6, 'Hass avocado',       14, 20, 45);
-insert into hl_crops (crop_id, crop_name, shelf_life_days, typical_broker_price_kg, typical_market_price_kg) values (7, 'French beans',        7, 50, 90);
-insert into hl_crops (crop_id, crop_name, shelf_life_days, typical_broker_price_kg, typical_market_price_kg) values (8, 'Kale (sukuma wiki)',  3, 15, 35);
+insert into hl_crops (crop_id, crop_name, shelf_life_days, typical_broker_price_kg, typical_market_price_kg) values (1, 'Roma tomatoes',      10, 42.17, 65);
+insert into hl_crops (crop_id, crop_name, shelf_life_days, typical_broker_price_kg, typical_market_price_kg) values (2, 'Onions',             30, 58.01, 85);
+insert into hl_crops (crop_id, crop_name, shelf_life_days, typical_broker_price_kg, typical_market_price_kg) values (3, 'Green peppers',      10, 45,    80);
+insert into hl_crops (crop_id, crop_name, shelf_life_days, typical_broker_price_kg, typical_market_price_kg) values (4, 'Carrots',            21, 30.89, 45);
+insert into hl_crops (crop_id, crop_name, shelf_life_days, typical_broker_price_kg, typical_market_price_kg) values (5, 'Cabbage',            21, 14.88, 25);
+insert into hl_crops (crop_id, crop_name, shelf_life_days, typical_broker_price_kg, typical_market_price_kg) values (6, 'Hass avocado',       14, 19,    30);
+insert into hl_crops (crop_id, crop_name, shelf_life_days, typical_broker_price_kg, typical_market_price_kg) values (7, 'French beans',        7, 50,    90);
+insert into hl_crops (crop_id, crop_name, shelf_life_days, typical_broker_price_kg, typical_market_price_kg) values (8, 'Kale (sukuma wiki)',  3, 15,    35);
 
 -- Advance the identity past the explicit IDs used above
 alter table hl_crops modify crop_id generated by default on null as identity (start with limit value);
