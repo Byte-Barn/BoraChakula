@@ -6,7 +6,7 @@ app HARVESTLINK (
     }
     navigation {
         homeUrl: {
-            page: 1
+            page: 50
         }
         loginUrl: {
             page: LOGIN
