@@ -14,6 +14,10 @@
 
 create or replace package hl_match_pkg as
 
+  -- Automatic re-matching from the HL_*_AUTO_MATCH triggers. Bulk loaders
+  -- (HL_DEMO) switch it off for the session, then match once at the end.
+  g_auto_match boolean := true;
+
   function get_setting (p_key in varchar2) return number;
 
   -- Road distance estimate: great-circle distance x road winding factor

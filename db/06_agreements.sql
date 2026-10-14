@@ -82,18 +82,3 @@ select a.match_id,
        rawtohex(a.orabctab_hash$)           as row_hash,
        substr(rawtohex(a.orabctab_hash$), 1, 16) as row_hash_short
   from hl_agreements a;
-
--- Demo: the two highest-ranked farmers on the first demand have confirmed
-begin
-  for r in (select match_id
-              from hl_matches
-             where demand_id = (select min(demand_id) from hl_matches)
-               and status = 'PROPOSED'
-             order by score_total desc
-             fetch first 2 rows only)
-  loop
-    hl_match_pkg.accept_match(r.match_id);
-  end loop;
-  commit;
-end;
-/

@@ -1,6 +1,8 @@
 -- HarvestLink: remove all objects (use before a clean re-install).
 -- Triggers are dropped with their tables.
+drop package hl_demo;
 drop view hl_impact_metrics_v;
+drop view hl_near_miss_v;
 drop view hl_fulfil_v;
 drop view hl_match_v;
 drop package hl_harvest_api;
