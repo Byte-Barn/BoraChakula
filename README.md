@@ -70,7 +70,9 @@ cd infra && terraform init && terraform apply
 terraform output app_url
 ```
 
-Prerequisites, secrets and options are in [`infra/README.md`](infra/README.md).
+Prerequisites, secrets and options are in [`infra/README.md`](infra/README.md). After the first deploy, merges to
+`main` deploy automatically through GitHub Actions (backend tests, then schema and app), see
+[Continuous deployment](infra/README.md#continuous-deployment-github-actions).
 
 ## Working on the code
 
