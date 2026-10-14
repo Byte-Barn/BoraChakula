@@ -20,6 +20,9 @@ list navigation-bar (
     
     entry app-user (
         label: &APP_USER.
+        serverSideCondition {
+            type: userIsAuthenticated
+        }
         icon {
             imageIconCssClasses: fa-user
         }
