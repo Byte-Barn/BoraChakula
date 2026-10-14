@@ -1,0 +1,20 @@
+plugin hlStatusBadge (
+    name: HL Status Badge
+    staticId: COM.HARVESTLINK.STATUSBADGE
+    templateComponent {
+        availableAs: [
+            partial
+        ]
+        partial:
+            ```html
+            <span class="hl-badge hl-badge-#STATUS!ATTR#">{case STATUS/}{when matched/}<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 1.75a6.25 6.25 0 1 0 0 12.5A6.25 6.25 0 0 0 8 1.75zM5.25 8.25l2 2 3.5-4"></path></svg>{when confirmed/}<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 1.75a6.25 6.25 0 1 0 0 12.5A6.25 6.25 0 0 0 8 1.75zM5.25 8.25l2 2 3.5-4"></path></svg>{when delivered/}<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3.5 8.5l3 3 6-7"></path></svg>{when transit/}<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M1.75 4h7.5v6.5h-7.5zM9.25 6.5h3l2 2.25v1.75h-5M4.5 12.5a1.25 1.25 0 1 0 0-.01M11.5 12.5a1.25 1.25 0 1 0 0-.01"></path></svg>{when scheduled/}<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2.25 3.5h11.5v10.25H2.25zM2.25 6.5h11.5M5 2v3M11 2v3"></path></svg>{when pending/}<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 1.75a6.25 6.25 0 1 0 0 12.5A6.25 6.25 0 0 0 8 1.75zM8 4.5V8l2.5 1.5"></path></svg>{when awaiting/}<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 1.75a6.25 6.25 0 1 0 0 12.5A6.25 6.25 0 0 0 8 1.75zM8 4.5V8l2.5 1.5"></path></svg>{otherwise/}<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 1.75a6.25 6.25 0 1 0 0 12.5A6.25 6.25 0 0 0 8 1.75zM5.25 8h5.5"></path></svg>{endcase/}{if ?TEXT/}#TEXT#{else/}{case STATUS/}{when matched/}Matched{when confirmed/}Confirmed{when delivered/}Delivered{when transit/}In transit{when scheduled/}Pickup scheduled{when pending/}Pending{when awaiting/}Awaiting farmer{when unmatched/}Unmatched{when cancelled/}Cancelled{when draft/}Draft{otherwise/}#STATUS#{endcase/}{endif/}</span>
+            ```
+        translateTemplates: false
+    }
+    component {
+        standardAttributes: regionTemplateAttr
+    }
+    information {
+        helpText: A status word with its glyph, never colour alone (HarvestLink design system StatusBadge).
+    }
+)

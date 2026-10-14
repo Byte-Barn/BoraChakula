@@ -28,3 +28,68 @@ file "css/harvestlink.css" (
     mimeType: text/css
     charSet: utf-8
 )
+
+file "css/hl-tokens.css" (
+    mimeType: text/css
+    charSet: utf-8
+)
+
+file "css/hl-components.css" (
+    mimeType: text/css
+    charSet: utf-8
+)
+
+file "css/hl-canvas.css" (
+    mimeType: text/css
+    charSet: utf-8
+)
+
+file "images/crop-carrot.jpg" (
+    mimeType: image/jpeg
+    charSet: utf-8
+)
+
+file "images/crop-onion.jpg" (
+    mimeType: image/jpeg
+    charSet: utf-8
+)
+
+file "images/crop-pepper.jpg" (
+    mimeType: image/jpeg
+    charSet: utf-8
+)
+
+file "images/crop-tomato.jpg" (
+    mimeType: image/jpeg
+    charSet: utf-8
+)
+
+file "images/map-kirinyaga-nairobi.svg" (
+    mimeType: image/svg+xml
+    charSet: utf-8
+)
+
+file "images/photo-farmer-basket-field.jpg" (
+    mimeType: image/jpeg
+    charSet: utf-8
+)
+
+file "images/photo-farmer-crate.jpg" (
+    mimeType: image/jpeg
+    charSet: utf-8
+)
+
+file "images/photo-farmer-sunhat.jpg" (
+    mimeType: image/jpeg
+    charSet: utf-8
+)
+
+file "images/photo-harvest-lettuce.jpg" (
+    mimeType: image/jpeg
+    charSet: utf-8
+)
+
+file "images/photo-market-stall.jpg" (
+    mimeType: image/jpeg
+    charSet: utf-8
+)

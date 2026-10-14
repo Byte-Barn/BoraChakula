@@ -1,0 +1,20 @@
+plugin hlProvenanceTag (
+    name: HL Provenance Tag
+    staticId: COM.HARVESTLINK.PROVENANCETAG
+    templateComponent {
+        availableAs: [
+            partial
+        ]
+        partial:
+            ```html
+            <span class="hl-prov hl-prov-#KIND!ATTR#" title="#TITLE!ATTR#">{if ?TEXT/}#TEXT#{else/}{case KIND/}{when live/}Live data{when sourced/}Sourced{when simulated/}Simulated{when demo/}Demo data{when roadmap/}Roadmap{otherwise/}#KIND#{endcase/}{endif/}</span>
+            ```
+        translateTemplates: false
+    }
+    component {
+        standardAttributes: regionTemplateAttr
+    }
+    information {
+        helpText: Where a number comes from: live, sourced, simulated, demo or roadmap (HarvestLink design system ProvenanceTag).
+    }
+)

@@ -1,0 +1,29 @@
+plugin hlStatCard (
+    name: HL Stat Card
+    staticId: COM.HARVESTLINK.STATCARD
+    templateComponent {
+        availableAs: [
+            partial
+            report
+        ]
+        partial:
+            ```html
+            <section class="hl-stat" aria-label="#LABEL!ATTR#"><div class="hl-stat-top"><p class="hl-stat-label">#LABEL#</p>{if ?PROVENANCE/}<span class="hl-prov hl-prov-#PROVENANCE!ATTR#">{case PROVENANCE/}{when live/}Live data{when sourced/}Sourced{when simulated/}Simulated{when demo/}Demo data{when roadmap/}Roadmap{otherwise/}#PROVENANCE#{endcase/}</span>{endif/}</div><p class="hl-stat-value hl-num">#VALUE#{if ?UNIT/}<small>#UNIT#</small>{endif/}</p>{if ?DELTA/}<p class="hl-stat-delta">#DELTA#</p>{endif/}{if ?METHOD/}<details><summary>How this is calculated</summary><p class="hl-stat-method">#METHOD#</p></details>{endif/}</section>
+            ```
+        reportBody:
+            ```html
+            <div class="hl-stat-grid #APEX$COMPONENT_CSS_CLASSES#">#APEX$ROWS#</div>
+            ```
+        reportRow:
+            ```html
+            <div #APEX$ROW_IDENTIFICATION#>#APEX$PARTIAL#</div>
+            ```
+        translateTemplates: false
+    }
+    component {
+        standardAttributes: regionTemplateAttr
+    }
+    information {
+        helpText: One metric with unit, provenance and a How this is calculated note (HarvestLink design system StatCard).
+    }
+)
