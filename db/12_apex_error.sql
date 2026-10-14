@@ -1,6 +1,6 @@
 -- HarvestLink: APEX error handling function.
 --
--- The backend APIs raise ORA-20100..-20599 with messages written for end
+-- The backend APIs raise ORA-20100..-20699 with messages written for end
 -- users (docs/backend-api.md). APEX would show them with the ORA- code and a
 -- PL/SQL stack; this handler shows just the message, inline when the page
 -- process names the item it belongs to. Set as the application's Error
@@ -8,7 +8,7 @@
 
 create or replace package hl_apex_error as
 
-  -- HarvestLink business errors: ORA-20100 .. ORA-20599
+  -- HarvestLink business errors: ORA-20100 .. ORA-20699
   function is_business_error (p_ora_sqlcode in number) return boolean;
 
   -- The message without its "ORA-20xxx: " prefix and stack lines
@@ -23,7 +23,7 @@ create or replace package body hl_apex_error as
 
   function is_business_error (p_ora_sqlcode in number) return boolean is
   begin
-    return p_ora_sqlcode between -20599 and -20100;
+    return p_ora_sqlcode between -20699 and -20100;
   end is_business_error;
 
   function clean_message (p_message in varchar2) return varchar2 is
