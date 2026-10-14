@@ -191,6 +191,9 @@ Matching re-runs automatically whenever demands, harvests or farm locations chan
 **Select AI (Stretch):** the reasons are already plain sentences, so Select AI is optional. If added, use it to
 turn the four reasons into one sentence in English or Kiswahili, and for operations to ask questions such as
 "which demands are short this week?", always beside the rule-based reasons, never replacing them.
+Built for match sentences: `hl_ai.explain_match` (`db/14_ai.sql`) with the API key in a database credential,
+sentences stored until the reasons change, and the joined reasons as the answer whenever AI is off or fails.
+The operations Q&A is not built.
 
 ## 7 · Security and privacy
 
@@ -240,7 +243,7 @@ turn the four reasons into one sentence in English or Kiswahili, and for operati
 | Map of pickups, cluster and route | Simulated | APEX Map region; straight-line × 1.3 | Built (match planner map) |
 | Impact dashboard with methods | MVP + demo factors | `HL_IMPACT_METRICS_V` | Built |
 | Role-based pages and demo users | MVP | Authorization schemes, `G_PARTY_ID` | Planned |
-| Plain-language AI explanations | Stretch | Select AI | Not started |
+| Plain-language AI explanations | Stretch | Select AI, `HL_AI.EXPLAIN_MATCH` with rule-based fallback | Built (off until a provider key is set) |
 | SMS offers, USSD, M-Pesa payouts, live GPS | Roadmap | Africa's Talking, Daraja B2C, routing API | Roadmap |
 
 ## 10 · Risks on demo day
