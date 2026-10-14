@@ -6,7 +6,7 @@ Tables behind them may change; the names, parameters and columns here will not
 change without a note in this file.
 
 - Database: Oracle Autonomous AI Database 26ai, schema `HARVESTLINK` (APEX parsing schema).
-- Source: `db/02_match_pkg.sql` (matching), `db/06_agreements.sql` (ledger), `db/07_api.sql` (APIs and contract views), `db/08_demo.sql` (demo dataset and reset), `db/09_auth.sql` (roles and "my" views).
+- Source: `db/02_match_pkg.sql` (matching), `db/06_agreements.sql` (ledger), `db/07_api.sql` (APIs and contract views), `db/08_demo.sql` (demo dataset and reset), `db/09_auth.sql` (roles and "my" views), `db/10_alloc.sql` (grade allocation).
 - Status of each item: **Ready** (in this PR) or **Planned** (a later backend PR, listed at the end).
 
 ## Conventions
@@ -148,9 +148,23 @@ Buttons:
 | Farmer declined | `hl_match_pkg.decline(p_match_id => :MATCH_ID)` — skips that farm for this demand and re-matches the gap |
 | Run matching again | `hl_match_pkg.run(p_demand_id => :P12_DEMAND_ID)` |
 
-### 6 · Grade routing — Ready (read), Planned (allocation)
+### 6 · Grade routing — Ready
 
-Read `HL_GRADE_ROUTING_V`: unallocated produce per harvest with the recommended channel and `suggested_buyer`, `suggested_buyer_type`, `suggested_buyer_km`. Editable outlet allocations with a no-double-counting guard (`HL_ALLOC_PKG`) are Planned.
+| Needs | Source |
+|---|---|
+| Grade explainer cards and split bars (GradeAllocation) | `HL_GRADE_ALLOCATION_V` where `crop_id = :CROP_ID`: one row per grade and destination, with `destination_type` `MATCHED` (sold to a demand buyer), `ALLOCATED` (sent to an outlet) or `UNALLOCATED`, plus `destination`, `kg`, `grade_total_kg` and `share_pct`. Shares add up to 100% per grade |
+| Lots still to place, with a suggested outlet | `HL_GRADE_ROUTING_V`: `farmer_name`, `grade`, `available_kg`, `recommended_channel`, `suggested_buyer`, `suggested_buyer_type`, `suggested_buyer_km` |
+| Outlet allocations table | `HL_ALLOCATIONS_V`: `allocation_id`, `farmer_name`, `crop_name`, `grade`, `outlet_name`, `outlet_type`, `alloc_kg`, `created_by`, `created_at` |
+| Outlet picker for a lot | `select buyer_id, buyer_name from hl_buyers where instr(',' \|\| accepted_grades \|\| ',', ',' \|\| :GRADE \|\| ',') > 0` |
+
+| Button | Call |
+|---|---|
+| Allocate *n* kg to an outlet | `:ID := hl_alloc_pkg.allocate(p_harvest_id => :HARVEST_ID, p_buyer_id => :BUYER_ID, p_kg => :KG);` |
+| Remove an allocation | `hl_alloc_pkg.remove(p_allocation_id => :ALLOCATION_ID);` (freed kg are re-matched) |
+
+The guard: matched + allocated kg on a harvest can never exceed its expected kg. `allocate` locks the harvest
+row, so two operators allocating the same lot at once cannot double-count; the second waits, then gets `-20401`
+if too little is left. Allocated kg are no longer offered to matching.
 
 ### 7 · Logistics and pickup route — Ready (summary), Planned (stops table)
 
@@ -209,6 +223,12 @@ Before a rehearsal or the pitch: `begin hl_demo.reset; end;` (commits). A "Reset
 | -20215 | `update_estimate` | Harvest already promised to a buyer |
 | -20216 | `update_estimate` | Harvest does not exist |
 | -20301 | `hl_demo.seed` | Demo tables are not empty; use `hl_demo.reset` |
+| -20401 | `hl_alloc_pkg.allocate` | Only *n* kg of this lot is left to allocate |
+| -20402 | `hl_alloc_pkg.allocate` | This outlet does not take that grade |
+| -20403 | `hl_alloc_pkg.allocate` | Quantity must be more than 0 kg |
+| -20404 | `hl_alloc_pkg.allocate` | Harvest does not exist |
+| -20405 | `hl_alloc_pkg.allocate` | Outlet does not exist |
+| -20406 | `hl_alloc_pkg.remove` | Allocation does not exist |
 | -20501 | `hl_auth.register_user` | Role must be BUYER, FARMER or OPS |
 | -20502 | `hl_auth.register_user` | No buyer or farmer with that name |
 
@@ -218,6 +238,5 @@ In APEX, map these to inline errors with an Error Handling Function, or let the 
 
 | PR | Adds | Unblocks |
 |---|---|---|
-| Grade allocation | Lots, outlets, allocations, `HL_ALLOC_PKG.allocate` with the sum ≤ lot guard | Grade routing screen edits |
 | Route stops | `HL_ROUTE_STOP` with order, times and per-leg km; separate-trip lines for the map | Logistics screen table and map |
 | Demand extras | Receiving time window, draft demands | Post-a-demand form fields |

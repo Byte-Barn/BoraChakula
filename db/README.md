@@ -6,7 +6,7 @@ Oracle Autonomous Database / Oracle Database 23ai schema, matching engine and de
 
 | File | Contents |
 |---|---|
-| `01_schema.sql` | Tables: settings, crops, farmers, buyers, harvests, demands, matches, routes |
+| `01_schema.sql` | Tables: settings, crops, farmers, buyers, harvests, demands, matches, routes, allocations |
 | `02_match_pkg.sql` | `HL_MATCH_PKG`: scoring, aggregation, route planning, status updates |
 | `03_views.sql` | Views for APEX pages, maps and the impact dashboard |
 | `04_seed.sql` | Reference data: matching settings and crops |
@@ -15,6 +15,7 @@ Oracle Autonomous Database / Oracle Database 23ai schema, matching engine and de
 | `07_api.sql` | Frontend contract: `HL_DEMAND_API`, `HL_HARVEST_API` and the `HL_MATCH_V`, `HL_FULFIL_V`, `HL_IMPACT_METRICS_V` views (see `docs/backend-api.md`) |
 | `08_demo.sql` | `HL_DEMO`: the canvas demo story (Kijani Fresh Grocers, Kirinyaga farms), `seed`, `reset`, `featured_demand_id` |
 | `09_auth.sql` | `HL_APP_USERS` and `HL_AUTH`: roles (buyer, farmer, ops), the signed-in party, and `HL_MY_*` views |
+| `10_alloc.sql` | `HL_ALLOC_PKG` (allocate / remove with a no-double-counting guard) and `HL_ALLOCATIONS_V`, `HL_GRADE_ALLOCATION_V` |
 | `install.sql` / `uninstall.sql` | Install everything / drop everything |
 
 ## Install
