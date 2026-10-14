@@ -157,6 +157,8 @@ def main():
     p.add_argument("--wallet", required=True, help="Path to the ADB client wallet zip")
     p.add_argument("--app-id", type=int, default=100)
     p.add_argument("--check-only", action="store_true", help="Validate and generate, do not install")
+    p.add_argument("--alias", help="App alias, for a second copy beside app 100 (aliases are unique)")
+    p.add_argument("--name", help="App name, e.g. to label a preview copy")
     args = p.parse_args()
 
     oracledb.defaults.fetch_lobs = False
@@ -189,7 +191,9 @@ def main():
         f'connect {WORKSPACE}/"{env("HL_SCHEMA_PASSWORD")}"@{service_name(args.wallet)}',
         "whenever sqlerror exit failure",
         f"apex validate -input {APEXLANG_DIR} -workspace {WORKSPACE}",
-        f"apex import -input {APEXLANG_DIR} -workspace {WORKSPACE} -schema {WORKSPACE} -id {args.app_id}",
+        f"apex import -input {APEXLANG_DIR} -workspace {WORKSPACE} -schema {WORKSPACE} -id {args.app_id}"
+        + (f" -alias {args.alias}" if args.alias else "")
+        + (f' -name "{args.name}"' if args.name else ""),
         "exit",
     ])
     result = subprocess.run([str(SQLCL), "-S", "/nolog"], input=script, text=True,
