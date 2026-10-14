@@ -6,7 +6,7 @@ Oracle Autonomous Database / Oracle Database 23ai schema, matching engine and de
 
 | File | Contents |
 |---|---|
-| `01_schema.sql` | Tables: settings, crops, farmers, buyers, harvests, demands, matches, routes, route stops, allocations |
+| `01_schema.sql` | Tables: settings, crops, consent notices, farmers, buyers, harvests, demands, matches, routes, route stops, allocations |
 | `02_match_pkg.sql` | `HL_MATCH_PKG`: scoring, aggregation, route planning, status updates |
 | `03_views.sql` | Views for APEX pages, maps and the impact dashboard |
 | `04_seed.sql` | Reference data: matching settings and crops |
@@ -18,6 +18,7 @@ Oracle Autonomous Database / Oracle Database 23ai schema, matching engine and de
 | `10_alloc.sql` | `HL_ALLOC_PKG` (allocate / remove with a no-double-counting guard) and `HL_ALLOCATIONS_V`, `HL_GRADE_ALLOCATION_V` |
 | `11_routes.sql` | `HL_ROUTE_STOP_V` (pins, stop table, separate-trip lines) and `HL_ROUTE_LINE_V` (GeoJSON route line and totals) |
 | `12_apex_error.sql` | `HL_APEX_ERROR.HANDLE`: the APEX error handling function (APEX databases only; skipped elsewhere) |
+| `13_farmer_api.sql` | `HL_FARMER_API` (consent, data export, account deletion, ledger purge), `HL_ERASURES`, `HL_MY_DATA_V` |
 | `tests/` | `run.sh` and the backend tests (see below) |
 | `install.sql` / `uninstall.sql` | Install everything / drop everything |
 

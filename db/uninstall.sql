@@ -7,6 +7,9 @@ exception
     if sqlcode != -4043 then raise; end if;
 end;
 /
+drop view hl_my_data_v;
+drop package hl_farmer_api;
+drop table hl_erasures purge;
 drop view hl_route_line_v;
 drop view hl_route_stop_v;
 drop view hl_grade_allocation_v;
@@ -40,5 +43,6 @@ drop table hl_demands purge;
 drop table hl_harvests purge;
 drop table hl_buyers purge;
 drop table hl_farmers purge;
+drop table hl_consent_texts purge;
 drop table hl_crops purge;
 drop table hl_settings purge;
