@@ -2,10 +2,11 @@ page 32 (
     name: Matches
     alias: MATCHES
     title: Matches
-    pageGroup: @matching-and-logistics
+    pageGroup: @dashboard
     appearance {
-        pageTemplate: @/standard
+        pageTemplate: @/blank
         templateOptions: #DEFAULT#
+        cssClasses: hlc-app
     }
     navigation {
         cursorFocus: doNotFocusCursor
@@ -19,43 +20,35 @@ page 32 (
         enableDuplicatePageSubmissions: false
     }
     comments {
-        comments: Canvas screen 5. Fulfilment bar, ranked farmers with the four reasons, confirm and decline (HL_MATCH_PKG), and the farms that were ruled out.
+        comments: Canvas screen 5 (Matching and aggregation). Ranked farmers from HL_MATCH_V as MatchCard Template Components, farms ruled out from HL_NEAR_MISS_V; confirm, decline and run again call HL_MATCH_PKG.
     }
 
-    region summary (
-        name: Demand
-        type: themeTemplateComponent/contentRow
+    region header (
+        name: Header
+        type: dynamicContent
         source {
-            location: localDatabase
-            type: sqlQuery
-            sqlQuery:
-                ```sql
-                select f.DEMAND_ID as DEMAND_ID
-                     , 'HL-D-' || lpad(f.DEMAND_ID, 4, '0') || ' · ' || f.BUYER_NAME as OVERLINE
-                     , case when f.TARGET_KG >= 1000
-                            then to_char(f.TARGET_KG / 1000, 'FM999G990D0') || ' t'
-                            else to_char(f.TARGET_KG, 'FM999G990') || ' kg' end
-                       || ' of Grade ' || f.GRADE_REQUIRED || ' ' || f.CROP_NAME as TITLE
-                     , 'Deliver ' || to_char(f.NEED_BY_DATE, 'Dy DD Mon')
-                       || ' · KES ' || to_char(f.PRICE_PER_KG, 'FM999G990') || '/kg · ' || f.STATUS as MISC
-                     , '<div class="hl-fulfil">'
-                       || '<div class="hl-fulfil__track" role="img" aria-label="'
-                       || f.FILL_PCT || '% of the order sourced">'
-                       || '<span class="hl-fulfil__seg hl-fulfil__seg--matched" style="width:'
-                       || to_char(least(100 * f.MATCHED_KG / f.TARGET_KG, 100), 'FM990D0', 'NLS_NUMERIC_CHARACTERS=''.,''') || '%"></span>'
-                       || '<span class="hl-fulfil__seg hl-fulfil__seg--pending" style="width:'
-                       || to_char(least(100 * f.PENDING_KG / f.TARGET_KG, 100), 'FM990D0', 'NLS_NUMERIC_CHARACTERS=''.,''') || '%"></span>'
-                       || '</div>'
-                       || '<ul class="hl-fulfil__legend">'
-                       || '<li><i class="hl-dot hl-dot--matched"></i>Confirmed <b>'
-                       || to_char(f.MATCHED_KG, 'FM999G999G990') || ' kg</b> · ' || f.MATCHED_FARMERS || ' farmers</li>'
-                       || '<li><i class="hl-dot hl-dot--pending"></i>Awaiting farmers <b>'
-                       || to_char(f.PENDING_KG, 'FM999G999G990') || ' kg</b> · ' || f.PENDING_FARMERS || ' farmers</li>'
-                       || '<li><i class="hl-dot hl-dot--open"></i>Still open <b>'
-                       || to_char(f.UNMATCHED_KG, 'FM999G999G990') || ' kg</b></li>'
-                       || '</ul></div>' as BODY_HTML
-                from HL_FULFIL_V f
-                where f.DEMAND_ID = :P32_DEMAND_ID
+            plsqlFunctionBody:
+                ```plsql
+                declare
+                  l_f hl_fulfil_v%rowtype;
+                  l_place varchar2(200);
+                begin
+                  select * into l_f from hl_fulfil_v where demand_id = :P32_DEMAND_ID;
+                  select location_name || ', ' || county into l_place from hl_buyers where buyer_id = l_f.buyer_id;
+                  return '<div class="hlc-root" style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:16px"><div style="flex:1 1 480px;min-width:0">'
+                    || '<header class="hl-ph"><a class="hl-ph-back hl-link" href="' || apex_page.get_url(p_page => case when hl_auth.is_buyer then 30 else 42 end)
+                    || '" style="text-decoration:none"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M13 8H3M7 4L3 8l4 4"></path></svg>' || case when hl_auth.is_buyer then 'Back to dashboard' else 'Back to impact' end || '</a>'
+                    || '<span class="hl-overline">Demand HL-D-' || lpad(l_f.demand_id, 4, '0') || '</span>'
+                    || '<div class="hl-ph-row"><div class="hl-stack" style="gap:4px"><h1>' || apex_escape.html('Matches for '
+                    || case when l_f.target_kg >= 1000 then rtrim(rtrim(to_char(l_f.target_kg / 1000, 'FM990D0', 'NLS_NUMERIC_CHARACTERS=''.,'''), '0'), '.') || ' t'
+                            else to_char(l_f.target_kg, 'FM999G990') || ' kg' end
+                    || ' of Grade ' || l_f.grade_required || ' ' || l_f.crop_name) || '</h1><p>'
+                    || apex_escape.html(l_f.buyer_name || ' · ' || l_place || ' · deliver ' || to_char(l_f.need_by_date, 'Dy DD Mon')
+                    || ' · KES ' || to_char(l_f.price_per_kg, 'FM999G990') || '/kg') || '</p></div></div></header></div>'
+                    || '<div style="display:flex;flex-wrap:wrap;gap:8px;padding-bottom:24px">'
+                    || '<button type="button" class="hl-btn hl-btn-secondary" onclick="apex.submit(''RUN'')">Run matching again</button>'
+                    || '<a class="hl-btn hl-btn-primary" href="' || apex_page.get_url(p_page => 40) || '">Route by grade<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 8h10M9 4l4 4-4 4"></path></svg></a></div></div>';
+                end;
                 ```
         }
         layout {
@@ -63,128 +56,61 @@ page 32 (
             slot: body
         }
         appearance {
-            template: @/standard
-            templateOptions: [
-                #DEFAULT#
-                t-Region--scrollBody
-            ]
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-full
         }
-        accessibility {
-            landmarkType: region
-        }
-        componentAppearance {
-            display: report
-        }
-        settings {
-            overline: &OVERLINE.
-            title: &TITLE.
-            description: &BODY_HTML!RAW.
-            miscellaneous: &MISC.
-        }
-
-        column BODY_HTML (
-            layout {
-                sequence: 50
-            }
-            source {
-                databaseColumn: BODY_HTML
-                dataType: varchar2
-            }
-        )
-
-        column DEMAND_ID (
-            layout {
-                sequence: 10
-            }
-            source {
-                databaseColumn: DEMAND_ID
-                dataType: number
-                primaryKey: true
-            }
-        )
-
-        column MISC (
-            layout {
-                sequence: 40
-            }
-            source {
-                databaseColumn: MISC
-                dataType: varchar2
-            }
-        )
-
-        column OVERLINE (
-            layout {
-                sequence: 20
-            }
-            source {
-                databaseColumn: OVERLINE
-                dataType: varchar2
-            }
-        )
-
-        column TITLE (
-            layout {
-                sequence: 30
-            }
-            source {
-                databaseColumn: TITLE
-                dataType: varchar2
-            }
-        )
-
     )
-
-    region ranked-farmers (
-        name: Ranked farmers
-        type: themeTemplateComponent/contentRow
+    region fulfilment (
+        name: Fulfilment
+        type: dynamicContent
         source {
-            location: localDatabase
-            type: sqlQuery
-            sqlQuery:
-                ```sql
-                select m.MATCH_ID as MATCH_ID
-                     , m.RANK_NO as RANK_NO
-                     , '#' || m.RANK_NO || ' · ' || m.FARMER_LOCATION as OVERLINE
-                     , m.FARMER_NAME as TITLE
-                     , to_char(m.ALLOCATED_KG, 'FM999G999G990') || ' of ' || to_char(m.AVAILABLE_KG, 'FM999G999G990')
-                       || ' kg · Grade ' || m.GRADE || ' · ' || m.DISTANCE_KM || ' km · ' || m.FARMER_PHONE as MISC
-                     , '<span class="hl-badge hl-badge--' || lower(m.UI_STATUS) || '">'
-                       || case m.UI_STATUS when 'MATCHED' then 'Confirmed' else 'Awaiting farmer' end
-                       || '</span>'
-                       -- Select AI sentence beside the reasons, only when AI wrote it
-                       -- (explain_match first: it generates and stores the sentence)
-                       || case when hl_ai.explain_match(m.MATCH_ID, 'en') is not null
-                                 and hl_ai.explained_by(m.MATCH_ID, 'en') = 'AI'
-                               then '<p class="hl-why"><span class="hl-ai" title="Written by Select AI from the four reasons">AI</span> '
-                                    || apex_escape.html(hl_ai.explain_match(m.MATCH_ID, 'en')) || '</p>' end
-                       || '<ul class="hl-reasons">'
-                       || '<li class="hl-reason hl-reason--' || m.REASON_QTY_STATE || '"><b>Quantity</b> '
-                       || apex_escape.html(m.REASON_QTY) || '</li>'
-                       || '<li class="hl-reason hl-reason--' || m.REASON_GRADE_STATE || '"><b>Grade</b> '
-                       || apex_escape.html(m.REASON_GRADE) || '</li>'
-                       || '<li class="hl-reason hl-reason--' || m.REASON_WINDOW_STATE || '"><b>Harvest window</b> '
-                       || apex_escape.html(m.REASON_WINDOW) || '</li>'
-                       || '<li class="hl-reason hl-reason--' || m.REASON_DIST_STATE || '"><b>Distance</b> '
-                       || apex_escape.html(m.REASON_DIST) || '</li>'
-                       || '</ul>'
-                       || case when m.AGREEMENT_HASH is not null
-                               then '<p class="hl-hash">Agreement recorded on the ledger · <code>'
-                                    || m.AGREEMENT_HASH || '</code></p>' end
-                       || case when m.UI_STATUS = 'PENDING'
-                               then '<div class="hl-actions">'
-                                    || '<button type="button" class="t-Button t-Button--hot t-Button--small" '
-                                    || 'onclick="apex.submit({request:''CONFIRM'',set:{P32_MATCH_ID:''' || m.MATCH_ID || '''}});">'
-                                    || 'Confirm ' || to_char(m.ALLOCATED_KG, 'FM999G999G990') || ' kg for '
-                                    || apex_escape.html(regexp_substr(m.FARMER_NAME, '^\S+')) || '</button>'
-                                    || '<button type="button" class="t-Button t-Button--small" '
-                                    || 'onclick="apex.submit({request:''DECLINE'',set:{P32_MATCH_ID:''' || m.MATCH_ID || '''}});">'
-                                    || 'Farmer declined</button>'
-                                    || '</div>' end as BODY_HTML
-                from HL_MATCH_V m
-                where m.DEMAND_ID = :P32_DEMAND_ID
-                  and m.UI_STATUS <> 'DECLINED'
-                order by m.RANK_NO
+            plsqlFunctionBody:
+                ```plsql
+                declare
+                  l_f      hl_fulfil_v%rowtype;
+                  l_farms  number;
+                  l_county varchar2(60);
+                  l_img    varchar2(40);
+                  l_words  sys.odcivarchar2list := sys.odcivarchar2list('One farm fills', 'Two farms fill', 'Three farms fill', 'Four farms fill',
+                                                                         'Five farms fill', 'Six farms fill', 'Seven farms fill', 'Eight farms fill');
+                  function kg (n number) return varchar2 is begin return to_char(n, 'FM999G999G990'); end;
+                  function pct (n number) return varchar2 is begin return to_char(round(n, 2), 'FM990D00', 'NLS_NUMERIC_CHARACTERS=''.,'''); end;
+                  function badge (p_status varchar2, p_text varchar2, p_icon varchar2) return varchar2 is
+                  begin
+                    return '<span class="hl-badge hl-badge-' || p_status || '"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="' || p_icon || '"></path></svg>' || p_text || '</span>';
+                  end;
+                begin
+                  select * into l_f from hl_fulfil_v where demand_id = :P32_DEMAND_ID;
+                  select count(*), max(regexp_substr(farmer_location, '[^,]+$')) into l_farms, l_county
+                    from hl_match_v where demand_id = l_f.demand_id and ui_status <> 'DECLINED';
+                  l_img := case lower(l_f.crop_name) when 'onions' then 'crop-onion.jpg' when 'green peppers' then 'crop-pepper.jpg'
+                                                     when 'carrots' then 'crop-carrot.jpg' else 'crop-tomato.jpg' end;
+                  return apex_plugin_util.replace_substitutions(p_escape => false, p_value =>
+                       '<section class="hlc-root hlc-card" aria-label="Fulfilment" style="padding:32px;display:flex;flex-wrap:wrap;gap:32px 48px;align-items:center">'
+                    || '<div style="flex:2 1 480px;min-width:0;display:flex;flex-direction:column;gap:20px"><div style="display:flex;flex-direction:column;gap:6px">'
+                    || '<p class="hl-overline" style="margin:0">Aggregation</p><div style="display:flex;gap:18px;align-items:center">'
+                    || '<img src="#APP_FILES#images/' || l_img || '" alt="" style="width:76px;height:76px;border-radius:16px;object-fit:contain;background:#fff;border:1px solid var(--line);flex:none">'
+                    || '<h2 style="margin:0;font:800 40px/46px var(--font-display);letter-spacing:-0.025em">'
+                    || case when l_farms between 1 and 8 then l_words(l_farms) else l_farms || ' farms fill' end || ' one order</h2></div>'
+                    || '<p style="margin:0;color:var(--ink-muted);max-width:60ch">' || apex_escape.html('No single farm can supply ' || kg(l_f.target_kg) || ' kg. Together, '
+                    || l_farms || ' farms in' || nvl(l_county, ' the area') || ' cover ' || l_f.fill_pct || '% of it.') || '</p></div>'
+                    || '<div class="hl-fill"><div class="hl-fill-head"><span class="hl-fill-total hl-num">' || kg(l_f.matched_kg + l_f.pending_kg)
+                    || '<small> of ' || kg(l_f.target_kg) || ' kg sourced</small></span><span class="hl-help">' || round(l_f.matched_kg / l_f.target_kg * 100) || '% confirmed</span></div>'
+                    || '<div class="hl-fill-track" role="img" aria-label="' || kg(l_f.matched_kg) || ' kg matched, ' || kg(l_f.pending_kg) || ' pending, ' || kg(l_f.unmatched_kg) || ' unmatched">'
+                    || '<span class="hl-fill-seg hl-fill-matched" style="width:' || pct(l_f.matched_kg / l_f.target_kg * 100) || '%"></span>'
+                    || '<span class="hl-fill-seg hl-fill-pending" style="width:' || pct(l_f.pending_kg / l_f.target_kg * 100) || '%"></span></div>'
+                    || '<ul class="hl-fill-legend"><li><span class="hl-key hl-key-matched"></span>Matched <b class="hl-num">' || kg(l_f.matched_kg) || ' kg</b></li>'
+                    || '<li><span class="hl-key hl-key-pending"></span>Pending <b class="hl-num">' || kg(l_f.pending_kg) || ' kg</b></li>'
+                    || '<li><span class="hl-key hl-key-unmatched"></span>Unmatched <b class="hl-num">' || kg(l_f.unmatched_kg) || ' kg</b></li></ul></div></div>'
+                    || '<dl style="flex:1 1 260px;margin:0;display:grid;grid-template-columns:1fr auto;gap:14px 24px;align-items:baseline">'
+                    || '<dt style="display:flex;gap:8px;align-items:center">' || badge('matched', 'Confirmed', 'M8 1.75a6.25 6.25 0 1 0 0 12.5A6.25 6.25 0 0 0 8 1.75zM5.25 8.25l2 2 3.5-4') || '<span style="font-size:13px;color:var(--ink-muted)">' || l_f.matched_farmers || ' farmers</span></dt>'
+                    || '<dd style="margin:0;font:500 28px/32px var(--font-display);font-variant-numeric:tabular-nums;text-align:right">' || kg(l_f.matched_kg) || ' kg</dd>'
+                    || '<dt style="display:flex;gap:8px;align-items:center">' || badge('pending', 'Pending', 'M8 1.75a6.25 6.25 0 1 0 0 12.5A6.25 6.25 0 0 0 8 1.75zM8 4.5V8l2.5 1.5') || '<span style="font-size:13px;color:var(--ink-muted)">' || l_f.pending_farmers || ' farmers</span></dt>'
+                    || '<dd style="margin:0;font:500 28px/32px var(--font-display);font-variant-numeric:tabular-nums;text-align:right">' || kg(l_f.pending_kg) || ' kg</dd>'
+                    || '<dt style="display:flex;gap:8px;align-items:center">' || badge('unmatched', 'Still open', 'M8 1.75a6.25 6.25 0 1 0 0 12.5A6.25 6.25 0 0 0 8 1.75zM5.25 8h5.5') || '</dt>'
+                    || '<dd style="margin:0;font:500 28px/32px var(--font-display);font-variant-numeric:tabular-nums;text-align:right">' || kg(l_f.unmatched_kg) || ' kg</dd></dl></section>');
+                end;
                 ```
         }
         layout {
@@ -192,115 +118,18 @@ page 32 (
             slot: body
         }
         appearance {
-            template: @/standard
-            templateOptions: [
-                #DEFAULT#
-                t-Region--scrollBody
-            ]
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-full
         }
-        accessibility {
-            landmarkType: region
-        }
-        componentAppearance {
-            display: report
-        }
-        settings {
-            overline: &OVERLINE.
-            title: &TITLE.
-            description: &BODY_HTML!RAW.
-            miscellaneous: &MISC.
-        }
-
-        column BODY_HTML (
-            layout {
-                sequence: 60
-            }
-            source {
-                databaseColumn: BODY_HTML
-                dataType: varchar2
-            }
-        )
-
-        column MATCH_ID (
-            layout {
-                sequence: 10
-            }
-            source {
-                databaseColumn: MATCH_ID
-                dataType: number
-                primaryKey: true
-            }
-        )
-
-        column MISC (
-            layout {
-                sequence: 50
-            }
-            source {
-                databaseColumn: MISC
-                dataType: varchar2
-            }
-        )
-
-        column OVERLINE (
-            layout {
-                sequence: 30
-            }
-            source {
-                databaseColumn: OVERLINE
-                dataType: varchar2
-            }
-        )
-
-        column RANK_NO (
-            layout {
-                sequence: 20
-            }
-            source {
-                databaseColumn: RANK_NO
-                dataType: number
-            }
-        )
-
-        column TITLE (
-            layout {
-                sequence: 40
-            }
-            source {
-                databaseColumn: TITLE
-                dataType: varchar2
-            }
-        )
-
     )
-
-    region not-matched (
-        name: Not matched
-        type: themeTemplateComponent/contentRow
+    region ranked-heading (
+        name: Ranked farmers heading
+        type: staticContent
         source {
-            location: localDatabase
-            type: sqlQuery
-            sqlQuery:
-                ```sql
-                select n.HARVEST_ID as HARVEST_ID
-                     , n.FARMER_LOCATION as OVERLINE
-                     , n.FARMER_NAME as TITLE
-                     , to_char(n.AVAILABLE_KG, 'FM999G999G990') || ' kg · Grade ' || n.GRADE
-                       || ' · ' || n.DISTANCE_KM || ' km' as MISC
-                     , '<span class="hl-badge hl-badge--unmatched">Not matched</span>'
-                       || '<ul class="hl-reasons">'
-                       || '<li class="hl-reason hl-reason--' || n.REASON_QTY_STATE || '"><b>Quantity</b> '
-                       || apex_escape.html(n.REASON_QTY) || '</li>'
-                       || '<li class="hl-reason hl-reason--' || n.REASON_GRADE_STATE || '"><b>Grade</b> '
-                       || apex_escape.html(n.REASON_GRADE) || '</li>'
-                       || '<li class="hl-reason hl-reason--' || n.REASON_WINDOW_STATE || '"><b>Harvest window</b> '
-                       || apex_escape.html(n.REASON_WINDOW) || '</li>'
-                       || '<li class="hl-reason hl-reason--' || n.REASON_DIST_STATE || '"><b>Distance</b> '
-                       || apex_escape.html(n.REASON_DIST) || '</li>'
-                       || '</ul>' as BODY_HTML
-                from HL_NEAR_MISS_V n
-                where n.DEMAND_ID = :P32_DEMAND_ID
-                order by n.DISTANCE_KM
+            htmlCode:
+                ```html
+                <h2 class="hlc-section-title">Ranked farmers</h2>
                 ```
         }
         layout {
@@ -308,83 +137,808 @@ page 32 (
             slot: body
         }
         appearance {
-            template: @/standard
-            templateOptions: [
-                #DEFAULT#
-                t-Region--scrollBody
-            ]
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-left hlc-root
         }
-        accessibility {
-            landmarkType: region
+        settings {
+            outputAs: html
+        }
+    )
+    region aside (
+        name: How we match
+        type: dynamicContent
+        source {
+            plsqlFunctionBody:
+                ```plsql
+                declare
+                  l_f   hl_fulfil_v%rowtype;
+                  l_b   number;
+                  l_c   number;
+                  l_out varchar2(32767);
+                  function li (p_icon varchar2, p_title varchar2, p_text varchar2) return varchar2 is
+                  begin
+                    return '<li style="display:flex;gap:12px"><span style="color:var(--forest);padding-top:3px"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="'
+                        || p_icon || '"></path></svg></span><div><b style="font-weight:600">' || p_title || '</b><p style="margin:0;font-size:13px;line-height:20px;color:var(--ink-muted)">' || p_text || '</p></div></li>';
+                  end;
+                begin
+                  select * into l_f from hl_fulfil_v where demand_id = :P32_DEMAND_ID;
+                  -- Lower grades the same farms hold, for grade routing
+                  select nvl(sum(case when h.grade = 'B' then hl_match_pkg.available_kg(h.harvest_id) end), 0),
+                         nvl(sum(case when h.grade = 'C' then hl_match_pkg.available_kg(h.harvest_id) end), 0)
+                    into l_b, l_c
+                    from hl_harvests h
+                   where h.crop_id = l_f.crop_id and h.status in ('OPEN', 'PARTIAL', 'COMMITTED')
+                     and h.farmer_id in (select farmer_id from hl_match_v where demand_id = l_f.demand_id and ui_status <> 'DECLINED');
+                  l_out := '<div class="hlc-root" style="display:flex;flex-direction:column;gap:24px">';
+                  if l_f.unmatched_kg > 0 then
+                    l_out := l_out || '<div class="hl-alert hl-alert-info" role="status"><svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 1.75a6.25 6.25 0 1 0 0 12.5A6.25 6.25 0 0 0 8 1.75zM8 7.25v4M8 4.75v.25"></path></svg><div><b>' || to_char(l_f.unmatched_kg, 'FM999G990')
+                      || ' kg still open</b>Accept a lower grade for the last ' || to_char(l_f.unmatched_kg, 'FM999G990')
+                      || ' kg, or widen the search radius. Matching runs again whenever a farmer registers a harvest.</div></div>';
+                  end if;
+                  l_out := l_out || '<section class="hlc-card" style="padding:24px;display:flex;flex-direction:column;gap:16px">'
+                    || '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><h2 style="margin:0;font-size:17px;line-height:24px">How we match</h2>'
+                    || '<span class="hl-prov hl-prov-live">Live data</span></div><ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:14px">'
+                    || li('M8 2v12M3 14h10M2 6.5l2.5-4 2.5 4a2.5 2.5 0 0 1-5 0zM9 6.5l2.5-4 2.5 4a2.5 2.5 0 0 1-5 0zM4.5 2.5h7', 'Quantity', 'Each farmer''s lot against what is still open.')
+                    || li('M13.5 2.5C6 2.5 2.5 6 2.5 11.5c0 1 .25 1.75.25 1.75S3.5 13.5 4.5 13.5c5.5 0 9-3.5 9-11zM2.75 13.25L9 7', 'Grade', 'Must meet or beat the grade the buyer asked for.')
+                    || li('M2.25 3.5h11.5v10.25H2.25zM2.25 6.5h11.5M5 2v3M11 2v3', 'Harvest window', 'Harvest must be ready by pickup, the day before delivery.')
+                    || li('M8 14.25s4.5-4.1 4.5-7.75a4.5 4.5 0 0 0-9 0c0 3.65 4.5 7.75 4.5 7.75zM8 8a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z', 'Distance', 'Closer farms rank higher; the farthest farm on a pickup is flagged.')
+                    || '</ul><p style="margin:0;font-size:13px;line-height:20px;color:var(--ink-muted);border-top:1px solid var(--line);padding-top:12px">Scored by a PL/SQL package in Oracle Autonomous Database. Every rank shows its reasons, never a score alone.</p></section>';
+                  if l_b + l_c > 0 then
+                    l_out := l_out || '<section style="background:var(--forest-soft);border-radius:16px;box-shadow:var(--shadow-card);padding:24px;display:flex;flex-direction:column;gap:12px">'
+                      || '<h2 style="margin:0;font-size:17px;line-height:24px;color:var(--forest)">Next: route the other grades</h2>'
+                      || '<p style="margin:0;font-size:13px;line-height:20px">These farms also hold ' || to_char(l_b, 'FM999G990') || ' kg of Grade B and '
+                      || to_char(l_c, 'FM999G990') || ' kg of Grade C. Send each to an outlet before planning the pickup.</p>'
+                      || '<div><a class="hl-btn hl-btn-primary" href="' || apex_page.get_url(p_page => 40) || '">Route by grade<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 8h10M9 4l4 4-4 4"></path></svg></a></div></section>';
+                  end if;
+                  return l_out || '</div>';
+                end;
+                ```
+        }
+        layout {
+            sequence: 35
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-right
+        }
+    )
+    region ranked-farmers (
+        name: Ranked farmers
+        type: appTemplateComponent/hlMatchCard
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select lpad(m.RANK_NO, 2, '0')                                                  as RANK
+                     , case m.UI_STATUS when 'MATCHED' then 'matched' else 'pending' end           as STATUS
+                     , m.FARMER_NAME                                                               as FARMER
+                     , m.FARMER_LOCATION                                                           as LOCATION
+                     , m.DISTANCE_KM || ' km to delivery'                                          as DISTANCE
+                     , to_char(m.HARVEST_FROM, 'DD') || '–' || to_char(m.HARVEST_TO, 'DD Mon')     as HARVEST
+                     , to_char(m.ALLOCATED_KG, 'FM999G999G990') || ' kg'                           as QTY
+                     , 'allocated of ' || to_char(m.AVAILABLE_KG, 'FM999G999G990') || ' kg'        as QTY_LABEL
+                     , m.GRADE                                                                     as GRADE
+                     , case when m.RANK_NO = 1 then 'Y' else 'N' end                               as OPEN_REASONS
+                     , 'Why this farmer was matched'                                               as REASONS_TITLE
+                     , 'Quantity'       as R1_LABEL, m.REASON_QTY    as R1_DETAIL, m.REASON_QTY_STATE    as R1_STATE
+                     , 'Grade'          as R2_LABEL, m.REASON_GRADE  as R2_DETAIL, m.REASON_GRADE_STATE  as R2_STATE
+                     , 'Harvest window' as R3_LABEL, m.REASON_WINDOW as R3_DETAIL, m.REASON_WINDOW_STATE as R3_STATE
+                     , 'Distance'       as R4_LABEL, m.REASON_DIST   as R4_DETAIL, m.REASON_DIST_STATE   as R4_STATE
+                     , case when m.UI_STATUS = 'PENDING'
+                            then 'javascript:apex.submit({request:"CONFIRM",set:{P32_MATCH_ID:"' || m.MATCH_ID || '"}});' end   as ACTION_URL
+                     , 'Confirm ' || to_char(m.ALLOCATED_KG, 'FM999G999G990') || ' kg for ' || regexp_substr(m.FARMER_NAME, '^\S+') as ACTION_LABEL
+                     , 'javascript:apex.submit({request:"DECLINE",set:{P32_MATCH_ID:"' || m.MATCH_ID || '"}});'          as ACTION2_URL
+                     , 'Farmer declined'                                                           as ACTION2_LABEL
+                     , 'Demo: records the farmer''s answer from SMS'                               as ACTION_NOTE
+                     , case when m.AGREEMENT_HASH is not null then 'Agreement recorded on the ledger · ' || m.AGREEMENT_HASH
+                            when hl_ai.explained_by(m.MATCH_ID, 'en') = 'AI' then 'AI summary: ' || hl_ai.explain_match(m.MATCH_ID, 'en') end as FOOTNOTE
+                  from HL_MATCH_V m
+                 where m.DEMAND_ID = :P32_DEMAND_ID
+                   and m.UI_STATUS <> 'DECLINED'
+                 order by m.RANK_NO
+                ```
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-left
         }
         componentAppearance {
             display: report
         }
         settings {
-            overline: &OVERLINE.
-            title: &TITLE.
-            description: &BODY_HTML!RAW.
-            miscellaneous: &MISC.
+            rank: &RANK.
+            status: &STATUS.
+            farmer: &FARMER.
+            location: &LOCATION.
+            distance: &DISTANCE.
+            harvest: &HARVEST.
+            qty: &QTY.
+            qtyLabel: &QTY_LABEL.
+            grade: &GRADE.
+            open: &OPEN_REASONS.
+            reasonsTitle: &REASONS_TITLE.
+            reason1Label: &R1_LABEL.
+            reason1Detail: &R1_DETAIL.
+            reason1State: &R1_STATE.
+            reason2Label: &R2_LABEL.
+            reason2Detail: &R2_DETAIL.
+            reason2State: &R2_STATE.
+            reason3Label: &R3_LABEL.
+            reason3Detail: &R3_DETAIL.
+            reason3State: &R3_STATE.
+            reason4Label: &R4_LABEL.
+            reason4Detail: &R4_DETAIL.
+            reason4State: &R4_STATE.
+            actionUrl: &ACTION_URL.
+            actionLabel: &ACTION_LABEL.
+            action2Url: &ACTION2_URL.
+            action2Label: &ACTION2_LABEL.
+            actionNote: &ACTION_NOTE.
+            footnote: &FOOTNOTE.
         }
 
-        column BODY_HTML (
-            layout {
-                sequence: 50
-            }
-            source {
-                databaseColumn: BODY_HTML
-                dataType: varchar2
-            }
-        )
-
-        column HARVEST_ID (
+        column RANK (
             layout {
                 sequence: 10
             }
             source {
-                databaseColumn: HARVEST_ID
-                dataType: number
-                primaryKey: true
-            }
-        )
-
-        column MISC (
-            layout {
-                sequence: 40
-            }
-            source {
-                databaseColumn: MISC
+                databaseColumn: RANK
                 dataType: varchar2
             }
         )
 
-        column OVERLINE (
+        column STATUS (
             layout {
                 sequence: 20
             }
             source {
-                databaseColumn: OVERLINE
+                databaseColumn: STATUS
                 dataType: varchar2
             }
         )
 
-        column TITLE (
+        column FARMER (
             layout {
                 sequence: 30
             }
             source {
-                databaseColumn: TITLE
+                databaseColumn: FARMER
+                dataType: varchar2
+            }
+        )
+
+        column LOCATION (
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: LOCATION
+                dataType: varchar2
+            }
+        )
+
+        column DISTANCE (
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: DISTANCE
+                dataType: varchar2
+            }
+        )
+
+        column HARVEST (
+            layout {
+                sequence: 60
+            }
+            source {
+                databaseColumn: HARVEST
+                dataType: varchar2
+            }
+        )
+
+        column QTY (
+            layout {
+                sequence: 70
+            }
+            source {
+                databaseColumn: QTY
+                dataType: varchar2
+            }
+        )
+
+        column QTY_LABEL (
+            layout {
+                sequence: 80
+            }
+            source {
+                databaseColumn: QTY_LABEL
+                dataType: varchar2
+            }
+        )
+
+        column GRADE (
+            layout {
+                sequence: 90
+            }
+            source {
+                databaseColumn: GRADE
+                dataType: varchar2
+            }
+        )
+
+        column OPEN_REASONS (
+            layout {
+                sequence: 100
+            }
+            source {
+                databaseColumn: OPEN_REASONS
+                dataType: varchar2
+            }
+        )
+
+        column REASONS_TITLE (
+            layout {
+                sequence: 110
+            }
+            source {
+                databaseColumn: REASONS_TITLE
+                dataType: varchar2
+            }
+        )
+
+        column R1_LABEL (
+            layout {
+                sequence: 120
+            }
+            source {
+                databaseColumn: R1_LABEL
+                dataType: varchar2
+            }
+        )
+
+        column R1_DETAIL (
+            layout {
+                sequence: 130
+            }
+            source {
+                databaseColumn: R1_DETAIL
+                dataType: varchar2
+            }
+        )
+
+        column R1_STATE (
+            layout {
+                sequence: 140
+            }
+            source {
+                databaseColumn: R1_STATE
+                dataType: varchar2
+            }
+        )
+
+        column R2_LABEL (
+            layout {
+                sequence: 150
+            }
+            source {
+                databaseColumn: R2_LABEL
+                dataType: varchar2
+            }
+        )
+
+        column R2_DETAIL (
+            layout {
+                sequence: 160
+            }
+            source {
+                databaseColumn: R2_DETAIL
+                dataType: varchar2
+            }
+        )
+
+        column R2_STATE (
+            layout {
+                sequence: 170
+            }
+            source {
+                databaseColumn: R2_STATE
+                dataType: varchar2
+            }
+        )
+
+        column R3_LABEL (
+            layout {
+                sequence: 180
+            }
+            source {
+                databaseColumn: R3_LABEL
+                dataType: varchar2
+            }
+        )
+
+        column R3_DETAIL (
+            layout {
+                sequence: 190
+            }
+            source {
+                databaseColumn: R3_DETAIL
+                dataType: varchar2
+            }
+        )
+
+        column R3_STATE (
+            layout {
+                sequence: 200
+            }
+            source {
+                databaseColumn: R3_STATE
+                dataType: varchar2
+            }
+        )
+
+        column R4_LABEL (
+            layout {
+                sequence: 210
+            }
+            source {
+                databaseColumn: R4_LABEL
+                dataType: varchar2
+            }
+        )
+
+        column R4_DETAIL (
+            layout {
+                sequence: 220
+            }
+            source {
+                databaseColumn: R4_DETAIL
+                dataType: varchar2
+            }
+        )
+
+        column R4_STATE (
+            layout {
+                sequence: 230
+            }
+            source {
+                databaseColumn: R4_STATE
+                dataType: varchar2
+            }
+        )
+
+        column ACTION_URL (
+            layout {
+                sequence: 240
+            }
+            source {
+                databaseColumn: ACTION_URL
+                dataType: varchar2
+            }
+        )
+
+        column ACTION_LABEL (
+            layout {
+                sequence: 250
+            }
+            source {
+                databaseColumn: ACTION_LABEL
+                dataType: varchar2
+            }
+        )
+
+        column ACTION2_URL (
+            layout {
+                sequence: 260
+            }
+            source {
+                databaseColumn: ACTION2_URL
+                dataType: varchar2
+            }
+        )
+
+        column ACTION2_LABEL (
+            layout {
+                sequence: 270
+            }
+            source {
+                databaseColumn: ACTION2_LABEL
+                dataType: varchar2
+            }
+        )
+
+        column ACTION_NOTE (
+            layout {
+                sequence: 280
+            }
+            source {
+                databaseColumn: ACTION_NOTE
+                dataType: varchar2
+            }
+        )
+
+        column FOOTNOTE (
+            layout {
+                sequence: 290
+            }
+            source {
+                databaseColumn: FOOTNOTE
                 dataType: varchar2
             }
         )
 
     )
+    region not-matched-heading (
+        name: Not matched heading
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <h2 class="hlc-section-title">Not matched</h2>
+                ```
+        }
+        layout {
+            sequence: 50
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-left hlc-root
+        }
+        settings {
+            outputAs: html
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: exists (select 1 from hl_near_miss_v where demand_id = :P32_DEMAND_ID)
+        }
+    )
+    region not-matched (
+        name: Not matched
+        type: appTemplateComponent/hlMatchCard
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select '—'                                                                         as RANK
+                     , 'unmatched'                                                                   as STATUS
+                     , 'Not matched'                                                                 as STATUS_TEXT
+                     , n.FARMER_NAME                                                                 as FARMER
+                     , n.FARMER_LOCATION                                                             as LOCATION
+                     , n.DISTANCE_KM || ' km to delivery'                                            as DISTANCE
+                     , to_char(n.HARVEST_FROM, 'DD Mon') || '–' || to_char(n.HARVEST_TO, 'DD Mon')   as HARVEST
+                     , to_char(n.AVAILABLE_KG, 'FM999G999G990') || ' kg'                             as QTY
+                     , 'available'                                                                   as QTY_LABEL
+                     , n.GRADE                                                                       as GRADE
+                     , 'Y'                                                                           as OPEN_REASONS
+                     , 'Why this farmer was not matched'                                             as REASONS_TITLE
+                     , 'Quantity'       as R1_LABEL, n.REASON_QTY    as R1_DETAIL, n.REASON_QTY_STATE    as R1_STATE
+                     , 'Grade'          as R2_LABEL, n.REASON_GRADE  as R2_DETAIL, n.REASON_GRADE_STATE  as R2_STATE
+                     , 'Harvest window' as R3_LABEL, n.REASON_WINDOW as R3_DETAIL, n.REASON_WINDOW_STATE as R3_STATE
+                     , 'Distance'       as R4_LABEL, n.REASON_DIST   as R4_DETAIL, n.REASON_DIST_STATE   as R4_STATE
+                  from HL_NEAR_MISS_V n
+                 where n.DEMAND_ID = :P32_DEMAND_ID
+                 order by n.DISTANCE_KM
+                ```
+        }
+        layout {
+            sequence: 60
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-left
+        }
+        componentAppearance {
+            display: report
+        }
+        settings {
+            rank: &RANK.
+            status: &STATUS.
+            statusText: &STATUS_TEXT.
+            farmer: &FARMER.
+            location: &LOCATION.
+            distance: &DISTANCE.
+            harvest: &HARVEST.
+            qty: &QTY.
+            qtyLabel: &QTY_LABEL.
+            grade: &GRADE.
+            open: &OPEN_REASONS.
+            reasonsTitle: &REASONS_TITLE.
+            reason1Label: &R1_LABEL.
+            reason1Detail: &R1_DETAIL.
+            reason1State: &R1_STATE.
+            reason2Label: &R2_LABEL.
+            reason2Detail: &R2_DETAIL.
+            reason2State: &R2_STATE.
+            reason3Label: &R3_LABEL.
+            reason3Detail: &R3_DETAIL.
+            reason3State: &R3_STATE.
+            reason4Label: &R4_LABEL.
+            reason4Detail: &R4_DETAIL.
+            reason4State: &R4_STATE.
+        }
 
+        column RANK (
+            layout {
+                sequence: 10
+            }
+            source {
+                databaseColumn: RANK
+                dataType: varchar2
+            }
+        )
+
+        column STATUS (
+            layout {
+                sequence: 20
+            }
+            source {
+                databaseColumn: STATUS
+                dataType: varchar2
+            }
+        )
+
+        column STATUS_TEXT (
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: STATUS_TEXT
+                dataType: varchar2
+            }
+        )
+
+        column FARMER (
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: FARMER
+                dataType: varchar2
+            }
+        )
+
+        column LOCATION (
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: LOCATION
+                dataType: varchar2
+            }
+        )
+
+        column DISTANCE (
+            layout {
+                sequence: 60
+            }
+            source {
+                databaseColumn: DISTANCE
+                dataType: varchar2
+            }
+        )
+
+        column HARVEST (
+            layout {
+                sequence: 70
+            }
+            source {
+                databaseColumn: HARVEST
+                dataType: varchar2
+            }
+        )
+
+        column QTY (
+            layout {
+                sequence: 80
+            }
+            source {
+                databaseColumn: QTY
+                dataType: varchar2
+            }
+        )
+
+        column QTY_LABEL (
+            layout {
+                sequence: 90
+            }
+            source {
+                databaseColumn: QTY_LABEL
+                dataType: varchar2
+            }
+        )
+
+        column GRADE (
+            layout {
+                sequence: 100
+            }
+            source {
+                databaseColumn: GRADE
+                dataType: varchar2
+            }
+        )
+
+        column OPEN_REASONS (
+            layout {
+                sequence: 110
+            }
+            source {
+                databaseColumn: OPEN_REASONS
+                dataType: varchar2
+            }
+        )
+
+        column REASONS_TITLE (
+            layout {
+                sequence: 120
+            }
+            source {
+                databaseColumn: REASONS_TITLE
+                dataType: varchar2
+            }
+        )
+
+        column R1_LABEL (
+            layout {
+                sequence: 130
+            }
+            source {
+                databaseColumn: R1_LABEL
+                dataType: varchar2
+            }
+        )
+
+        column R1_DETAIL (
+            layout {
+                sequence: 140
+            }
+            source {
+                databaseColumn: R1_DETAIL
+                dataType: varchar2
+            }
+        )
+
+        column R1_STATE (
+            layout {
+                sequence: 150
+            }
+            source {
+                databaseColumn: R1_STATE
+                dataType: varchar2
+            }
+        )
+
+        column R2_LABEL (
+            layout {
+                sequence: 160
+            }
+            source {
+                databaseColumn: R2_LABEL
+                dataType: varchar2
+            }
+        )
+
+        column R2_DETAIL (
+            layout {
+                sequence: 170
+            }
+            source {
+                databaseColumn: R2_DETAIL
+                dataType: varchar2
+            }
+        )
+
+        column R2_STATE (
+            layout {
+                sequence: 180
+            }
+            source {
+                databaseColumn: R2_STATE
+                dataType: varchar2
+            }
+        )
+
+        column R3_LABEL (
+            layout {
+                sequence: 190
+            }
+            source {
+                databaseColumn: R3_LABEL
+                dataType: varchar2
+            }
+        )
+
+        column R3_DETAIL (
+            layout {
+                sequence: 200
+            }
+            source {
+                databaseColumn: R3_DETAIL
+                dataType: varchar2
+            }
+        )
+
+        column R3_STATE (
+            layout {
+                sequence: 210
+            }
+            source {
+                databaseColumn: R3_STATE
+                dataType: varchar2
+            }
+        )
+
+        column R4_LABEL (
+            layout {
+                sequence: 220
+            }
+            source {
+                databaseColumn: R4_LABEL
+                dataType: varchar2
+            }
+        )
+
+        column R4_DETAIL (
+            layout {
+                sequence: 230
+            }
+            source {
+                databaseColumn: R4_DETAIL
+                dataType: varchar2
+            }
+        )
+
+        column R4_STATE (
+            layout {
+                sequence: 240
+            }
+            source {
+                databaseColumn: R4_STATE
+                dataType: varchar2
+            }
+        )
+
+    )
+    region page-state (
+        name: Page state
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <span></span>
+                ```
+        }
+        layout {
+            sequence: 90
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-full
+        }
+        settings {
+            outputAs: html
+        }
+    )
     pageItem P32_DEMAND_ID (
         type: hidden
         layout {
             sequence: 10
-            region: @summary
+            region: @page-state
             slot: regionBody
         }
     )
@@ -396,48 +950,11 @@ page 32 (
         }
         layout {
             sequence: 20
-            region: @summary
+            region: @page-state
             slot: regionBody
         }
         security {
             sessionStateProtection: unrestricted
-        }
-    )
-
-    button run-matching (
-        buttonName: RUN
-        label: Run matching again
-        layout {
-            sequence: 10
-            region: @summary
-            slot: next
-        }
-        appearance {
-            buttonTemplate: @/text
-            templateOptions: #DEFAULT#
-        }
-        behavior {
-            warnOnUnsavedChanges: doNotCheck
-        }
-    )
-
-    button my-demands (
-        buttonName: MY_DEMANDS
-        label: Back to my demands
-        layout {
-            sequence: 20
-            region: @summary
-            slot: previous
-        }
-        appearance {
-            buttonTemplate: @/text
-            templateOptions: #DEFAULT#
-        }
-        behavior {
-            action: redirectThisApp
-            target: {
-                page: 30
-            }
         }
     )
 
@@ -509,5 +1026,4 @@ page 32 (
             plsqlExpression: :REQUEST = 'RUN'
         }
     )
-
 )
