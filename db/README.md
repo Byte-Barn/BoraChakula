@@ -14,6 +14,7 @@ Oracle Autonomous Database / Oracle Database 23ai schema, matching engine and de
 | `06_agreements.sql` | `HL_AGREEMENTS` blockchain table: tamper-evident ledger of confirmed, rejected and delivered farmer agreements |
 | `07_api.sql` | Frontend contract: `HL_DEMAND_API`, `HL_HARVEST_API` and the `HL_MATCH_V`, `HL_FULFIL_V`, `HL_IMPACT_METRICS_V` views (see `docs/backend-api.md`) |
 | `08_demo.sql` | `HL_DEMO`: the canvas demo story (Kijani Fresh Grocers, Kirinyaga farms), `seed`, `reset`, `featured_demand_id` |
+| `09_auth.sql` | `HL_APP_USERS` and `HL_AUTH`: roles (buyer, farmer, ops), the signed-in party, and `HL_MY_*` views |
 | `install.sql` / `uninstall.sql` | Install everything / drop everything |
 
 ## Install
