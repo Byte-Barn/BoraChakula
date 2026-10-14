@@ -19,6 +19,7 @@ Oracle Autonomous Database / Oracle Database 23ai schema, matching engine and de
 | `11_routes.sql` | `HL_ROUTE_STOP_V` (pins, stop table, separate-trip lines) and `HL_ROUTE_LINE_V` (GeoJSON route line and totals) |
 | `12_apex_error.sql` | `HL_APEX_ERROR.HANDLE`: the APEX error handling function (APEX databases only; skipped elsewhere) |
 | `13_farmer_api.sql` | `HL_FARMER_API` (consent, data export, account deletion, ledger purge), `HL_ERASURES`, `HL_LEDGER_PURGES`, `HL_LEDGER_PURGE_V`, `HL_MY_DATA_V` (operations steps: `docs/operations.md`) |
+| `14_ai.sql` | `HL_AI`: one-sentence match explanations in English or Kiswahili with Select AI, rule-based fallback; `HL_AI_EXPLANATIONS` cache; `AI_ENABLED` setting (off) |
 | `tests/` | `run.sh` and the backend tests (see below) |
 | `install.sql` / `uninstall.sql` | Install everything / drop everything |
 
@@ -88,6 +89,28 @@ begin
 end;
 ```
 
+## Select AI match sentences (optional)
+
+`hl_ai.explain_match(match_id, 'en' | 'sw')` rewords a match's four reasons as one sentence with Select AI
+(`DBMS_CLOUD_AI`, Autonomous Database only). It is off after install (`AI_ENABLED = 0`); until it is switched on,
+or whenever the provider fails, it returns the reasons joined into one sentence, so pages never depend on AI.
+
+Switch it on with an API key from a supported provider (`openai`, `cohere`, `anthropic`, `google`). The key is
+read from the environment and stored only in the database, as credential `HL_AI_CRED`:
+
+```bash
+export HL_AI_PROVIDER=openai HL_AI_API_KEY=<key>   # optional: HL_AI_MODEL=<model name>
+python scripts/enable_select_ai.py --wallet infra/.wallet/wallet.zip
+```
+
+The script grants `HARVESTLINK` `EXECUTE` on `DBMS_CLOUD` and `DBMS_CLOUD_AI` and opens the network ACL to the
+provider's host (as ADMIN), then creates the credential and the `HL_EXPLAIN` profile, switches AI on and prints
+the featured match's sentence in both languages. `--disable` switches it off again. For OCI Generative AI, create
+an OCI credential and call `hl_ai.create_profile('oci', '<credential>', '<model>')` by hand.
+
+A reinstall resets `AI_ENABLED` to 0 but keeps the credential and profile, so `begin hl_ai.set_enabled(true);
+commit; end;` switches it back on. If the schema user itself is recreated, rerun the script.
+
 ## Views for APEX
 
 | View | Use |
@@ -102,7 +125,10 @@ end;
 
 Update these with real figures before the pitch:
 
-- `hl_crops`: `typical_broker_price_kg`, `typical_market_price_kg`, `shelf_life_days`
-- `hl_settings`: `BASELINE_LOSS_RATE`, vehicle capacities and emission factors
+- `hl_crops`: `typical_broker_price_kg` (FAOSTAT 2024 farm-gate for five crops, estimates for peppers, French beans
+  and kale), `typical_market_price_kg` (estimates), `shelf_life_days` (estimates)
+- `hl_settings`: vehicle capacities. `BASELINE_LOSS_RATE` (IFPRI 2022) and the emission factors (UK DESNZ 2024) are
+  sourced; the `db/04_seed.sql` header lists the references. When you replace a figure, cite its source in the
+  setting description and set the metric's `provenance` in `HL_IMPACT_METRICS_V` to `sourced`.
 
 Then re-run `begin hl_match_pkg.rematch_all; commit; end;`.

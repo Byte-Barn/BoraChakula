@@ -1,6 +1,7 @@
 -- Ledger purge after account deletion. Rows cannot be deleted until 16 days
 -- after insert, so this checks the preview, the audit log and that the purge
--- removes nothing still in retention. Runs after test_07 (erasures pending).
+-- removes nothing still in retention. Runs after test_07 (erasures pending)
+-- and test_08_ai, which leaves farmers alone.
 declare
   l_v       hl_ledger_purge_v%rowtype;
   l_before  number;
