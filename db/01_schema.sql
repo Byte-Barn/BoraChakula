@@ -56,6 +56,7 @@ create table hl_farmers (
   consent_given   varchar2(1)   default 'N' not null,
   consent_version varchar2(20),             -- notice the farmer agreed to
   consent_at      timestamp,                -- when they agreed
+  erased_at       timestamp,                -- account deleted; row kept as a pseudonymous stub
   created_at      timestamp     default systimestamp not null,
   constraint hl_farmers_pk primary key (farmer_id),
   constraint hl_farmers_phone_uk unique (phone),

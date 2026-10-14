@@ -18,7 +18,7 @@ Oracle Autonomous Database / Oracle Database 23ai schema, matching engine and de
 | `10_alloc.sql` | `HL_ALLOC_PKG` (allocate / remove with a no-double-counting guard) and `HL_ALLOCATIONS_V`, `HL_GRADE_ALLOCATION_V` |
 | `11_routes.sql` | `HL_ROUTE_STOP_V` (pins, stop table, separate-trip lines) and `HL_ROUTE_LINE_V` (GeoJSON route line and totals) |
 | `12_apex_error.sql` | `HL_APEX_ERROR.HANDLE`: the APEX error handling function (APEX databases only; skipped elsewhere) |
-| `13_farmer_api.sql` | `HL_FARMER_API` (consent, data export, account deletion, ledger purge), `HL_ERASURES`, `HL_MY_DATA_V` |
+| `13_farmer_api.sql` | `HL_FARMER_API` (consent, data export, account deletion, ledger purge), `HL_ERASURES`, `HL_LEDGER_PURGES`, `HL_LEDGER_PURGE_V`, `HL_MY_DATA_V` (operations steps: `docs/operations.md`) |
 | `14_ai.sql` | `HL_AI`: one-sentence match explanations in English or Kiswahili with Select AI, rule-based fallback; `HL_AI_EXPLANATIONS` cache; `AI_ENABLED` setting (off) |
 | `tests/` | `run.sh` and the backend tests (see below) |
 | `install.sql` / `uninstall.sql` | Install everything / drop everything |

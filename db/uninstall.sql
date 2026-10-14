@@ -12,6 +12,8 @@ drop table hl_ai_explanations purge;
 drop view hl_my_data_v;
 drop package hl_farmer_api;
 drop table hl_erasures purge;
+drop view hl_ledger_purge_v;
+drop table hl_ledger_purges purge;
 drop view hl_route_line_v;
 drop view hl_route_stop_v;
 drop view hl_grade_allocation_v;

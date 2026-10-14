@@ -251,7 +251,8 @@ Kenya Data Protection Act, 2019: consent at sign-up, a copy of your data, and de
 | Record consent to a specific notice | `hl_farmer_api.record_consent(p_farmer_id, p_consent_version default latest)` |
 | "Download my data" | `hl_farmer_api.export_data(p_farmer_id)` returns a JSON CLOB; the signed-in farmer's copy is `HL_MY_DATA_V.DATA_JSON` |
 | "Delete my account" | `hl_farmer_api.delete_account(p_farmer_id)`; sign the farmer out afterwards (their login no longer maps to a party) |
-| Purge expired ledger rows (operations) | `hl_farmer_api.purge_ledger` returns rows deleted |
+| What a ledger purge would delete (operations) | `HL_LEDGER_PURGE_V`: `cutoff`, `due_erasures`, `rows_to_delete`, `erased_rows`, `other_rows`, `next_due` |
+| Purge expired ledger rows (operations) | `hl_farmer_api.purge_ledger` returns rows deleted and logs the purge in `HL_LEDGER_PURGES`; steps in `docs/operations.md` |
 
 `export_data` keys: `exported_at`, `farmer`, `consent` (`given`, `version`, `given_at`, `notice_text`), `logins`,
 `harvests`, `matches`, `allocations`, `agreement_ledger`, `retention`.
@@ -262,15 +263,22 @@ What `delete_account` does, in one transaction (nothing is changed if it fails):
    that link to ledger rows, and `PURGE_AFTER` = newest ledger row naming the farmer + 16 days).
 2. Replaces the farmer's name and phone with the pseudonym, then declines their confirmed matches, so the ledger
    records each agreement ending (`REJECTED`) without the real name.
-3. Deletes their harvests (with every match, including delivered ones, allocations and pickup stops), their
-   login mapping in `HL_APP_USERS` and the farmer row. Re-plans the routes they were on (a dispatched route keeps
-   its trip, with the name replaced by the pseudonym in its stop list) and re-matches the freed demand to other farms.
+3. Deletes their harvests without a delivered match (with their matches, allocations and pickup stops) and their
+   login mapping in `HL_APP_USERS`, and re-matches the freed demand to other farms. Dispatched and closed routes are
+   not re-planned; the name in their stop list is replaced by the pseudonym.
+4. Keeps delivered history: harvests with a `DELIVERED` match stay (status `HARVESTED`, closed to matching) with
+   only their delivered matches, so closed demands keep their delivered kg and the impact figures do not drop.
+   The farmer row then stays as a pseudonymous stub (`full_name` = pseudonym, placeholder phone, no village,
+   cooperative or consent, location rounded to 0.1°, `erased_at` set) and its pickup stops are pseudonymised the
+   same way. A farmer with no delivered history has the row deleted.
 
-Afterwards the farmer is in no view except `HL_AGREEMENTS_V`: rows written **before** the deletion keep the real
-name and phone, because a blockchain table cannot be updated and `NO DELETE UNTIL 16 DAYS AFTER INSERT`. Once
-`PURGE_AFTER` passes, `purge_ledger` deletes them with `DBMS_BLOCKCHAIN_TABLE.DELETE_EXPIRED_ROWS`. That call can
-only trim the chain by age, so it also deletes **every other** ledger row as old as the newest one being purged;
-run it deliberately (it is not scheduled). It sets `PURGED_AT` on each erasure whose rows are gone.
+Afterwards the farmer is in no view except `HL_AGREEMENTS_V` (a stub appears only as `Erased farmer #n` on delivered
+orders). Ledger rows written **before** the deletion keep the real name and phone, because a blockchain table
+cannot be updated and `NO DELETE UNTIL 16 DAYS AFTER INSERT`. Once `PURGE_AFTER` passes, `purge_ledger` deletes them
+with `DBMS_BLOCKCHAIN_TABLE.DELETE_EXPIRED_ROWS`. That call can only trim the ledger by age, so it also deletes
+**every other** party's rows as old as the newest one being purged. This is accepted and run monthly by operations
+(`docs/operations.md`, which explains the decision). It sets `PURGED_AT` on each erasure whose rows are gone.
+Calling `delete_account` or `export_data` again for a deleted farmer raises `-20606`.
 
 In the demo, `hl_demo.reset` brings deleted demo farmers back and re-maps `FARMER_DEMO` to Wanjiru Muthoni.
 
@@ -314,6 +322,7 @@ In the demo, `hl_demo.reset` brings deleted demo farmers back and re-maps `FARME
 | -20603 | `hl_farmer_api` | You can only see or delete your own farmer account |
 | -20604 | Saving consent on `HL_FARMERS` | No consent notice has been published |
 | -20605 | `purge_ledger` | Only operations can purge the agreement ledger |
+| -20606 | `hl_farmer_api` | Farmer has already been deleted |
 | -20611 | `hl_ai` | Match does not exist |
 | -20612 | `hl_ai` | Language must be en (English) or sw (Kiswahili) |
 
