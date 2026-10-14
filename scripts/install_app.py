@@ -7,6 +7,8 @@ Pipeline (all through the database, no App Builder session needed):
     -> apex/apexlang/                        (generated source, kept in git)
     + apex/theme/harvestlink.css             (HarvestLink styling, added as a static file)
     + error handling function                (hl_apex_error.handle, db/12_apex_error.sql)
+    + apex/theme/design-system, images       (HarvestLink design system CSS and canvas photos)
+    + apex/components/                       (Template Components: StatCard, MatchCard, ...)
     + apex/pages/                            (canvas screens written in APEXlang)
     -> SQLcl "apex validate" + "apex import"  (installs into the workspace)
 
@@ -37,6 +39,13 @@ BLUEPRINT = REPO / "apex" / "harvestlink-blueprint.md"
 APEXLANG_DIR = REPO / "apex" / "apexlang"
 THEME_CSS = REPO / "apex" / "theme" / "harvestlink.css"
 THEME_ICONS = REPO / "apex" / "theme" / "icons"
+# Design system from the HarvestLink canvas: stylesheets loaded on every page
+# (in this order) and images referenced as #APP_FILES#images/<name>
+DESIGN_CSS = [REPO / "apex" / "theme" / "design-system" / n
+              for n in ("hl-tokens.css", "hl-components.css", "hl-canvas.css")]
+THEME_IMAGES = REPO / "apex" / "theme" / "images"
+COMPONENTS_DIR = REPO / "apex" / "components"
+MIME_TYPES = {".css": "text/css", ".jpg": "image/jpeg", ".png": "image/png", ".svg": "image/svg+xml"}
 PAGES_DIR = REPO / "apex" / "pages"
 WORKSPACE = "HARVESTLINK"
 
@@ -88,11 +97,16 @@ def apply_theme():
     shared = APEXLANG_DIR / "shared-components"
     for icon in THEME_ICONS.glob("*.png"):
         shutil.copyfile(icon, shared / "static-files" / "icons" / icon.name)
-    target = shared / "static-files" / "css" / THEME_CSS.name
-    target.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(THEME_CSS, target)
-    with open(shared / "static-files.apx", "a", newline="\n") as f:
-        f.write(f'\nfile "css/{THEME_CSS.name}" (\n    mimeType: text/css\n    charSet: utf-8\n)\n')
+
+    files = [("css", f) for f in [THEME_CSS] + DESIGN_CSS]
+    files += [("images", f) for f in sorted(THEME_IMAGES.glob("*")) if f.suffix in MIME_TYPES]
+    with open(shared / "static-files.apx", "a", newline="\n") as apx:
+        for folder, source in files:
+            target = shared / "static-files" / folder / source.name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(source, target)
+            apx.write(f'\nfile "{folder}/{source.name}" (\n    mimeType: {MIME_TYPES[source.suffix]}\n'
+                      f'    charSet: utf-8\n)\n')
 
     theme = shared / "themes" / "universal-theme" / "theme.apx"
     text = theme.read_text()
@@ -103,8 +117,25 @@ def apply_theme():
         "fileUrls: [\n"
         "            #THEME_FILES#css/Core#MIN#.css?v=#APEX_VERSION#\n"
         f"            #APP_FILES#css/{THEME_CSS.name}\n"
-        "        ]")), newline="\n")
-    print(f"Added {THEME_CSS.relative_to(REPO)} and the HarvestLink icons to the app")
+        + "".join(f"            #APP_FILES#css/{c.name}\n" for c in DESIGN_CSS)
+        + "        ]")), newline="\n")
+    print(f"Added {THEME_CSS.relative_to(REPO)}, the design system ({len(DESIGN_CSS)} stylesheets, "
+          f"{len(files) - 1 - len(DESIGN_CSS)} images) and the HarvestLink icons to the app")
+
+
+def apply_template_components():
+    """Add the HarvestLink Template Components in apex/components/<name>/ (one
+    plug-in each: plugin.apx and custom-attributes.apx). Pages use them as
+    regions of type appTemplateComponent/<name>."""
+    target_root = APEXLANG_DIR / "shared-components" / "plugins" / "template-component"
+    names = []
+    for folder in sorted(p for p in COMPONENTS_DIR.iterdir() if p.is_dir()):
+        target = target_root / folder.name
+        target.mkdir(parents=True, exist_ok=True)
+        for apx in folder.glob("*.apx"):
+            (target / apx.name).write_text(apx.read_text(encoding="utf-8"), encoding="utf-8", newline="\n")
+        names.append(folder.name)
+    print(f"Added {len(names)} Template Components: {', '.join(names)}")
 
 
 def apply_error_handling():
@@ -211,6 +242,7 @@ def main():
             print(f"Generated {len(z.namelist())} APEXlang files in {APEXLANG_DIR.relative_to(REPO)}")
         apply_theme()
         apply_error_handling()
+        apply_template_components()
         apply_frontend_pages()
 
     if args.check_only:

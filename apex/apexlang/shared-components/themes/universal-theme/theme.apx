@@ -15,6 +15,9 @@ theme universal-theme (
         fileUrls: [
             #THEME_FILES#css/Core#MIN#.css?v=#APEX_VERSION#
             #APP_FILES#css/harvestlink.css
+            #APP_FILES#css/hl-tokens.css
+            #APP_FILES#css/hl-components.css
+            #APP_FILES#css/hl-canvas.css
         ]
     }
     componentDefaults {
