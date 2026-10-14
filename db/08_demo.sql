@@ -238,6 +238,13 @@ create or replace package body hl_demo as
     delete from hl_buyers;
     delete from hl_farmers;
     seed;
+    -- Deleting a demo farmer's account (hl_farmer_api.delete_account) also
+    -- removes their login mapping; restore it. Dynamic because HL_AUTH is
+    -- installed after this package (db/09_auth.sql).
+    execute immediate q'[
+      begin
+        hl_auth.register_user('FARMER_DEMO', 'FARMER', 'Wanjiru Muthoni');
+      end;]';
     commit;
   exception
     when others then
