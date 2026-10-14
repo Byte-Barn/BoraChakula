@@ -1,0 +1,371 @@
+page 31 (
+    name: Post a Demand
+    alias: POST-DEMAND
+    title: Post a demand
+    pageGroup: @marketplace
+    appearance {
+        pageTemplate: @/standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        authorizationScheme: mustNotBePublicUser
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+    advanced {
+        enableDuplicatePageSubmissions: false
+    }
+    comments {
+        comments: Canvas screen 4. Buyers post a demand (HL_DEMAND_API.create_demand) or save a draft, then go straight to the ranked farmers.
+    }
+
+    region post-demand (
+        name: Post a demand
+        type: staticContent
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: #DEFAULT#
+        }
+        settings {
+            outputAs: text
+        }
+        comments {
+            comments: Tell farmers what you need before they harvest. Matching starts as soon as you post.
+        }
+    )
+
+    pageItem P31_DEMAND_ID (
+        type: hidden
+        layout {
+            sequence: 5
+            region: @post-demand
+            slot: regionBody
+        }
+    )
+
+    pageItem P31_BUYER_ID (
+        type: selectList
+        label {
+            label: Buyer
+            alignment: right
+        }
+        lov {
+            type: sharedComponent
+            lov: @lov-buyers
+        }
+        layout {
+            sequence: 10
+            region: @post-demand
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: hl_auth.buyer_id is null
+        }
+    )
+
+    pageItem P31_CROP_ID (
+        type: selectList
+        label {
+            label: Crop
+            alignment: right
+        }
+        lov {
+            type: sharedComponent
+            lov: @lov-crops
+        }
+        layout {
+            sequence: 20
+            region: @post-demand
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+        }
+        validation {
+            valueRequired: true
+        }
+    )
+
+    pageItem P31_GRADE (
+        type: radioGroup
+        label {
+            label: Quality grade
+            alignment: right
+        }
+        settings {
+            noOfCols: 10
+        }
+        lov {
+            type: sharedComponent
+            lov: @lov-grades
+            displayNullValue: false
+        }
+        layout {
+            sequence: 30
+            region: @post-demand
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+        }
+        validation {
+            valueRequired: true
+        }
+    )
+
+    pageItem P31_QTY_KG (
+        type: numberField
+        label {
+            label: Quantity (kg)
+            alignment: right
+        }
+        layout {
+            sequence: 40
+            region: @post-demand
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            valueRequired: true
+        }
+    )
+
+    pageItem P31_PRICE_PER_KG (
+        type: numberField
+        label {
+            label: Price (KES/kg)
+            alignment: right
+        }
+        layout {
+            sequence: 50
+            region: @post-demand
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            valueRequired: true
+        }
+    )
+
+    pageItem P31_NEED_BY (
+        type: datePicker
+        label {
+            label: Delivery date (at least 7 days away)
+            alignment: right
+        }
+        layout {
+            sequence: 60
+            region: @post-demand
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+        validation {
+            valueRequired: true
+        }
+    )
+
+    pageItem P31_WINDOW (
+        type: selectList
+        label {
+            label: Receiving time
+            alignment: right
+        }
+        lov {
+            type: sharedComponent
+            lov: @lov-receiving-windows
+        }
+        layout {
+            sequence: 70
+            region: @post-demand
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    pageItem P31_NOTES (
+        type: textarea
+        label {
+            label: Notes for farmers
+            alignment: right
+        }
+        layout {
+            sequence: 80
+            region: @post-demand
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    button post (
+        buttonName: POST
+        label: Post demand
+        layout {
+            sequence: 10
+            region: @post-demand
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @/text
+            hot: true
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    button save-draft (
+        buttonName: SAVE_DRAFT
+        label: Save draft
+        layout {
+            sequence: 20
+            region: @post-demand
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @/text
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    process defaults (
+        name: Suggest values for a new demand
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                if :P31_DEMAND_ID is null and :P31_CROP_ID is null then
+                  :P31_GRADE    := 'A';
+                  :P31_NEED_BY  := to_char(trunc(sysdate) + 14);
+                  :P31_WINDOW   := '06-10';
+                end if;
+                ```
+        }
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+    )
+
+    process save-draft (
+        name: Save draft
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                :P31_DEMAND_ID := hl_demand_api.save_draft(
+                  p_demand_id        => to_number(:P31_DEMAND_ID),
+                  p_buyer_id         => coalesce(hl_auth.buyer_id, to_number(:P31_BUYER_ID)),
+                  p_crop_id          => to_number(:P31_CROP_ID),
+                  p_grade            => :P31_GRADE,
+                  p_quantity_kg      => to_number(:P31_QTY_KG),
+                  p_price_per_kg     => to_number(:P31_PRICE_PER_KG),
+                  p_need_by_date     => to_date(:P31_NEED_BY),
+                  p_notes            => :P31_NOTES,
+                  p_receiving_window => :P31_WINDOW);
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :REQUEST = 'SAVE_DRAFT'
+        }
+    )
+
+    process post-demand (
+        name: Post demand and show the matches
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                declare
+                  l_id number := to_number(:P31_DEMAND_ID);
+                begin
+                  if l_id is null then
+                    l_id := hl_demand_api.create_demand(
+                      p_buyer_id         => coalesce(hl_auth.buyer_id, to_number(:P31_BUYER_ID)),
+                      p_crop_id          => to_number(:P31_CROP_ID),
+                      p_grade            => :P31_GRADE,
+                      p_quantity_kg      => to_number(:P31_QTY_KG),
+                      p_price_per_kg     => to_number(:P31_PRICE_PER_KG),
+                      p_need_by_date     => to_date(:P31_NEED_BY),
+                      p_notes            => :P31_NOTES,
+                      p_receiving_window => :P31_WINDOW);
+                  else
+                    -- A saved draft: store the latest values, then apply every rule and match
+                    l_id := hl_demand_api.save_draft(
+                      p_demand_id        => l_id,
+                      p_buyer_id         => coalesce(hl_auth.buyer_id, to_number(:P31_BUYER_ID)),
+                      p_crop_id          => to_number(:P31_CROP_ID),
+                      p_grade            => :P31_GRADE,
+                      p_quantity_kg      => to_number(:P31_QTY_KG),
+                      p_price_per_kg     => to_number(:P31_PRICE_PER_KG),
+                      p_need_by_date     => to_date(:P31_NEED_BY),
+                      p_notes            => :P31_NOTES,
+                      p_receiving_window => :P31_WINDOW);
+                    hl_demand_api.publish(p_demand_id => l_id);
+                  end if;
+                  commit;
+                  apex_util.redirect_url(apex_page.get_url(
+                    p_page        => 32,
+                    p_clear_cache => '31,32',
+                    p_items       => 'P32_DEMAND_ID',
+                    p_values      => l_id));
+                end;
+                ```
+        }
+        execution {
+            sequence: 20
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :REQUEST = 'POST'
+        }
+    )
+
+)

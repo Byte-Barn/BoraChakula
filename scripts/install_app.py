@@ -7,6 +7,7 @@ Pipeline (all through the database, no App Builder session needed):
     -> apex/apexlang/                        (generated source, kept in git)
     + apex/theme/harvestlink.css             (HarvestLink styling, added as a static file)
     + error handling function                (hl_apex_error.handle, db/12_apex_error.sql)
+    + apex/pages/                            (canvas screens written in APEXlang)
     -> SQLcl "apex validate" + "apex import"  (installs into the workspace)
 
 APEX 26.1 cannot import APEXlang through APEX_APPLICATION_INSTALL, so the
@@ -36,6 +37,7 @@ BLUEPRINT = REPO / "apex" / "harvestlink-blueprint.md"
 APEXLANG_DIR = REPO / "apex" / "apexlang"
 THEME_CSS = REPO / "apex" / "theme" / "harvestlink.css"
 THEME_ICONS = REPO / "apex" / "theme" / "icons"
+PAGES_DIR = REPO / "apex" / "pages"
 WORKSPACE = "HARVESTLINK"
 
 GENERATE = """
@@ -72,6 +74,10 @@ def connect(wallet, wallet_dir):
     )
 
 
+# Files below are written with newline="\n": the APEXlang parser rejects CRLF,
+# which text mode writes on Windows.
+
+
 def apply_theme():
     """Add the HarvestLink stylesheet and app icons to the generated app.
 
@@ -85,7 +91,7 @@ def apply_theme():
     target = shared / "static-files" / "css" / THEME_CSS.name
     target.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(THEME_CSS, target)
-    with open(shared / "static-files.apx", "a") as f:
+    with open(shared / "static-files.apx", "a", newline="\n") as f:
         f.write(f'\nfile "css/{THEME_CSS.name}" (\n    mimeType: text/css\n    charSet: utf-8\n)\n')
 
     theme = shared / "themes" / "universal-theme" / "theme.apx"
@@ -97,7 +103,7 @@ def apply_theme():
         "fileUrls: [\n"
         "            #THEME_FILES#css/Core#MIN#.css?v=#APEX_VERSION#\n"
         f"            #APP_FILES#css/{THEME_CSS.name}\n"
-        "        ]")))
+        "        ]")), newline="\n")
     print(f"Added {THEME_CSS.relative_to(REPO)} and the HarvestLink icons to the app")
 
 
@@ -113,8 +119,37 @@ def apply_error_handling():
         "    errorHandling {\n"
         "        defaultDisplayLocation: inlineInNotification\n"
         "        errorHandlingFunctionName: hl_apex_error.handle\n"
-        "    }\n" + anchor), 1))
+        "    }\n" + anchor), 1), newline="\n")
     print("Set hl_apex_error.handle as the error handling function")
+
+
+def apply_frontend_pages():
+    """Add the canvas screens in apex/pages/ to the generated app.
+
+    Blueprints only describe table forms and reports, so screens that call the
+    backend API (docs/backend-api.md) are written in APEXlang and copied in on
+    every build, with their navigation entries (navigation.apx) and lists of
+    values (lovs.apx).
+    """
+    pages = sorted(PAGES_DIR.glob("p*.apx"))
+    for page in pages:
+        if any((APEXLANG_DIR / "pages").glob(page.name[:6] + "-*.apx")):
+            sys.exit(f"{page.name} has the number of a blueprint page; renumber it")
+        (APEXLANG_DIR / "pages" / page.name).write_text(
+            page.read_text(encoding="utf-8"), encoding="utf-8", newline="\n")
+
+    shared = APEXLANG_DIR / "shared-components"
+    with open(shared / "lovs.apx", "a", encoding="utf-8", newline="\n") as f:
+        f.write("\n" + (PAGES_DIR / "lovs.apx").read_text(encoding="utf-8"))
+
+    lists = shared / "lists.apx"
+    text = lists.read_text(encoding="utf-8")
+    anchor = "list navigation-menu (\n    name: Navigation Menu\n"
+    if anchor not in text:
+        sys.exit(f"Unexpected navigation menu in {lists}; cannot add the canvas screens")
+    entries = (PAGES_DIR / "navigation.apx").read_text(encoding="utf-8")
+    lists.write_text(text.replace(anchor, anchor + "    \n" + entries, 1), encoding="utf-8", newline="\n")
+    print(f"Added {len(pages)} canvas screens from {PAGES_DIR.relative_to(REPO)}")
 
 
 def main():
@@ -122,6 +157,8 @@ def main():
     p.add_argument("--wallet", required=True, help="Path to the ADB client wallet zip")
     p.add_argument("--app-id", type=int, default=100)
     p.add_argument("--check-only", action="store_true", help="Validate and generate, do not install")
+    p.add_argument("--alias", help="App alias, for a second copy beside app 100 (aliases are unique)")
+    p.add_argument("--name", help="App name, e.g. to label a preview copy")
     args = p.parse_args()
 
     oracledb.defaults.fetch_lobs = False
@@ -143,6 +180,7 @@ def main():
             print(f"Generated {len(z.namelist())} APEXlang files in {APEXLANG_DIR.relative_to(REPO)}")
         apply_theme()
         apply_error_handling()
+        apply_frontend_pages()
 
     if args.check_only:
         return
@@ -153,7 +191,9 @@ def main():
         f'connect {WORKSPACE}/"{env("HL_SCHEMA_PASSWORD")}"@{service_name(args.wallet)}',
         "whenever sqlerror exit failure",
         f"apex validate -input {APEXLANG_DIR} -workspace {WORKSPACE}",
-        f"apex import -input {APEXLANG_DIR} -workspace {WORKSPACE} -schema {WORKSPACE} -id {args.app_id}",
+        f"apex import -input {APEXLANG_DIR} -workspace {WORKSPACE} -schema {WORKSPACE} -id {args.app_id}"
+        + (f" -alias {args.alias}" if args.alias else "")
+        + (f' -name "{args.name}"' if args.name else ""),
         "exit",
     ])
     result = subprocess.run([str(SQLCL), "-S", "/nolog"], input=script, text=True,

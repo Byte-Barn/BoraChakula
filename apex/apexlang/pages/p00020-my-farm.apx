@@ -1,0 +1,508 @@
+page 20 (
+    name: My Farm
+    alias: MY-FARM
+    title: My farm
+    pageGroup: @marketplace
+    appearance {
+        pageTemplate: @/standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        authorizationScheme: mustNotBePublicUser
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+    advanced {
+        enableDuplicatePageSubmissions: false
+    }
+    comments {
+        comments: Canvas screen 2, phone first. Offers to the signed-in farmer (accept or decline), registering a harvest (HL_HARVEST_API.register) and the farmer's harvests.
+    }
+
+    region offers (
+        name: Offers from buyers
+        type: themeTemplateComponent/contentRow
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select o.MATCH_ID as MATCH_ID
+                     , o.BUYER_NAME || ' · ' || o.BUYER_LOCATION as OVERLINE
+                     , to_char(o.ALLOCATED_KG, 'FM999G999G990') || ' kg of Grade ' || o.GRADE || ' ' || o.CROP_NAME as TITLE
+                     , 'KES ' || to_char(o.PRICE_PER_KG, 'FM999G990') || '/kg · KES '
+                       || to_char(o.OFFER_VALUE_KES, 'FM999G999G990') || ' · deliver by '
+                       || to_char(o.NEED_BY_DATE, 'Dy DD Mon') as MISC
+                     , '<span class="hl-badge hl-badge--' || lower(o.UI_STATUS) || '">'
+                       || case o.UI_STATUS when 'MATCHED' then 'You confirmed'
+                                           when 'PENDING' then 'Waiting for your answer'
+                                           else 'You declined' end
+                       || '</span>'
+                       -- Select AI sentence in Kiswahili, only when AI wrote it
+                       || case when hl_ai.explain_match(o.MATCH_ID, 'sw') is not null
+                                 and hl_ai.explained_by(o.MATCH_ID, 'sw') = 'AI'
+                               then '<p class="hl-why"><span class="hl-ai" title="Imeandikwa na Select AI">AI</span> '
+                                    || apex_escape.html(hl_ai.explain_match(o.MATCH_ID, 'sw')) || '</p>' end
+                       || '<ul class="hl-reasons hl-reasons--plain">'
+                       || '<li>' || apex_escape.html(o.REASON_WINDOW) || '</li>'
+                       || '<li>' || apex_escape.html(o.REASON_DIST) || '</li>'
+                       || '</ul>'
+                       || case when o.AGREEMENT_HASH is not null
+                               then '<p class="hl-hash">Agreement recorded on the ledger · <code>'
+                                    || o.AGREEMENT_HASH || '</code></p>' end
+                       || case when o.UI_STATUS = 'PENDING'
+                               then '<div class="hl-actions">'
+                                    || '<button type="button" class="t-Button t-Button--hot" '
+                                    || 'onclick="apex.submit({request:''ACCEPT'',set:{P20_MATCH_ID:''' || o.MATCH_ID || '''}});">'
+                                    || 'Accept ' || to_char(o.ALLOCATED_KG, 'FM999G999G990') || ' kg</button>'
+                                    || '<button type="button" class="t-Button" '
+                                    || 'onclick="apex.submit({request:''DECLINE'',set:{P20_MATCH_ID:''' || o.MATCH_ID || '''}});">'
+                                    || 'Decline</button>'
+                                    || '</div>' end as BODY_HTML
+                from HL_MY_OFFERS_V o
+                where o.UI_STATUS <> 'DECLINED'
+                order by case o.UI_STATUS when 'PENDING' then 0 else 1 end, o.NEED_BY_DATE
+                ```
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+        accessibility {
+            landmarkType: region
+        }
+        componentAppearance {
+            display: report
+        }
+        settings {
+            overline: &OVERLINE.
+            title: &TITLE.
+            description: &BODY_HTML!RAW.
+            miscellaneous: &MISC.
+        }
+
+        column BODY_HTML (
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: BODY_HTML
+                dataType: varchar2
+            }
+        )
+
+        column MATCH_ID (
+            layout {
+                sequence: 10
+            }
+            source {
+                databaseColumn: MATCH_ID
+                dataType: number
+                primaryKey: true
+            }
+        )
+
+        column MISC (
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: MISC
+                dataType: varchar2
+            }
+        )
+
+        column OVERLINE (
+            layout {
+                sequence: 20
+            }
+            source {
+                databaseColumn: OVERLINE
+                dataType: varchar2
+            }
+        )
+
+        column TITLE (
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: TITLE
+                dataType: varchar2
+            }
+        )
+
+    )
+
+    region register-harvest (
+        name: Register a harvest
+        type: staticContent
+        layout {
+            sequence: 20
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: #DEFAULT#
+        }
+        settings {
+            outputAs: text
+        }
+        comments {
+            comments: Tell buyers what you expect to harvest, before you harvest.
+        }
+    )
+
+    pageItem P20_MATCH_ID (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 5
+            region: @register-harvest
+            slot: regionBody
+        }
+        security {
+            sessionStateProtection: unrestricted
+        }
+    )
+
+    pageItem P20_FARMER_ID (
+        type: selectList
+        label {
+            label: Farmer
+            alignment: right
+        }
+        lov {
+            type: sharedComponent
+            lov: @lov-farmers
+        }
+        layout {
+            sequence: 10
+            region: @register-harvest
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: hl_auth.farmer_id is null
+        }
+    )
+
+    pageItem P20_CROP_ID (
+        type: selectList
+        label {
+            label: Crop
+            alignment: right
+        }
+        lov {
+            type: sharedComponent
+            lov: @lov-crops
+        }
+        layout {
+            sequence: 20
+            region: @register-harvest
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    pageItem P20_GRADE (
+        type: radioGroup
+        label {
+            label: Grade
+            alignment: right
+        }
+        settings {
+            noOfCols: 10
+        }
+        lov {
+            type: sharedComponent
+            lov: @lov-grades
+            displayNullValue: false
+        }
+        layout {
+            sequence: 30
+            region: @register-harvest
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    pageItem P20_QTY_KG (
+        type: numberField
+        label {
+            label: Expected quantity (kg)
+            alignment: right
+        }
+        layout {
+            sequence: 40
+            region: @register-harvest
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+    )
+
+    pageItem P20_FROM (
+        type: datePicker
+        label {
+            label: Harvest from
+            alignment: right
+        }
+        layout {
+            sequence: 50
+            region: @register-harvest
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+    )
+
+    pageItem P20_TO (
+        type: datePicker
+        label {
+            label: Harvest to
+            alignment: right
+        }
+        layout {
+            sequence: 60
+            region: @register-harvest
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-floating
+            templateOptions: #DEFAULT#
+            width: 32
+        }
+    )
+
+    pageItem P20_NOTES (
+        type: textarea
+        label {
+            label: Notes
+            alignment: right
+        }
+        layout {
+            sequence: 70
+            region: @register-harvest
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-floating
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    button register (
+        buttonName: REGISTER
+        label: Register harvest
+        layout {
+            sequence: 10
+            region: @register-harvest
+            slot: next
+        }
+        appearance {
+            buttonTemplate: @/text
+            hot: true
+            templateOptions: #DEFAULT#
+        }
+        behavior {
+            warnOnUnsavedChanges: doNotCheck
+        }
+    )
+
+    region my-harvests (
+        name: My harvests
+        type: themeTemplateComponent/contentRow
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select h.HARVEST_ID as HARVEST_ID
+                     , 'Grade ' || h.GRADE || ' · ' || initcap(h.STATUS) as OVERLINE
+                     , h.CROP_NAME || ' · ' || to_char(h.EXPECTED_QTY_KG, 'FM999G999G990') || ' kg' as TITLE
+                     , to_char(h.HARVEST_FROM, 'DD Mon') || '–' || to_char(h.HARVEST_TO, 'DD Mon')
+                       || ' · ' || to_char(h.AVAILABLE_KG, 'FM999G999G990') || ' kg not yet promised' as MISC
+                from HL_MY_HARVESTS_V h
+                where h.HARVEST_TO >= trunc(sysdate) - 7
+                order by h.HARVEST_FROM
+                ```
+        }
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+        accessibility {
+            landmarkType: region
+        }
+        componentAppearance {
+            display: report
+        }
+        settings {
+            overline: &OVERLINE.
+            title: &TITLE.
+            miscellaneous: &MISC.
+        }
+
+        column HARVEST_ID (
+            layout {
+                sequence: 10
+            }
+            source {
+                databaseColumn: HARVEST_ID
+                dataType: number
+                primaryKey: true
+            }
+        )
+
+        column MISC (
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: MISC
+                dataType: varchar2
+            }
+        )
+
+        column OVERLINE (
+            layout {
+                sequence: 20
+            }
+            source {
+                databaseColumn: OVERLINE
+                dataType: varchar2
+            }
+        )
+
+        column TITLE (
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: TITLE
+                dataType: varchar2
+            }
+        )
+
+    )
+
+    process accept-offer (
+        name: Accept offer
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                hl_match_pkg.confirm(p_match_id => to_number(:P20_MATCH_ID));
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :REQUEST = 'ACCEPT'
+        }
+    )
+
+    process decline-offer (
+        name: Decline offer
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                hl_match_pkg.decline(p_match_id => to_number(:P20_MATCH_ID));
+                ```
+        }
+        execution {
+            sequence: 20
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :REQUEST = 'DECLINE'
+        }
+    )
+
+    process register-harvest (
+        name: Register harvest
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                declare
+                  l_id number;
+                begin
+                  -- Checked here, not as required items, so Accept and Decline
+                  -- submit without filling in this form
+                  if :P20_CROP_ID is null or :P20_GRADE is null or :P20_QTY_KG is null
+                     or :P20_FROM is null or :P20_TO is null then
+                    raise_application_error(-20291, 'Choose a crop and grade, and give the quantity and harvest dates');
+                  end if;
+                  l_id := hl_harvest_api.register(
+                    p_farmer_id       => coalesce(hl_auth.farmer_id, to_number(:P20_FARMER_ID)),
+                    p_crop_id         => to_number(:P20_CROP_ID),
+                    p_grade           => :P20_GRADE,
+                    p_expected_qty_kg => to_number(:P20_QTY_KG),
+                    p_harvest_from    => to_date(:P20_FROM),
+                    p_harvest_to      => to_date(:P20_TO),
+                    p_notes           => :P20_NOTES);
+                  :P20_CROP_ID := null;
+                  :P20_QTY_KG  := null;
+                  :P20_FROM    := null;
+                  :P20_TO      := null;
+                  :P20_NOTES   := null;
+                end;
+                ```
+        }
+        execution {
+            sequence: 30
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :REQUEST = 'REGISTER'
+        }
+    )
+
+)

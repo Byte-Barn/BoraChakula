@@ -1,0 +1,217 @@
+page 42 (
+    name: Sustainability Impact
+    alias: IMPACT
+    title: Sustainability impact
+    pageGroup: @dashboard
+    appearance {
+        pageTemplate: @/standard
+        templateOptions: #DEFAULT#
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        authorizationScheme: mustNotBePublicUser
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+    advanced {
+        enableDuplicatePageSubmissions: false
+    }
+    comments {
+        comments: Canvas screen 8. One card per HL_IMPACT_METRICS_V row, with its provenance (live, simulated or demo) and how it is calculated.
+    }
+
+    region market-access (
+        name: Market access
+        type: themeTemplateComponent/contentRow
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select m.METRIC_KEY as METRIC_KEY
+                     , m.SORT_ORDER as SORT_ORDER
+                     , m.LABEL as OVERLINE
+                     , to_char(m.VALUE, 'FM999G999G999G990') || ' ' || m.UNIT as TITLE
+                     , '<span class="hl-prov hl-prov--' || m.PROVENANCE || '">' || initcap(m.PROVENANCE) || '</span>'
+                       || '<p class="hl-method"><b>How this is calculated.</b> '
+                       || apex_escape.html(m.METHOD) || '</p>' as BODY_HTML
+                from HL_IMPACT_METRICS_V m
+                where m.METRIC_GROUP = 'MARKET_ACCESS'
+                order by m.SORT_ORDER
+                ```
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+        accessibility {
+            landmarkType: region
+        }
+        componentAppearance {
+            display: report
+        }
+        settings {
+            overline: &OVERLINE.
+            title: &TITLE.
+            description: &BODY_HTML!RAW.
+        }
+
+        column BODY_HTML (
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: BODY_HTML
+                dataType: varchar2
+            }
+        )
+
+        column METRIC_KEY (
+            layout {
+                sequence: 10
+            }
+            source {
+                databaseColumn: METRIC_KEY
+                dataType: varchar2
+                primaryKey: true
+            }
+        )
+
+        column OVERLINE (
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: OVERLINE
+                dataType: varchar2
+            }
+        )
+
+        column SORT_ORDER (
+            layout {
+                sequence: 20
+            }
+            source {
+                databaseColumn: SORT_ORDER
+                dataType: number
+            }
+        )
+
+        column TITLE (
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: TITLE
+                dataType: varchar2
+            }
+        )
+
+    )
+
+    region waste-emissions (
+        name: Waste and emissions
+        type: themeTemplateComponent/contentRow
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select m.METRIC_KEY as METRIC_KEY
+                     , m.SORT_ORDER as SORT_ORDER
+                     , m.LABEL as OVERLINE
+                     , to_char(m.VALUE, 'FM999G999G999G990') || ' ' || m.UNIT as TITLE
+                     , '<span class="hl-prov hl-prov--' || m.PROVENANCE || '">' || initcap(m.PROVENANCE) || '</span>'
+                       || '<p class="hl-method"><b>How this is calculated.</b> '
+                       || apex_escape.html(m.METHOD) || '</p>' as BODY_HTML
+                from HL_IMPACT_METRICS_V m
+                where m.METRIC_GROUP = 'WASTE_EMISSIONS'
+                order by m.SORT_ORDER
+                ```
+        }
+        layout {
+            sequence: 20
+            slot: body
+        }
+        appearance {
+            template: @/standard
+            templateOptions: [
+                #DEFAULT#
+                t-Region--scrollBody
+            ]
+        }
+        accessibility {
+            landmarkType: region
+        }
+        componentAppearance {
+            display: report
+        }
+        settings {
+            overline: &OVERLINE.
+            title: &TITLE.
+            description: &BODY_HTML!RAW.
+        }
+
+        column BODY_HTML (
+            layout {
+                sequence: 50
+            }
+            source {
+                databaseColumn: BODY_HTML
+                dataType: varchar2
+            }
+        )
+
+        column METRIC_KEY (
+            layout {
+                sequence: 10
+            }
+            source {
+                databaseColumn: METRIC_KEY
+                dataType: varchar2
+                primaryKey: true
+            }
+        )
+
+        column OVERLINE (
+            layout {
+                sequence: 30
+            }
+            source {
+                databaseColumn: OVERLINE
+                dataType: varchar2
+            }
+        )
+
+        column SORT_ORDER (
+            layout {
+                sequence: 20
+            }
+            source {
+                databaseColumn: SORT_ORDER
+                dataType: number
+            }
+        )
+
+        column TITLE (
+            layout {
+                sequence: 40
+            }
+            source {
+                databaseColumn: TITLE
+                dataType: varchar2
+            }
+        )
+
+    )
+
+)
