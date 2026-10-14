@@ -510,8 +510,9 @@ select d.demand_id,
 
 -- One row per impact metric, with its unit, provenance and the method text
 -- the StatCard's "How this is calculated" note shows.
---   provenance: live (computed from records), simulated (prototype stand-in),
---   demo (illustrative factor or seeded price)
+--   provenance: live (computed from records), sourced (records x a published
+--   factor, cited in the method), simulated (prototype stand-in), demo
+--   (illustrative factor or seeded price). Sources: db/04_seed.sql header.
 create or replace view hl_impact_metrics_v as
 with i as (select * from hl_impact_v),
      r as (select nvl(sum(stops), 0) as separate_trips, nvl(sum(trips), 0) as shared_trips
@@ -537,12 +538,15 @@ select 4, 'MARKET_ACCESS', 'AGREEMENTS_RECORDED', 'Agreements recorded', a.confi
 union all
 select 5, 'MARKET_ACCESS', 'INCOME_UPLIFT', 'Estimated farmer income uplift', i.farmer_income_uplift_kes, 'KES', 'demo',
        'Allocated kg × (buyer price − typical broker price). Grade C counts against KES 0, '
-       || 'because it usually goes unsold. Broker prices are placeholders until market interviews.'
+       || 'because it usually goes unsold. Broker prices are FAO farm-gate producer prices for Kenya '
+       || '(FAOSTAT, January 2024) for tomatoes, onions, carrots, cabbage and avocado; team estimates '
+       || 'for peppers, French beans and kale until the market interviews.'
   from i
 union all
-select 6, 'WASTE_EMISSIONS', 'LOSS_AVOIDED', 'Estimated post-harvest loss avoided', i.loss_avoided_kg, 'kg', 'demo',
+select 6, 'WASTE_EMISSIONS', 'LOSS_AVOIDED', 'Estimated post-harvest loss avoided', i.loss_avoided_kg, 'kg', 'sourced',
        'Allocated kg × baseline loss rate of '
-       || to_char(hl_match_pkg.get_setting('BASELINE_LOSS_RATE') * 100, 'fm990') || '% (illustrative factor).'
+       || to_char(hl_match_pkg.get_setting('BASELINE_LOSS_RATE') * 100, 'fm990') || '%: tomato losses from farm '
+       || 'to point of sale without a pre-arranged buyer, 28.2% of value (IFPRI, Laikipia County, 2022).'
   from i
 union all
 select 7, 'WASTE_EMISSIONS', 'DISTANCE_SAVED', 'Truck distance saved', i.km_saved, 'km', 'simulated',
@@ -551,9 +555,10 @@ select 7, 'WASTE_EMISSIONS', 'DISTANCE_SAVED', 'Truck distance saved', i.km_save
   from i
 union all
 select 8, 'WASTE_EMISSIONS', 'CO2_AVOIDED', 'Estimated CO₂ avoided', i.co2_saved_kg, 'kg CO₂e', 'simulated',
-       'Kilometres saved × vehicle emission factors (pickup '
-       || to_char(hl_match_pkg.get_setting('PICKUP_CO2_KG_PER_KM'), 'fm0.00') || ', truck '
-       || to_char(hl_match_pkg.get_setting('TRUCK_CO2_KG_PER_KM'), 'fm0.00') || ' kg CO₂ per km).'
+       'Kilometres saved × diesel emission factors from UK DESNZ 2024 conversion factors (van '
+       || to_char(hl_match_pkg.get_setting('PICKUP_CO2_KG_PER_KM'), 'fm0.000') || ', 7.5–17 t rigid truck '
+       || to_char(hl_match_pkg.get_setting('TRUCK_CO2_KG_PER_KM'), 'fm0.000') || ' kg CO₂e per km). '
+       || 'Factors are published; distances are simulated, so the total is too.'
   from i
 union all
 select 9, 'WASTE_EMISSIONS', 'TRIPS_REPLACED', 'Trips replaced', r.separate_trips - r.shared_trips, 'trips', 'simulated',
