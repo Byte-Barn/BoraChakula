@@ -9,3 +9,4 @@ infra/.wallet/
 .env
 secrets.env
 __pycache__/
+infra/tfplan

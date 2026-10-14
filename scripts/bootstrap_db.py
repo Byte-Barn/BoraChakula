@@ -152,7 +152,7 @@ def main():
     target = p.add_mutually_exclusive_group(required=True)
     target.add_argument("--wallet", help="Path to the ADB client wallet zip")
     target.add_argument("--dsn", help="Plain connect string, e.g. localhost/FREEPDB1")
-    p.add_argument("--service", default="harvestlink_low", help="TNS alias in the wallet")
+    p.add_argument("--service", help="TNS alias in the wallet (default: the *_low alias)")
     p.add_argument("--skip-user", action="store_true")
     p.add_argument("--skip-apex", action="store_true")
     p.add_argument("--skip-install", action="store_true")
@@ -163,6 +163,10 @@ def main():
         if args.wallet:
             with zipfile.ZipFile(args.wallet) as z:
                 z.extractall(wallet_dir)
+            if not args.service:
+                tns = (Path(wallet_dir) / "tnsnames.ora").read_text()
+                args.service = re.search(r"^(\w+_low)\s*=", tns, re.M | re.I).group(1)
+            print(f"Connecting to {args.service}")
 
         if not (args.skip_user and args.skip_apex):
             with connect("ADMIN", env("HL_ADMIN_PASSWORD"), args, wallet_dir) as admin:

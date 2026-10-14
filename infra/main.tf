@@ -3,21 +3,18 @@ provider "oci" {
   region              = var.region
 }
 
-# Always Free Autonomous AI Database with APEX workload
+# Always Free Autonomous AI Database (Transaction Processing, with APEX)
 resource "oci_database_autonomous_database" "harvestlink" {
   compartment_id = var.tenancy_ocid
   db_name        = var.db_name
-  display_name   = "HarvestLink"
-  db_workload    = "APEX"
+  display_name   = var.display_name
+  db_workload    = "OLTP" # Transaction Processing: includes APEX and allows a wallet
   is_free_tier   = true
+  license_model  = "LICENSE_INCLUDED"
   admin_password = var.admin_password
 
   # Always Free without an IP allow-list requires mutual TLS (wallet)
   is_mtls_connection_required = true
-
-  lifecycle {
-    ignore_changes = [admin_password]
-  }
 }
 
 # Client wallet used by scripts/bootstrap_db.py to connect as ADMIN

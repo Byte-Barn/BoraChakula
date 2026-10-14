@@ -29,5 +29,11 @@ variable "wallet_password" {
 variable "db_name" {
   description = "Database name (letters and numbers only, max 30 chars)"
   type        = string
-  default     = "HARVESTLINK"
+  default     = "HarvestLinkStrathmore"
+}
+
+variable "display_name" {
+  description = "Name shown in the OCI console"
+  type        = string
+  default     = "HarvestLinkStrathmore"
 }
