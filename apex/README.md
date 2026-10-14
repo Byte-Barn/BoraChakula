@@ -24,6 +24,8 @@ Saving or deleting a demand, harvest or farmer location re-runs matching automat
 
 ## Build and install
 
+`terraform apply` in `infra/` runs this automatically whenever the blueprint changes. By hand:
+
 ```bash
 source ~/.config/harvestlink/secrets.env
 python scripts/install_app.py --wallet infra/.wallet/wallet.zip --check-only   # validate + regenerate apexlang/

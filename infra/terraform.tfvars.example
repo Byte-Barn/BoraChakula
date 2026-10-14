@@ -1,4 +1,10 @@
-# Copy to terraform.tfvars (git-ignored). Passwords come from environment:
-#   TF_VAR_admin_password, TF_VAR_wallet_password
+# Copy to terraform.tfvars (git-ignored). Secrets come from the environment:
+#   source ~/.config/harvestlink/secrets.env
+# (TF_VAR_admin_password, TF_VAR_wallet_password and the HL_* script variables)
 tenancy_ocid = "ocid1.tenancy.oc1..xxxxxxxx"
 region       = "eu-frankfurt-1"
+
+# Optional overrides
+# python     = "~/.venvs/harvestlink/bin/python"
+# sqlcl      = "~/.local/opt/sqlcl/bin/sql"
+# reset_data = false   # keep data entered in the app when db/ changes

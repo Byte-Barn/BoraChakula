@@ -17,3 +17,7 @@ output "database_actions_url" {
 output "wallet_path" {
   value = local_sensitive_file.wallet_zip.filename
 }
+
+output "app_url" {
+  value = replace(lower(oci_database_autonomous_database.harvestlink.connection_urls[0].apex_url), "/ords/apex", "/ords/r/harvestlink/harvestlink/")
+}

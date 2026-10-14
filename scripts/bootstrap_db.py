@@ -3,12 +3,13 @@
 
 Steps (each can be skipped):
   1. As ADMIN: create the HARVESTLINK schema user.
-  2. As ADMIN: create the HARVESTLINK APEX workspace and a developer login.
+  2. As ADMIN: create the HARVESTLINK APEX workspace, a developer login and
+     (if HL_DEMO_USER is set) an end-user login for judges.
   3. As HARVESTLINK: install db/01..04 (optionally dropping existing objects).
 
 Secrets are read from the environment, never from arguments:
   HL_ADMIN_PASSWORD, HL_WALLET_PASSWORD, HL_SCHEMA_PASSWORD,
-  HL_APEX_USER, HL_APEX_PASSWORD, HL_APEX_EMAIL
+  HL_APEX_USER, HL_APEX_PASSWORD, HL_APEX_EMAIL, optional HL_DEMO_USER, HL_DEMO_PASSWORD
 
 Examples:
   # Cloud (after terraform apply)
@@ -75,9 +76,9 @@ def connect(user, password, args, wallet_dir):
         return oracledb.connect(
             user=user, password=password, dsn=args.service,
             config_dir=wallet_dir, wallet_location=wallet_dir,
-            wallet_password=env("HL_WALLET_PASSWORD"),
+            wallet_password=env("HL_WALLET_PASSWORD"), tcp_connect_timeout=30, retry_count=3,
         )
-    return oracledb.connect(user=user, password=password, dsn=args.dsn)
+    return oracledb.connect(user=user, password=password, dsn=args.dsn, tcp_connect_timeout=30)
 
 
 def create_schema_user(conn):
@@ -120,16 +121,46 @@ def create_workspace(conn):
     print(f"Created APEX workspace {SCHEMA} with developer {env('HL_APEX_USER').upper()}")
 
 
+def create_demo_user(conn):
+    """End-user login (no builder access) for judges; skipped if HL_DEMO_USER is unset."""
+    if not os.environ.get("HL_DEMO_USER"):
+        return
+    user = env("HL_DEMO_USER").upper()
+    cur = conn.cursor()
+    cur.execute("""select count(*) from apex_workspace_apex_users
+                    where workspace_name = :w and user_name = :u""", w=SCHEMA, u=user)
+    if cur.fetchone()[0]:
+        print(f"APEX user {user} exists, skipping")
+        return
+    cur.execute("""
+        begin
+          apex_util.set_workspace(p_workspace => :ws);
+          apex_util.create_user(
+            p_user_name                    => :usr,
+            p_web_password                 => :pwd,
+            p_developer_privs              => null,
+            p_change_password_on_first_use => 'N');
+          commit;
+        end;""", ws=SCHEMA, usr=user, pwd=env("HL_DEMO_PASSWORD"))
+    print(f"Created APEX end user {user}")
+
+
 def install(conn, reset):
     cur = conn.cursor()
-    cur.execute("select count(*) from user_tables where table_name = 'HL_SETTINGS'")
-    if cur.fetchone()[0]:
-        if not reset:
+    if reset:
+        for stmt in split_sql((REPO / "db" / "uninstall.sql").read_text()):
+            try:
+                cur.execute(stmt)
+            except oracledb.DatabaseError as e:
+                # Already gone: not installed yet, or an earlier run stopped part-way
+                if e.args[0].code not in (942, 2289, 4043, 4080):
+                    raise
+        print("Dropped existing objects")
+    else:
+        cur.execute("select count(*) from user_tables where table_name = 'HL_SETTINGS'")
+        if cur.fetchone()[0]:
             print("HarvestLink objects already installed; use --reset to reinstall")
             return
-        for stmt in split_sql((REPO / "db" / "uninstall.sql").read_text()):
-            cur.execute(stmt)
-        print("Dropped existing objects")
 
     for name in SQL_FILES:
         statements = split_sql((REPO / "db" / name).read_text())
@@ -175,6 +206,7 @@ def main():
                     create_schema_user(admin)
                 if not args.skip_apex:
                     create_workspace(admin)
+                    create_demo_user(admin)
 
         if not args.skip_install:
             with connect(SCHEMA, env("HL_SCHEMA_PASSWORD"), args, wallet_dir) as conn:

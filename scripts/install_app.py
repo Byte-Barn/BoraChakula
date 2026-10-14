@@ -64,7 +64,7 @@ def connect(wallet, wallet_dir):
     return oracledb.connect(
         user=WORKSPACE, password=env("HL_SCHEMA_PASSWORD"), dsn=service_name(wallet),
         config_dir=wallet_dir, wallet_location=wallet_dir,
-        wallet_password=env("HL_WALLET_PASSWORD"),
+        wallet_password=env("HL_WALLET_PASSWORD"), tcp_connect_timeout=30, retry_count=3,
     )
 
 

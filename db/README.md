@@ -17,7 +17,9 @@ Oracle Autonomous Database / Oracle Database 23ai schema, matching engine and de
 
 **APEX (OCI Autonomous Database):** SQL Workshop → SQL Scripts → upload and run `01` to `05` in order.
 
-**Scripted (OCI):** `python scripts/bootstrap_db.py --wallet infra/.wallet/wallet.zip` creates the schema user and APEX workspace and installs everything.
+**Whole stack (OCI):** `terraform apply` in `infra/` provisions the database and runs the scripts below; see `infra/README.md`.
+
+**Scripted (OCI):** `python scripts/bootstrap_db.py --wallet infra/.wallet/wallet.zip` creates the schema user, APEX workspace and logins and installs everything (`--reset` reinstalls).
 
 **SQLcl / SQL\*Plus:** from this directory run `@install.sql`.
 

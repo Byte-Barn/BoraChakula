@@ -37,3 +37,27 @@ variable "display_name" {
   type        = string
   default     = "HarvestLinkStrathmore"
 }
+
+variable "python" {
+  description = "Python with python-oracledb installed (pip install -r requirements.txt)"
+  type        = string
+  default     = "~/.venvs/harvestlink/bin/python"
+}
+
+variable "sqlcl" {
+  description = "SQLcl 26.x launcher, used to import the APEXlang app"
+  type        = string
+  default     = "~/.local/opt/sqlcl/bin/sql"
+}
+
+variable "app_id" {
+  description = "APEX application ID"
+  type        = number
+  default     = 100
+}
+
+variable "reset_data" {
+  description = "Drop and reinstall HarvestLink objects (back to demo data) when db/ changes"
+  type        = bool
+  default     = true
+}
