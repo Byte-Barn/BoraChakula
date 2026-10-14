@@ -109,6 +109,7 @@ create table hl_demands (
   need_by_date     date          not null,
   delivery_lat     number(9,6),              -- defaults to buyer location
   delivery_lon     number(9,6),
+  receiving_window varchar2(5),              -- '06-10', '10-14' or '14-18'
   status           varchar2(20)  default 'OPEN' not null,
   notes            varchar2(400),
   created_at       timestamp     default systimestamp not null,
@@ -118,8 +119,9 @@ create table hl_demands (
   constraint hl_demands_grade_ck check (grade_required in ('A','B','C')),
   constraint hl_demands_qty_ck check (quantity_kg > 0),
   constraint hl_demands_price_ck check (price_per_kg > 0),
+  constraint hl_demands_window_ck check (receiving_window in ('06-10','10-14','14-18')),
   constraint hl_demands_status_ck check (status in
-    ('OPEN','PARTIAL','FILLED','CLOSED','CANCELLED'))
+    ('DRAFT','OPEN','PARTIAL','FILLED','CLOSED','CANCELLED'))
 );
 create index hl_demands_crop_ix on hl_demands (crop_id, status);
 create index hl_demands_buyer_ix on hl_demands (buyer_id);

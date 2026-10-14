@@ -175,6 +175,7 @@ create or replace package body hl_demo as
     -- Featured order: 2 t of Grade A Roma tomatoes in 14 days
     l_d_tomato := add_demand(l_kijani, 'Roma tomatoes', 'A', 2000, 75, 14,
                              'Plastic crates only, no sacks. Gate 2, ask for Mary.');
+    update hl_demands set receiving_window = '06-10' where demand_id = l_d_tomato;
     l_h := add_harvest(l_wanjiru, 'Roma tomatoes', 'A', 650,  8, 12);
     l_h := add_harvest(l_peter,   'Roma tomatoes', 'A', 550,  9, 13);
     l_h := add_harvest(l_grace,   'Roma tomatoes', 'A', 450, 10, 13);

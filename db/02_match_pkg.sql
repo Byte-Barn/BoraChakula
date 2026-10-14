@@ -376,7 +376,7 @@ create or replace package body hl_match_pkg as
      where demand_id = p_demand_id
        for update;
 
-    if l_demand.status in ('CLOSED', 'CANCELLED') then
+    if l_demand.status in ('DRAFT', 'CLOSED', 'CANCELLED') then
       raise_application_error(-20101, 'Demand ' || p_demand_id || ' is ' || l_demand.status);
     end if;
 
