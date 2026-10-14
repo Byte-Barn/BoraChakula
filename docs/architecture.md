@@ -210,11 +210,13 @@ turn the four reasons into one sentence in English or Kiswahili, and for operati
 - Consent captured per farmer at sign-up: `consent_given`, plus the version of the notice agreed to
   (`consent_version`, text in `HL_CONSENT_TEXTS`) and when (`consent_at`).
 - Right of access: `hl_farmer_api.export_data` returns everything held about a farmer as JSON.
-- Right to deletion: `hl_farmer_api.delete_account` removes the farmer, their harvests, offers, allocations, pickup
-  stops and login mapping from every table and view at once. The exception is the agreement ledger
-  (`HL_AGREEMENTS`, a blockchain table): rows already written keep the name and phone and cannot be changed or
-  deleted for 16 days; rows written during and after deletion carry only a pseudonym. `HL_ERASURES` records when each
-  farmer's rows may be purged, and `hl_farmer_api.purge_ledger` purges them (see `docs/backend-api.md`).
+- Right to deletion: `hl_farmer_api.delete_account` removes the farmer's open harvests, offers, allocations, pickup
+  stops and login mapping at once. Delivered orders stay as buyer records under a pseudonymous stub (`Erased
+  farmer #n`, no contact details, location blurred), so closed orders and impact figures are unchanged. The agreement
+  ledger (`HL_AGREEMENTS`, a blockchain table) keeps the name and phone in rows already written, which cannot be
+  changed or deleted for 16 days; rows written during and after deletion carry only the pseudonym. `HL_ERASURES`
+  records when each farmer's rows may be purged; operations purge monthly with `hl_farmer_api.purge_ledger`, which
+  also removes other parties' rows of the same age, a trade-off accepted in `docs/operations.md`.
 - The agreement ledger records who confirmed, rejected or delivered each match, and when.
 
 ## 8 · Deployment and DevOps

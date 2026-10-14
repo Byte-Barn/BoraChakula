@@ -1,6 +1,8 @@
 -- Farmer data rights: consent, export, access control, account deletion
 declare
   l_peter  number; l_wanjiru number; l_grace number; l_n number; l_s varchar2(4000);
+  l_closed_kg number; l_delivered_kg number; l_kg number;
+  l_f      hl_farmers%rowtype;
   l_json   clob;
   l_e      hl_erasures%rowtype;
   l_d      number := hl_demo.featured_demand_id;
@@ -35,27 +37,51 @@ begin
   hl_auth.set_user(null);
 
   -- Delete Peter: confirmed on the featured demand, with delivered history
-  select count(*) into l_n from hl_agreements where farmer_name = 'Peter Kariuki';
+  select nvl(sum(matched_kg), 0) into l_closed_kg from hl_fulfil_v where status = 'CLOSED';
+  select nvl(sum(allocated_kg), 0) into l_delivered_kg from hl_matches where status = 'DELIVERED';
+  hlt.ok(l_closed_kg > 0, 'demo has a closed order with delivered kg');
   hl_farmer_api.delete_account(l_peter);
-  select count(*) into l_n from hl_farmers where farmer_id = l_peter;
-  hlt.eq(l_n, 0, 'farmer row deleted');
-  select count(*) into l_n from hl_harvests where farmer_id = l_peter;
-  hlt.eq(l_n, 0, 'harvests deleted');
-  select count(*) into l_n from hl_match_v where farmer_name like '%Peter%';
+
+  -- Delivered history stays, so buyer records and impact hold
+  select nvl(sum(matched_kg), 0) into l_kg from hl_fulfil_v where status = 'CLOSED';
+  hlt.eq(l_kg, l_closed_kg, 'closed orders keep their delivered kg');
+  select nvl(sum(allocated_kg), 0) into l_kg from hl_matches where status = 'DELIVERED';
+  hlt.eq(l_kg, l_delivered_kg, 'delivered kg unchanged overall');
+  select * into l_f from hl_farmers where farmer_id = l_peter;
+  hlt.ok(l_f.erased_at is not null and l_f.full_name like 'Erased farmer #%' and l_f.phone like 'ERASED-%'
+         and l_f.location_name is null and l_f.cooperative is null and l_f.consent_given = 'N'
+         and l_f.latitude = round(l_f.latitude, 1),
+         'farmer row kept only as a pseudonymous stub for the delivered order');
+  select count(*) into l_n from hl_harvests where farmer_id = l_peter and status <> 'HARVESTED';
+  hlt.eq(l_n, 0, 'open harvests deleted; kept harvests closed to matching');
+  select count(*) into l_n
+    from hl_matches m join hl_harvests h on h.harvest_id = m.harvest_id
+   where h.farmer_id = l_peter and m.status <> 'DELIVERED';
+  hlt.eq(l_n, 0, 'only delivered matches remain, and re-matching adds none');
+  select count(*) into l_n from hl_match_v where farmer_name like '%Peter%' or farmer_phone like '%000102';
   hlt.eq(l_n, 0, 'gone from matches');
+  select count(*) into l_n from hl_match_v where farmer_id = l_peter and match_status = 'DELIVERED' and farmer_name like 'Erased farmer #%';
+  hlt.eq(l_n, 1, 'delivered match shows the pseudonym');
+  hlt.raises('hl_farmer_api.delete_account(' || l_peter || ');', -20606, 'a deleted account cannot be deleted again');
+  hlt.raises('declare c clob; begin c := hl_farmer_api.export_data(' || l_peter || '); end;', -20606, 'a deleted account has no export');
   select * into l_e from hl_erasures where farmer_id = l_peter;
   hlt.ok(l_e.purge_after > systimestamp + interval '15' day, 'erasure logged with a purge date 16 days after the last ledger row');
   select count(*) into l_n from hl_agreements where event = 'REJECTED' and farmer_name = l_e.pseudonym and farmer_phone like 'ERASED-%';
   hlt.eq(l_n, 1, 'confirmed agreement ended under a pseudonym');
   select count(*) into l_n from hl_agreements where farmer_name = 'Peter Kariuki' and recorded_at > l_e.requested_at;
   hlt.eq(l_n, 0, 'no new ledger row carries the real name');
-  select count(*) into l_n from hl_route_stops where stop_name = 'Peter Kariuki';
+  select count(*) into l_n from hl_route_stops where stop_name = 'Peter Kariuki' or place = 'Mwea';
   hlt.eq(l_n, 0, 'removed from pickup stops');
   select count(*) into l_n from hl_routes where instr(route_sequence, 'Peter Kariuki') > 0;
   hlt.eq(l_n, 0, 'removed from route stop lists');
   select status into l_s from hl_demands where demand_id = l_d;
   hlt.ok(l_s in ('OPEN', 'PARTIAL', 'FILLED'), 'featured demand still active after re-matching');
   hlt.eq(hl_farmer_api.purge_ledger, 0, 'nothing purgeable before 16 days');
+
+  -- Grace has no delivered history: her row goes entirely
+  hl_farmer_api.delete_account(l_grace);
+  select count(*) into l_n from hl_farmers where farmer_id = l_grace;
+  hlt.eq(l_n, 0, 'farmer without delivered history: row deleted');
   select count(*) into l_n from user_objects where status = 'INVALID';
   hlt.eq(l_n, 0, 'no invalid objects after deletion');
 
