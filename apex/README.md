@@ -6,6 +6,7 @@ The app is defined as an Oracle APEX 26.1 **Application Blueprint** and built wi
 |---|---|
 | `harvestlink-blueprint.md` | Source of truth: pages, regions, forms, LOVs, menu (Oracle blueprint grammar v26.1) |
 | `apexlang/` | APEXlang application generated from the blueprint by `APEX_GENDEV.PROCESS_BLUEPRINT` |
+| `pages/` | Canvas screens written in APEXlang, copied into `apexlang/` on every build (blueprints cannot call the backend API) |
 | `theme/harvestlink.css` | HarvestLink "Field Ledger" styling over Universal Theme: forest on ivory, Fraunces and IBM Plex, hairline panels |
 | `theme/icons/` | App icons drawn from the HarvestLink leaf mark |
 
@@ -24,6 +25,26 @@ The app is defined as an Oracle APEX 26.1 **Application Blueprint** and built wi
 Saving or deleting a demand, harvest or farmer location re-runs matching automatically
 (`db/05_auto_match.sql`), so there is no separate "run matching" step.
 
+## Canvas screens (`pages/`)
+
+The screens from the design canvas, built on the contract in [`docs/backend-api.md`](../docs/backend-api.md):
+they read the contract views and change data only through the API packages. The navigation entry of each shows
+for the roles that use it (`hl_auth`).
+
+| # | Screen | Roles | Reads | Calls |
+|---|---|---|---|---|
+| 20 | My farm | Farmer, operations | `HL_MY_OFFERS_V`, `HL_MY_HARVESTS_V` | `hl_match_pkg.confirm` / `decline`, `hl_harvest_api.register` |
+| 30 | My demands | Buyer, operations | `HL_FULFIL_V` (the buyer's own) | |
+| 31 | Post a demand | Buyer, operations | | `hl_demand_api.create_demand` / `save_draft` / `publish` |
+| 32 | Matches | Buyer, operations | `HL_FULFIL_V`, `HL_MATCH_V`, `HL_NEAR_MISS_V`, `hl_ai` | `hl_match_pkg.confirm` / `decline` / `run` |
+| 42 | Impact | Everyone | `HL_IMPACT_METRICS_V` | |
+
+Each `p*.apx` file is one page. `navigation.apx` holds their menu entries and `lovs.apx` extra lists of values;
+the installer adds both to the generated shared components. Cards are Content Row template components whose
+description is HTML built in the page query (values escaped with `apex_escape.html`); the classes it uses
+(`hl-fulfil`, `hl-badge`, `hl-reason`, `hl-prov`, ...) are styled in `theme/harvestlink.css`. Page numbers must
+not clash with blueprint pages (the installer stops if they do).
+
 ## Build and install
 
 `terraform apply` in `infra/` runs this automatically whenever the blueprint changes. By hand:
@@ -32,7 +53,12 @@ Saving or deleting a demand, harvest or farmer location re-runs matching automat
 source ~/.config/harvestlink/secrets.env
 python scripts/install_app.py --wallet infra/.wallet/wallet.zip --check-only   # validate + regenerate apexlang/
 python scripts/install_app.py --wallet infra/.wallet/wallet.zip --app-id 100   # also install
+# a preview copy beside app 100 (aliases must be unique in the workspace)
+python scripts/install_app.py --wallet infra/.wallet/wallet.zip --app-id 200 --alias HARVESTLINK-200 --name "HarvestLink preview 200"
 ```
+
+On Windows, keep `.apx` files on LF line endings (`.gitattributes` does this for checkouts): SQLcl's APEXlang
+parser rejects CRLF.
 
 Install uses SQLcl 26.x (`apex validate` / `apex import`), because APEX 26.1 cannot import
 APEXlang through `APEX_APPLICATION_INSTALL`. Edit the blueprint and `theme/`, not the generated files: the installer adds the stylesheet
