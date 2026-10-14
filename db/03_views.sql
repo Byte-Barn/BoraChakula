@@ -15,18 +15,13 @@ select h.harvest_id,
        c.crop_name,
        h.grade,
        h.expected_qty_kg,
-       h.expected_qty_kg - nvl(a.allocated_kg, 0) as available_kg,
+       hl_match_pkg.available_kg(h.harvest_id) as available_kg,
        h.harvest_from,
        h.harvest_to,
        h.status
   from hl_harvests h
   join hl_farmers f on f.farmer_id = h.farmer_id
-  join hl_crops c on c.crop_id = h.crop_id
-  left join (select harvest_id, sum(allocated_kg) as allocated_kg
-               from hl_matches
-              where status <> 'REJECTED'
-              group by harvest_id) a
-    on a.harvest_id = h.harvest_id;
+  join hl_crops c on c.crop_id = h.crop_id;
 
 -- Buyer demands with fill progress and logistics savings
 create or replace view hl_demand_summary_v as

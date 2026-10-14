@@ -26,7 +26,8 @@ create or replace package hl_match_pkg as
     p_lat2 in number, p_lon2 in number
   ) return number;
 
-  -- Volume of a harvest not yet allocated to any (non-rejected) match
+  -- Volume of a harvest not yet promised to a (non-rejected) match or
+  -- allocated to an outlet (HL_ALLOCATIONS)
   function available_kg (p_harvest_id in number) return number;
 
   -- Score components: return null when the harvest is not eligible
@@ -95,14 +96,14 @@ create or replace package body hl_match_pkg as
   function available_kg (p_harvest_id in number) return number is
     l_available number;
   begin
-    select h.expected_qty_kg - nvl(sum(m.allocated_kg), 0)
+    select h.expected_qty_kg
+           - nvl((select sum(m.allocated_kg) from hl_matches m
+                   where m.harvest_id = h.harvest_id and m.status <> 'REJECTED'), 0)
+           - nvl((select sum(a.alloc_kg) from hl_allocations a
+                   where a.harvest_id = h.harvest_id), 0)
       into l_available
       from hl_harvests h
-      left join hl_matches m
-        on m.harvest_id = h.harvest_id
-       and m.status <> 'REJECTED'
-     where h.harvest_id = p_harvest_id
-     group by h.expected_qty_kg;
+     where h.harvest_id = p_harvest_id;
     return greatest(l_available, 0);
   end available_kg;
 
