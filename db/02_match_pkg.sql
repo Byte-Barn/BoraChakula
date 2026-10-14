@@ -44,6 +44,18 @@ create or replace package hl_match_pkg as
   procedure accept_match (p_match_id in number);
   procedure reject_match (p_match_id in number);
 
+  -- Frontend contract (docs/backend-api.md). Each commits nothing: APEX
+  -- commits at the end of the page process.
+  -- run:        re-match one demand now (e.g. "Run matching again")
+  procedure run (p_demand_id in number);
+  -- confirm:    the farmer said yes; appends ACCEPTED to the agreement ledger
+  procedure confirm (p_match_id in number);
+  -- decline:    the farmer said no; that farm is skipped for this demand and
+  --             the shortfall is re-matched from other farms
+  procedure decline (p_match_id in number);
+  -- rerun_open: re-match every active demand, earliest deadline first
+  procedure rerun_open;
+
 end hl_match_pkg;
 /
 
@@ -449,6 +461,41 @@ create or replace package body hl_match_pkg as
       refresh_statuses(l_demand_id);
     end if;
   end reject_match;
+
+  procedure run (p_demand_id in number) is
+  begin
+    run_matching(p_demand_id);
+  end run;
+
+  procedure confirm (p_match_id in number) is
+    l_demand_id hl_matches.demand_id%type;
+  begin
+    update hl_matches set status = 'ACCEPTED'
+     where match_id = p_match_id and status = 'PROPOSED'
+     returning demand_id into l_demand_id;
+    if l_demand_id is null then
+      raise_application_error(-20111, 'Match ' || p_match_id || ' is not awaiting a farmer answer');
+    end if;
+    refresh_statuses(l_demand_id);
+  end confirm;
+
+  procedure decline (p_match_id in number) is
+    l_demand_id hl_matches.demand_id%type;
+  begin
+    select demand_id into l_demand_id
+      from hl_matches
+     where match_id = p_match_id and status in ('PROPOSED', 'ACCEPTED');
+    reject_match(p_match_id);
+    run_matching(l_demand_id);
+  exception
+    when no_data_found then
+      raise_application_error(-20112, 'Match ' || p_match_id || ' cannot be declined');
+  end decline;
+
+  procedure rerun_open is
+  begin
+    rematch_all;
+  end rerun_open;
 
 end hl_match_pkg;
 /
