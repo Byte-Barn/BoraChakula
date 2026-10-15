@@ -1,0 +1,106 @@
+page 44 (
+    name: Agreement Ledger
+    alias: LEDGER
+    title: Agreement ledger
+    pageGroup: @dashboard
+    appearance {
+        pageTemplate: @/blank
+        templateOptions: #DEFAULT#
+        cssClasses: hlc-app
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        authorizationScheme: mustNotBePublicUser
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+    advanced {
+        enableDuplicatePageSubmissions: false
+    }
+    comments {
+        comments: Operations. The agreement ledger (HL_AGREEMENTS_V) inside the app layout and navigation: every confirmation, rejection and delivery, newest first, with its row hash from the blockchain table. Replaces the blueprint ledger (page 13) in the app navigation.
+    }
+
+    region header (
+        name: Header
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div class="hlc-root"><header class="hl-ph"><div class="hl-ph-row"><div class="hl-stack" style="gap:4px"><h1>Agreement ledger</h1><p>Every confirmation, rejection and delivery, recorded in an Oracle blockchain table. Rows cannot be changed or deleted, and each row&#39;s hash is chained to the one before, so any tampering shows.</p></div></div></header></div>
+                ```
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-full
+        }
+        settings {
+            outputAs: html
+        }
+    )
+
+    region ledger (
+        name: Recorded agreements
+        type: dynamicContent
+        source {
+            plsqlFunctionBody:
+                ```plsql
+                declare
+                  l_html clob;
+                  l_rows pls_integer := 0;
+                  function badge (p_event varchar2) return varchar2 is
+                  begin
+                    return '<span class="hl-badge hl-badge-' || case p_event when 'ACCEPTED' then 'confirmed' when 'DELIVERED' then 'delivered' else 'cancelled' end
+                        || '">' || apex_escape.html(initcap(p_event)) || '</span>';
+                  end;
+                begin
+                  if not hl_auth.is_ops then
+                    return '<div class="hlc-root hl-alert hl-alert-info" role="status"><div><b>Operations only</b>Only the HarvestLink team can see the agreement ledger.</div></div>';
+                  end if;
+                  l_html := '<section class="hlc-root hlc-card" style="padding:24px;display:flex;flex-direction:column;gap:16px">'
+                    || '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><h2 style="margin:0;font:700 20px/28px var(--font-display)">Recorded agreements</h2>'
+                    || '<span class="hl-prov hl-prov-live">Live data</span></div>'
+                    || '<div class="hl-table-wrap"><table class="hl-table"><caption class="hl-sr">Agreement ledger, newest first</caption><thead><tr>'
+                    || '<th scope="col">Recorded</th><th scope="col">Event</th><th scope="col">Farmer</th><th scope="col">Buyer</th><th scope="col">Produce</th>'
+                    || '<th scope="col" class="hl-r">Quantity</th><th scope="col" class="hl-r">Value</th><th scope="col">Row hash</th></tr></thead><tbody>';
+                  for a in (select * from hl_agreements_v order by recorded_at desc, chain_id, chain_seq desc fetch first 200 rows only) loop
+                    l_rows := l_rows + 1;
+                    l_html := l_html || '<tr><td>' || to_char(a.recorded_at, 'Dy DD Mon, HH24:MI') || '</td>'
+                      || '<td>' || badge(a.event) || '</td>'
+                      || '<td>' || apex_escape.html(a.farmer_name) || '</td>'
+                      || '<td>' || apex_escape.html(a.buyer_name) || '</td>'
+                      || '<td>' || apex_escape.html(a.crop_name) || '<span class="hl-sub">Grade ' || apex_escape.html(a.grade) || '</span></td>'
+                      || '<td class="hl-r">' || to_char(a.quantity_kg, 'FM999G999G990') || ' kg<span class="hl-sub">KES '
+                      || rtrim(to_char(a.price_per_kg, 'FM999G990D99', 'NLS_NUMERIC_CHARACTERS=''.,'''), '.') || '/kg</span></td>'
+                      || '<td class="hl-r">KES ' || to_char(a.value_kes, 'FM999G999G990') || '</td>'
+                      || '<td><code title="Chain ' || a.chain_id || ', row ' || a.chain_seq || ': ' || a.row_hash || '">' || a.row_hash_short || '</code></td></tr>';
+                  end loop;
+                  if l_rows = 0 then
+                    l_html := l_html || '<tr><td colspan="8" class="hlc-muted">No agreements yet. A row is added each time a farmer confirms or declines a match, or a delivery is recorded.</td></tr>';
+                  end if;
+                  l_html := l_html || '</tbody></table></div>';
+                  if l_rows = 200 then
+                    l_html := l_html || '<p class="hlc-muted">Showing the newest 200 rows.</p>';
+                  end if;
+                  return l_html || '</section>';
+                end;
+                ```
+        }
+        layout {
+            sequence: 20
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-full
+        }
+    )
+)
