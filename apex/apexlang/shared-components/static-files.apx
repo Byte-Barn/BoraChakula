@@ -49,6 +49,11 @@ file "images/crop-avocado.jpg" (
     charSet: utf-8
 )
 
+file "images/crop-cabbage.jpg" (
+    mimeType: image/jpeg
+    charSet: utf-8
+)
+
 file "images/crop-carrot.jpg" (
     mimeType: image/jpeg
     charSet: utf-8
