@@ -238,19 +238,19 @@ body.hlc-app .t-Region-buttons--top, body.hlc-phone .t-Region-buttons--top { ord
 /* Grade allocation: unplaced kilograms */
 .hlc-alloc-open { background: repeating-linear-gradient(45deg, var(--surface-sunken) 0 6px, #fff 6px 12px); color: var(--ink-muted); }
 
-/* Forms on canvas pages: card sections with labels above the fields.
+/* Forms on canvas pages: card sections with labels above the fields (.hlc-fields: the same
+   fields inside a native region, which already draws the card).
    The section heading (.hlc-root) is region body, which APEX renders after the
    items, so the card is a flex column that moves it back to the top */
 .hlc-form { background: var(--surface-raised); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow-card); padding: 24px;
   display: flex; flex-direction: column; }
 .hlc-form > .hlc-root { order: -1; margin-bottom: 16px; }
-.hlc-form .t-Form-label { font: 600 13px/16px var(--font-sans); color: var(--ink); }
-.hlc-form .apex-item-text, .hlc-form .apex-item-select, .hlc-form .apex-item-textarea, .hlc-form .apex-item-datepicker input {
+:is(.hlc-form, .hlc-fields) .t-Form-label { font: 600 13px/16px var(--font-sans); color: var(--ink); }
+:is(.hlc-form, .hlc-fields) :is(.apex-item-text, .apex-item-select, .apex-item-textarea, .apex-item-datepicker input) {
   border-radius: 10px; border-color: #c9d1c6; background: #fff; min-height: 44px; font-size: 15px; }
-.hlc-form .t-Form-itemWrapper > .apex-item-text, .hlc-form .t-Form-itemWrapper > .apex-item-select,
-.hlc-form .t-Form-itemWrapper > .apex-item-textarea, .hlc-form .t-Form-itemWrapper > .apex-item-datepicker { flex: 1 1 auto; width: 100%; max-width: 420px; }
+:is(.hlc-form, .hlc-fields) .t-Form-itemWrapper > :is(.apex-item-text, .apex-item-select, .apex-item-textarea, .apex-item-datepicker) { flex: 1 1 auto; width: 100%; max-width: 420px; }
 .hlc-form .apex-item-datepicker input { width: 100%; }
-.hlc-form .t-Form-fieldContainer { margin-bottom: 8px; }
+:is(.hlc-form, .hlc-fields) .t-Form-fieldContainer { margin-bottom: 8px; }
 /* Crop picker: a radio group shown as photo tiles (crop IDs are fixed reference data).
    APEX wraps every noOfCols options in a row, so the rows are flattened into one grid;
    Universal Theme draws the radio circle on label::before, which becomes the photo */
