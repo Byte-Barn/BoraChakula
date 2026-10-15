@@ -154,6 +154,8 @@ body.hlc-page .t-Body-contentInner { min-width: 0; }
 .hl-prov-sourced { background: var(--sky-soft); color: var(--sky); }
 .hl-stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); gap: 20px; }
 .hl-stat-grid > div > .hl-stat { height: 100%; box-sizing: border-box; }
+/* cards in a row keep their figures level: the label block takes any spare height */
+.hl-stat-grid .hl-stat-top { flex: 1 0 auto; }
 /* four cards on a tablet: two by two instead of three and an orphan */
 @media (min-width: 561px) and (max-width: 960px) { .hl-stat-grid:has(> :nth-child(4):last-child) { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .hlc-match-list { display: flex; flex-direction: column; gap: 16px; }
