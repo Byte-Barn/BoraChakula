@@ -222,7 +222,9 @@ page 30 (
                   function img (p_crop varchar2) return varchar2 is
                   begin
                     return '#APP_FILES#images/' || case lower(p_crop) when 'onions' then 'crop-onion.jpg' when 'green peppers' then 'crop-pepper.jpg'
-                                                                      when 'carrots' then 'crop-carrot.jpg' else 'crop-tomato.jpg' end;
+                                                                      when 'carrots' then 'crop-carrot.jpg' when 'cabbage' then 'crop-cabbage.jpg'
+                                                                      when 'hass avocado' then 'crop-avocado.jpg' when 'french beans' then 'crop-french-beans.jpg'
+                                                                      when 'kale (sukuma wiki)' then 'crop-kale.jpg' else 'crop-tomato.jpg' end;
                   end;
                   function badge (p_status varchar2, p_text varchar2) return varchar2 is
                     l_icon varchar2(400) := case p_status when 'matched' then 'M8 1.75a6.25 6.25 0 1 0 0 12.5A6.25 6.25 0 0 0 8 1.75zM5.25 8.25l2 2 3.5-4' when 'delivered' then 'M3.5 8.5l3 3 6-7' when 'transit' then 'M1.75 4h7.5v6.5h-7.5zM9.25 6.5h3l2 2.25v1.75h-5M4.5 12.5a1.25 1.25 0 1 0 0-.01M11.5 12.5a1.25 1.25 0 1 0 0-.01'

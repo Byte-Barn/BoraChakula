@@ -85,7 +85,9 @@ page 32 (
                   select count(*), max(regexp_substr(farmer_location, '[^,]+$')) into l_farms, l_county
                     from hl_match_v where demand_id = l_f.demand_id and ui_status <> 'DECLINED';
                   l_img := case lower(l_f.crop_name) when 'onions' then 'crop-onion.jpg' when 'green peppers' then 'crop-pepper.jpg'
-                                                     when 'carrots' then 'crop-carrot.jpg' else 'crop-tomato.jpg' end;
+                                                     when 'carrots' then 'crop-carrot.jpg' when 'cabbage' then 'crop-cabbage.jpg'
+                                                     when 'hass avocado' then 'crop-avocado.jpg' when 'french beans' then 'crop-french-beans.jpg'
+                                                     when 'kale (sukuma wiki)' then 'crop-kale.jpg' else 'crop-tomato.jpg' end;
                   return apex_plugin_util.replace_substitutions(p_escape => false, p_value =>
                        '<section class="hlc-root hlc-card" aria-label="Fulfilment" style="padding:32px;display:flex;flex-wrap:wrap;gap:32px 48px;align-items:center">'
                     || '<div style="flex:2 1 480px;min-width:0;display:flex;flex-direction:column;gap:20px"><div style="display:flex;flex-direction:column;gap:6px">'
