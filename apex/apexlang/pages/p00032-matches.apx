@@ -599,8 +599,8 @@ page 32 (
             outputAs: html
         }
         serverSideCondition {
-            type: expression
-            plsqlExpression: exists (select 1 from hl_near_miss_v where demand_id = :P32_DEMAND_ID)
+            type: rowsReturned
+            sqlQuery: select 1 from hl_near_miss_v where demand_id = :P32_DEMAND_ID
         }
     )
     region not-matched (
