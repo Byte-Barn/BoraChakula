@@ -347,7 +347,10 @@ select m.match_id,
        f.farmer_id,
        f.full_name                                           as farmer_name,
        f.location_name || ', ' || f.county                   as farmer_location,
-       case when m.status in ('ACCEPTED', 'DELIVERED') then f.phone
+       -- Unmasked once the farmer has confirmed, and only for the buyer who
+       -- owns the demand, the farmer, operations and scripts
+       case when m.status in ('ACCEPTED', 'DELIVERED')
+             and hl_match_pkg.can_act(m.demand_id, m.harvest_id) = 'Y' then f.phone
             else '•••• ••• ' || substr(f.phone, -3) end      as farmer_phone,
        f.latitude                                            as farmer_lat,
        f.longitude                                           as farmer_lon,

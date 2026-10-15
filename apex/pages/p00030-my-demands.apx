@@ -281,11 +281,25 @@ page 30 (
             plsqlFunctionBody:
                 ```plsql
                 declare
-                  l_d   number := hl_demo.featured_demand_id;
+                  l_buyer number;
+                  l_d   number;
                   l_f   hl_fulfil_v%rowtype;
                   l_n   number;
                   l_county varchar2(60);
                 begin
+                  -- The signed-in buyer's route (operations: the featured buyer's)
+                  select coalesce(hl_auth.buyer_id, max(f0.buyer_id)) into l_buyer from hl_fulfil_v f0 where f0.demand_id = hl_demo.featured_demand_id;
+                  select max(r.demand_id) keep (dense_rank first
+                           order by case when r.demand_id = hl_demo.featured_demand_id then 0 else 1 end, f.need_by_date)
+                    into l_d
+                    from hl_route_line_v r
+                    join hl_fulfil_v f on f.demand_id = r.demand_id
+                   where f.buyer_id = l_buyer;
+                  if l_d is null then
+                    return '<aside class="hlc-root hlc-card" style="padding:24px;display:flex;flex-direction:column;gap:8px">'
+                        || '<h2 style="margin:0;font:700 20px/28px var(--font-display)">Pickup route</h2>'
+                        || '<p style="margin:0;font-size:13px;line-height:20px;color:var(--ink-muted)">Your pickup route appears here once farmers are matched to one of your demands.</p></aside>';
+                  end if;
                   select * into l_f from hl_fulfil_v where demand_id = l_d;
                   select count(*), max(trim(regexp_substr(farmer_location, '[^,]+$'))) into l_n, l_county from hl_match_v where demand_id = l_d and ui_status <> 'DECLINED';
                   return apex_plugin_util.replace_substitutions(p_escape => false, p_value =>
@@ -307,6 +321,25 @@ page 30 (
             template: @/blank-with-attributes
             templateOptions: #DEFAULT#
             cssClasses: hlc-right hlc-rows-1
+        }
+    )
+
+    process role-gate (
+        name: Only buyers and operations
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                -- Other roles go to their own home page; unmapped users to the landing page
+                if nvl(hl_auth.role, '-') not in ('BUYER', 'OPS') then
+                  apex_util.redirect_url(apex_page.get_url(
+                    p_page => case hl_auth.role when 'FARMER' then 20 when 'BUYER' then 30 else 50 end));
+                end if;
+                ```
+        }
+        execution {
+            sequence: 1
+            point: beforeHeader
         }
     )
 )

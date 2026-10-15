@@ -240,19 +240,61 @@ page 41 (
         source {
             plsqlCode:
                 ```plsql
-                if :P41_DEMAND_ID is null then
-                  select max(r.DEMAND_ID) keep (dense_rank first
-                           order by case when r.DEMAND_ID = hl_demo.featured_demand_id then 0 else 1 end,
-                                    f.NEED_BY_DATE)
-                    into :P41_DEMAND_ID
-                    from HL_ROUTE_LINE_V r
-                    join HL_FULFIL_V f on f.DEMAND_ID = r.DEMAND_ID
-                   where (hl_auth.buyer_id is null or f.BUYER_ID = hl_auth.buyer_id);
-                end if;
+                declare
+                  l_buyer number := hl_auth.buyer_id;
+                  l_own   number;
+                begin
+                  -- A buyer sees only their own demands
+                  if l_buyer is not null and :P41_DEMAND_ID is not null then
+                    select count(*) into l_own from hl_demands
+                     where demand_id = to_number(:P41_DEMAND_ID) and buyer_id = l_buyer;
+                    if l_own = 0 then
+                      :P41_DEMAND_ID := null;
+                    end if;
+                  end if;
+                  if :P41_DEMAND_ID is null then
+                    select max(r.DEMAND_ID) keep (dense_rank first
+                             order by case when r.DEMAND_ID = hl_demo.featured_demand_id then 0 else 1 end,
+                                      f.NEED_BY_DATE)
+                      into :P41_DEMAND_ID
+                      from HL_ROUTE_LINE_V r
+                      join HL_FULFIL_V f on f.DEMAND_ID = r.DEMAND_ID
+                     where (l_buyer is null or f.BUYER_ID = l_buyer);
+                  end if;
+                  -- No route yet: show the buyer's latest demand (its farmers deliver directly)
+                  if :P41_DEMAND_ID is null and l_buyer is not null then
+                    select max(demand_id) keep (dense_rank first order by need_by_date desc)
+                      into :P41_DEMAND_ID
+                      from hl_demands
+                     where buyer_id = l_buyer and status <> 'DRAFT';
+                  end if;
+                  if :P41_DEMAND_ID is null then
+                    apex_util.redirect_url(apex_page.get_url(p_page => 30));
+                  end if;
+                end;
                 ```
         }
         execution {
             sequence: 10
+            point: beforeHeader
+        }
+    )
+
+    process role-gate (
+        name: Only buyers and operations
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                -- Other roles go to their own home page; unmapped users to the landing page
+                if nvl(hl_auth.role, '-') not in ('BUYER', 'OPS') then
+                  apex_util.redirect_url(apex_page.get_url(
+                    p_page => case hl_auth.role when 'FARMER' then 20 when 'BUYER' then 30 else 50 end));
+                end if;
+                ```
+        }
+        execution {
+            sequence: 1
             point: beforeHeader
         }
     )

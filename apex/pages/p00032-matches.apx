@@ -961,12 +961,35 @@ page 32 (
     )
 
     process default-demand (
-        name: Default to the featured demand
+        name: Default to the buyer's next demand, or the featured demand
         type: executeCode
         source {
             plsqlCode:
                 ```plsql
-                :P32_DEMAND_ID := coalesce(:P32_DEMAND_ID, hl_demo.featured_demand_id);
+                -- A buyer sees only their own demands: another buyer's ID is ignored,
+                -- and a buyer with none goes back to the dashboard. Operations
+                -- default to the featured demand.
+                declare
+                  l_buyer number := hl_auth.buyer_id;
+                  l_own   number;
+                begin
+                  if l_buyer is null then
+                    :P32_DEMAND_ID := coalesce(:P32_DEMAND_ID, hl_demo.featured_demand_id);
+                  else
+                    select count(*) into l_own from hl_demands
+                     where demand_id = to_number(:P32_DEMAND_ID) and buyer_id = l_buyer;
+                    if l_own = 0 then
+                      select max(demand_id) keep (dense_rank first
+                               order by case when status in ('OPEN', 'PARTIAL', 'FILLED') then 0 else 1 end, need_by_date)
+                        into :P32_DEMAND_ID
+                        from hl_demands
+                       where buyer_id = l_buyer and status <> 'DRAFT';
+                    end if;
+                    if :P32_DEMAND_ID is null then
+                      apex_util.redirect_url(apex_page.get_url(p_page => 30));
+                    end if;
+                  end if;
+                end;
                 ```
         }
         execution {
@@ -1026,6 +1049,25 @@ page 32 (
         serverSideCondition {
             type: expression
             plsqlExpression: :REQUEST = 'RUN'
+        }
+    )
+
+    process role-gate (
+        name: Only buyers and operations
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                -- Other roles go to their own home page; unmapped users to the landing page
+                if nvl(hl_auth.role, '-') not in ('BUYER', 'OPS') then
+                  apex_util.redirect_url(apex_page.get_url(
+                    p_page => case hl_auth.role when 'FARMER' then 20 when 'BUYER' then 30 else 50 end));
+                end if;
+                ```
+        }
+        execution {
+            sequence: 1
+            point: beforeHeader
         }
     )
 )
