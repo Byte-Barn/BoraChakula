@@ -217,6 +217,29 @@ def apply_frontend_pages():
     text = text.replace(scheme, scheme.replace("@oracle-apex-accounts", "@harvestlink-accounts"), 1)
     text = text.replace(login, login.replace("page: LOGIN", "page: 9000"), 1)
 
+    # The blueprint's generated login page (9999, /login) has no branding and no
+    # way back; anyone who still opens it (old links, bookmarks) goes to Sign in
+    old_login = APEXLANG_DIR / "pages" / "p09999-login.apx"
+    source = old_login.read_text(encoding="utf-8")
+    end = source.rstrip().rfind("\n)")
+    if not source.startswith("page 9999 (") or end < 0:
+        sys.exit(f"Unexpected {old_login.name}; cannot send the old login page to the sign-in page")
+    old_login.write_text(source[:end] + (
+        "\n    process go-to-sign-in (\n"
+        "        name: Go to the HarvestLink sign-in page\n"
+        "        type: executeCode\n"
+        "        source {\n"
+        "            plsqlCode:\n"
+        "                ```plsql\n"
+        "                apex_util.redirect_url(apex_page.get_url(p_page => 9000));\n"
+        "                ```\n"
+        "        }\n"
+        "        execution {\n"
+        "            sequence: 1\n"
+        "            point: beforeHeader\n"
+        "        }\n"
+        "    )") + source[end:], encoding="utf-8", newline="\n")
+
     # Page 0 only renders its shared regions (the canvas app navigation) once
     # the user interface names it as the global page; the blueprint doesn't
     ui = "    userInterface {\n        currentTheme: @universal-theme\n    }\n"
