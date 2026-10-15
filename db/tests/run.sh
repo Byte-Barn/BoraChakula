@@ -63,6 +63,7 @@ set define off feedback off serveroutput on size unlimited lines 200 pages 0 tri
 alter session set container=FREEPDB1;
 create user ${TEST_USER} identified by "${TEST_PW}" quota unlimited on users;
 grant create session, create table, create view, create sequence, create procedure, create trigger to ${TEST_USER};
+grant execute on sys.dbms_crypto to ${TEST_USER};
 connect ${TEST_USER}/"${TEST_PW}"@localhost/FREEPDB1
 set define off feedback off serveroutput on size unlimited
 @install.sql
