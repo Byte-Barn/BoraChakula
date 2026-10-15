@@ -411,8 +411,8 @@ page 50 (
                      , m.PROVENANCE                                  as PROVENANCE
                      , m.METHOD                                      as METHOD
                   from HL_IMPACT_METRICS_V m
-                 where m.METRIC_KEY in ('PRODUCE_SOURCED', 'DISTANCE_SAVED', 'CO2_AVOIDED', 'FARMERS_REACHED')
-                 order by case m.METRIC_KEY when 'PRODUCE_SOURCED' then 1 when 'DISTANCE_SAVED' then 2 when 'CO2_AVOIDED' then 3 else 4 end
+                 where m.METRIC_KEY in ('PRODUCE_SOURCED', 'LOSS_AVOIDED', 'DISTANCE_SAVED', 'CO2_AVOIDED', 'FARMERS_REACHED')
+                 order by case m.METRIC_KEY when 'PRODUCE_SOURCED' then 1 when 'LOSS_AVOIDED' then 2 when 'DISTANCE_SAVED' then 3 when 'CO2_AVOIDED' then 4 else 5 end
                 ```
         }
         layout {
