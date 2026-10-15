@@ -264,6 +264,9 @@ page 50 (
             templateOptions: #DEFAULT#
             cssClasses: hlc-band-white hlc-band-cards
         }
+        messages {
+            whenNoDataFound: No open demands right now. New orders from buyers appear here.
+        }
         componentAppearance {
             display: report
         }
