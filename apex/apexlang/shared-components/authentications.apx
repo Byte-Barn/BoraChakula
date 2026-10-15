@@ -3,3 +3,36 @@ authentication oracle-apex-accounts (
     type: oracleApexAccounts
 )
 
+
+authentication harvestlink-accounts (
+    name: HarvestLink accounts
+    type: custom
+    source {
+        plsqlCode:
+            ```plsql
+            -- Sign-in through HL_ACCOUNT_API (db/15_accounts.sql). A failed sign-in
+            -- shows why: wrong password, email not confirmed, buyer awaiting
+            -- approval, locked or disabled account.
+            function hl_sign_in (p_username in varchar2, p_password in varchar2) return boolean is
+            begin
+              if hl_account_api.authenticate(p_username, p_password) then
+                return true;
+              end if;
+              apex_util.set_custom_auth_status(p_status => hl_account_api.login_message);
+              return false;
+            end hl_sign_in;
+
+            -- Sign in as the account's user name, whatever case the email was typed in
+            procedure hl_after_sign_in is
+            begin
+              apex_custom_auth.set_user(hl_account_api.login_user);
+            end hl_after_sign_in;
+            ```
+    }
+    settings {
+        authFunctionName: hl_sign_in
+    }
+    loginProcessing {
+        postAuthenticationProcedureName: hl_after_sign_in
+    }
+)
