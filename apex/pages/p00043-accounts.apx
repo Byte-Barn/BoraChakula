@@ -108,7 +108,7 @@ page 43 (
         }
         layout {
             sequence: 10
-            region: @pending
+            region: @header
             slot: regionBody
         }
         security {
