@@ -515,6 +515,24 @@ select d.demand_id,
 --   (illustrative factor or seeded price). Sources: db/04_seed.sql header.
 create or replace view hl_impact_metrics_v as
 with i as (select * from hl_impact_v),
+     -- Broker prices behind the income uplift: crops with allocated kg above
+     -- Grade C (Grade C counts against KES 0)
+     bp as (select case when count(*) > 0
+                         and count(case when max_basis = 'ESTIMATE' then 1 end) = 0
+                        then 'sourced' else 'demo' end as provenance,
+                   listagg(crop_name || ' KES ' || to_char(price, 'fm999990.00') || ' (' || source || ')', '; ')
+                     within group (order by crop_name) as used
+              from (select c.crop_name,
+                           max(c.typical_broker_price_kg) as price,
+                           max(c.broker_price_source)     as source,
+                           max(case c.broker_price_basis when 'ESTIMATE' then 'ESTIMATE' else 'SOURCED' end) as max_basis
+                      from hl_matches m
+                      join hl_harvests h on h.harvest_id = m.harvest_id
+                      join hl_demands d on d.demand_id = m.demand_id
+                      join hl_crops c on c.crop_id = d.crop_id
+                     where m.status <> 'REJECTED'
+                       and h.grade <> 'C'
+                     group by c.crop_name)),
      r as (select nvl(sum(stops), 0) as separate_trips, nvl(sum(trips), 0) as shared_trips
              from hl_routes where vehicle_type <> 'DIRECT'),
      a as (select count(distinct match_id) as confirmed
@@ -536,12 +554,11 @@ select 4, 'MARKET_ACCESS', 'AGREEMENTS_RECORDED', 'Agreements recorded', a.confi
        'Farmer confirmations written to the HL_AGREEMENTS blockchain table.'
   from a
 union all
-select 5, 'MARKET_ACCESS', 'INCOME_UPLIFT', 'Estimated farmer income uplift', i.farmer_income_uplift_kes, 'KES', 'demo',
-       'Allocated kg × (buyer price − typical broker price). Grade C counts against KES 0, '
-       || 'because it usually goes unsold. Broker prices are FAO farm-gate producer prices for Kenya '
-       || '(FAOSTAT 2024, official values) for tomatoes, onions, green peppers, carrots, cabbage and '
-       || 'avocado; FAO has no Kenyan price for French beans or kale, so those two are team estimates.'
-  from i
+select 5, 'MARKET_ACCESS', 'INCOME_UPLIFT', 'Estimated farmer income uplift', i.farmer_income_uplift_kes, 'KES', bp.provenance,
+       substr('Allocated kg × (buyer price − typical broker price). Grade C counts against KES 0, '
+       || 'because it usually goes unsold. Broker prices used: ' || nvl(bp.used, 'none yet') || '.'
+       || case when bp.provenance = 'demo' then ' At least one is a team estimate.' end, 1, 4000)
+  from i, bp
 union all
 select 6, 'WASTE_EMISSIONS', 'LOSS_AVOIDED', 'Estimated post-harvest loss avoided', i.loss_avoided_kg, 'kg', 'sourced',
        'Allocated kg × baseline loss rate of '

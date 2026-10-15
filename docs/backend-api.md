@@ -221,7 +221,7 @@ The legs of one trip add up to `aggregated_km / trips`. Older columns in `HL_DEM
 | `metric_group` | `MARKET_ACCESS` or `WASTE_EMISSIONS` section |
 | `metric_key` | Stable key: `PRODUCE_SOURCED`, `FARMERS_REACHED`, `DEMANDS_SERVED`, `AGREEMENTS_RECORDED`, `INCOME_UPLIFT`, `LOSS_AVOIDED`, `DISTANCE_SAVED`, `CO2_AVOIDED`, `TRIPS_REPLACED` |
 | `label`, `value`, `unit` | Card text |
-| `provenance` | ProvenanceTag |
+| `provenance` | ProvenanceTag. `INCOME_UPLIFT` is `sourced` while every broker price it uses (crops in current orders, above Grade C) is published or from the market interviews, else `demo`; its `method` lists those prices and sources |
 | `method` | "How this is calculated" note |
 
 ### Demo dataset and reset — Ready
@@ -325,6 +325,8 @@ In the demo, `hl_demo.reset` brings deleted demo farmers back and re-maps `FARME
 | -20606 | `hl_farmer_api` | Farmer has already been deleted |
 | -20611 | `hl_ai` | Match does not exist |
 | -20612 | `hl_ai` | Language must be en (English) or sw (Kiswahili) |
+| -20621 | `apply_interview_prices` | Only operations can change crop prices |
+| -20622 | `apply_interview_prices` | Minimum number of observations must be at least 1 |
 
 The app's error handling function, `hl_apex_error.handle` (`db/12_apex_error.sql`), shows these messages without
 the `ORA-20xxx:` prefix or stack, in the page notification. It is set on every build by `scripts/install_app.py`,

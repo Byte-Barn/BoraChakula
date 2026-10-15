@@ -107,3 +107,47 @@ purges, and the other rows they take, predictable. Do not purge in the 48 hours 
    the next monthly purge.
 
 5. **Verify the chain again** (step 2).
+
+## Market interview prices
+
+Crop prices behind the income uplift come from FAOSTAT where FAO publishes a Kenyan price, otherwise from team
+estimates (French beans and kale). Market interview answers replace them, crop by crop.
+
+1. **Type up the forms.** For each "Broker price vs market price" answer on an interview record form (Appendix A of
+   `docs/HarvestLink_Hackathon_Plan.pdf`), add a row to a copy of `docs/market-interviews-template.csv`:
+   - `crop_name` exactly as in `HL_CROPS` (for example `Roma tomatoes`, `Kale (sukuma wiki)`);
+   - `interviewee_role`: `FARMER`, `TRADER`, `BROKER` or `OTHER`;
+   - prices in **KES per kg**. Convert crates and bags in the sheet (a tomato crate is about 64 kg) and keep the
+     answer as given in `quoted_as`. Leave a price empty if it was not asked;
+   - no names or phone numbers (first names stay on the paper form).
+
+2. **Load the rows** into `HL_PRICE_OBSERVATIONS`: APEX SQL Workshop → Utilities → Data Workshop → Load Data, into
+   the existing table, or `insert` statements in SQL Commands.
+
+3. **Compare** the medians with the prices in use, and look at the range for answers typed in the wrong unit:
+
+   ```sql
+   select crop_name, broker_observations, broker_median_kg, broker_min_kg, broker_max_kg,
+          broker_price_in_use, broker_price_source,
+          market_observations, market_median_kg, market_price_in_use
+     from hl_price_summary_v
+    order by crop_name;
+   ```
+
+4. **Apply** the medians for crops with enough answers (default 3; operations only):
+
+   ```sql
+   declare n pls_integer;
+   begin
+     n := hl_calibration.apply_interview_prices(p_min_observations => 3);
+     dbms_output.put_line(n || ' prices changed');
+     commit;
+   end;
+   ```
+
+   Each changed price gets basis `INTERVIEW` and a source such as "Market interviews, Murang'a town market,
+   15 Oct 2026: median of 6". The impact page's income uplift then lists the prices it used with their sources,
+   and shows `sourced` while none of the crops in current orders rely on an estimate.
+
+5. **Keep the seed in step**: copy the applied prices and sources into `db/04_seed.sql` (the `hl_crops` inserts
+   and the `update hl_crops` basis block) in a pull request, so a rebuild keeps them.

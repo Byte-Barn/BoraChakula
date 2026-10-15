@@ -21,6 +21,7 @@ Oracle Autonomous Database / Oracle Database 23ai schema, matching engine and de
 | `13_farmer_api.sql` | `HL_FARMER_API` (consent, data export, account deletion, ledger purge), `HL_ERASURES`, `HL_LEDGER_PURGES`, `HL_LEDGER_PURGE_V`, `HL_MY_DATA_V` (operations steps: `docs/operations.md`) |
 | `14_ai.sql` | `HL_AI`: one-sentence match explanations in English or Kiswahili with Select AI, rule-based fallback; `HL_AI_EXPLANATIONS` cache; `AI_ENABLED` setting (off) |
 | `tests/` | `run.sh` and the backend tests (see below) |
+| `15_market_interviews.sql` | `HL_PRICE_OBSERVATIONS` (market interview answers), `HL_PRICE_SUMMARY_V`, `HL_CALIBRATION.APPLY_INTERVIEW_PRICES` |
 | `install.sql` / `uninstall.sql` | Install everything / drop everything |
 
 ## Install
@@ -126,9 +127,13 @@ commit; end;` switches it back on. If the schema user itself is recreated, rerun
 Update these with real figures before the pitch:
 
 - `hl_crops`: `typical_broker_price_kg` (FAOSTAT 2024 farm-gate for six crops; FAO has no Kenyan price for French
-  beans or kale, so those are estimates), `typical_market_price_kg` (estimates), `shelf_life_days` (estimates)
+  beans or kale, so those are estimates), `typical_market_price_kg` (estimates), `shelf_life_days` (estimates).
+  Each price records its basis (`PUBLISHED`, `INTERVIEW`, `ESTIMATE`) and source. Market interview answers go into
+  `HL_PRICE_OBSERVATIONS` and `hl_calibration.apply_interview_prices` applies the medians: steps in
+  `docs/operations.md`, "Market interview prices".
 - `hl_settings`: vehicle capacities. `BASELINE_LOSS_RATE` (IFPRI 2022) and the emission factors (Kenyan fleet
   averages, GIZ/INFRAS 2018) are sourced; the `db/04_seed.sql` header lists the references. When you replace a figure, cite its source in the
-  setting description and set the metric's `provenance` in `HL_IMPACT_METRICS_V` to `sourced`.
+  setting description and set the metric's `provenance` in `HL_IMPACT_METRICS_V` to `sourced`. The income uplift
+  works its provenance out from the crops' price basis, so it needs no edit.
 
 Then re-run `begin hl_match_pkg.rematch_all; commit; end;`.

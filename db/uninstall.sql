@@ -7,6 +7,9 @@ exception
     if sqlcode != -4043 then raise; end if;
 end;
 /
+drop package hl_calibration;
+drop view hl_price_summary_v;
+drop table hl_price_observations purge;
 drop package hl_ai;
 drop table hl_ai_explanations purge;
 drop view hl_my_data_v;

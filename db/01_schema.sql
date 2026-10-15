@@ -24,9 +24,18 @@ create table hl_crops (
   shelf_life_days         number(4)     not null,
   typical_broker_price_kg number(10,2),   -- KES/kg paid by middlemen at farm gate
   typical_market_price_kg number(10,2),   -- KES/kg at wholesale market
+  -- Where each price comes from: PUBLISHED (a cited dataset), INTERVIEW (the
+  -- team's market interviews, HL_PRICE_OBSERVATIONS) or ESTIMATE; and the
+  -- citation shown in the impact method text
+  broker_price_basis      varchar2(10)  default 'ESTIMATE' not null,
+  broker_price_source     varchar2(300) default 'Team estimate' not null,
+  market_price_basis      varchar2(10)  default 'ESTIMATE' not null,
+  market_price_source     varchar2(300) default 'Team estimate' not null,
   constraint hl_crops_pk primary key (crop_id),
   constraint hl_crops_name_uk unique (crop_name),
-  constraint hl_crops_shelf_ck check (shelf_life_days > 0)
+  constraint hl_crops_shelf_ck check (shelf_life_days > 0),
+  constraint hl_crops_broker_basis_ck check (broker_price_basis in ('PUBLISHED','INTERVIEW','ESTIMATE')),
+  constraint hl_crops_market_basis_ck check (market_price_basis in ('PUBLISHED','INTERVIEW','ESTIMATE'))
 );
 
 -- ---------------------------------------------------------------------------

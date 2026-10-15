@@ -1,0 +1,2 @@
+observed_on,market,interviewee_role,crop_name,broker_price_kg,market_price_kg,quoted_as,notes
+2026-10-15,Murang'a town market,FARMER,Roma tomatoes,39.06,60,"KES 2,500 per 64 kg crate; market KES 60/kg",Example row: delete before loading
