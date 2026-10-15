@@ -50,7 +50,7 @@ page 42 (
                     || '<div style="position:relative;padding:40px;display:flex;flex-direction:column;gap:14px;max-width:620px">'
                     || '<p class="hlc-eyebrow">' || apex_escape.html('Demand HL-D-' || lpad(l_d, 4, '0') || ' · delivery ' || to_char(l_f.need_by_date, 'Dy DD Mon')) || '</p>'
                     || '<h1 style="margin:0;font:800 38px/44px var(--font-display);letter-spacing:-0.02em;color:#fff">Sustainability impact</h1>'
-                    || '<p style="margin:0;font-size:16px;line-height:25px;color:rgba(255,255,255,.88)">What one demand changes for the farms that fill it. Each figure says where it comes from and how it is calculated.</p>'
+                    || '<p style="margin:0;font-size:16px;line-height:25px;color:rgba(255,255,255,.88)">What one demand changes for the farms that fill it. The cards below add up every demand so far, and each figure says where it comes from and how it is calculated.</p>'
                     || '<div style="display:flex;flex-wrap:wrap;gap:24px;margin-top:6px">'
                     || fig(to_char(l_f.matched_kg + l_f.pending_kg, 'FM999G990') || ' kg', 'sourced before harvest')
                     || fig(to_char(round(l_km), 'FM999G990') || ' km', 'fewer truck km, simulated')
@@ -122,9 +122,8 @@ page 42 (
             sqlQuery:
                 ```sql
                 select m.LABEL                              as LABEL
-                     , case when m.UNIT = 'KES' then 'KES ' || to_char(m.VALUE, 'FM999G999G990')
-                            else to_char(m.VALUE, 'FM999G999G990') end      as VALUE_LABEL
-                     , case when m.UNIT = 'KES' then null else m.UNIT end   as UNIT
+                     , to_char(m.VALUE, 'FM999G999G990')    as VALUE_LABEL
+                     , m.UNIT                               as UNIT
                      , m.PROVENANCE                         as PROVENANCE
                      , m.METHOD                             as METHOD
                   from HL_IMPACT_METRICS_V m
@@ -234,9 +233,8 @@ page 42 (
             sqlQuery:
                 ```sql
                 select m.LABEL                              as LABEL
-                     , case when m.UNIT = 'KES' then 'KES ' || to_char(m.VALUE, 'FM999G999G990')
-                            else to_char(m.VALUE, 'FM999G999G990') end      as VALUE_LABEL
-                     , case when m.UNIT = 'KES' then null else m.UNIT end   as UNIT
+                     , to_char(m.VALUE, 'FM999G999G990')    as VALUE_LABEL
+                     , m.UNIT                               as UNIT
                      , m.PROVENANCE                         as PROVENANCE
                      , m.METHOD                             as METHOD
                   from HL_IMPACT_METRICS_V m
