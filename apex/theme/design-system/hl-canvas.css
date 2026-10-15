@@ -242,12 +242,15 @@ body.hlc-app .t-Region { border-radius: 16px; box-shadow: var(--shadow-card); bo
 /* Farmer screens: phone first, one narrow column, bottom navigation */
 body.hlc-phone { margin: 0; background: var(--surface); color: var(--ink); font-family: var(--font-sans); }
 body.hlc-phone .t-Body-contentInner { max-width: 480px; margin: 0 auto; padding: 0 0 96px; display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+/* anchored sections clear the top of the screen and stop above the fixed bottom navigation */
+html:has(body.hlc-phone) { scroll-padding-top: 12px; scroll-padding-bottom: 88px; }
+@media (prefers-reduced-motion: no-preference) { html:has(body.hlc-phone) { scroll-behavior: smooth; } }
 body.hlc-phone .t-Body-contentInner > .hlc-phone-card { margin: 0 16px; border-radius: 16px; box-shadow: var(--shadow-card); border-color: var(--line); }
-.hlc-bottom-nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; max-width: 480px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+.hlc-bottom-nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; max-width: 480px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
   background: #fff; border-top: 1px solid var(--line); padding: 6px 8px 10px; box-sizing: border-box; }
 .hlc-bottom-nav a { min-height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 12px; font-weight: 500;
   color: var(--ink-muted) !important; text-decoration: none; border-radius: 12px; }
-.hlc-bottom-nav a[aria-current="page"] { font-weight: 700; color: var(--forest) !important; background: var(--forest-soft); }
+.hlc-bottom-nav a[aria-current] { font-weight: 700; color: var(--forest) !important; background: var(--forest-soft); }
 body.hlc-phone .hlc-phone-card .t-Form-label { font: 600 13px/16px var(--font-sans); }
 body.hlc-phone .hlc-phone-card .apex-item-text, body.hlc-phone .hlc-phone-card .apex-item-select, body.hlc-phone .hlc-phone-card .apex-item-datepicker input { border-radius: 10px; min-height: 48px; }
 
