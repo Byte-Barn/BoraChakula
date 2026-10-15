@@ -95,8 +95,8 @@ awaiting approval, a locked or a disabled account. `APP_USER` is the upper-case 
 | Account settings (signed in) | `HL_MY_ACCOUNT_V`: `user_name`, `email`, `role`, `party_name`, `status`, `email_verified_at`, `last_login_at`, `created_at` | |
 
 **Email.** Messages go to `HL_MAIL_OUTBOX` and are sent through Brevo's transactional email API when the
-`MAIL_ENABLED` setting is 1 (`scripts/enable_brevo.py`, planned, stores the key as the APEX web credential
-`BREVO_API`). Until then they stay `QUEUED`, so sign-up works without email. `HL_TEXT_SETTINGS` holds
+`MAIL_ENABLED` setting is 1 (`scripts/enable_brevo.py` stores the key as the APEX web credential
+`BREVO_API`; see `db/README.md`). Until then they stay `QUEUED`, so sign-up works without email. `HL_TEXT_SETTINGS` holds
 `MAIL_SENDER_EMAIL`, `MAIL_SENDER_NAME`, and the page links `VERIFY_URL` and `RESET_URL` (with a `#TOKEN#`
 placeholder) and `SIGN_IN_URL`.
 
