@@ -66,7 +66,7 @@ page 20 (
                     || '<svg width="24" height="24" viewBox="0 0 32 32" fill="none" aria-hidden="true" focusable="false"><path d="M16 29C8 26 3.5 18.5 4.5 8c8 2 12.5 8 11.5 21z" fill="currentColor"></path><path d="M16 29c8-3 12.5-10.5 11.5-21-8 2-12.5 8-11.5 21z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"></path><circle cx="16" cy="4.5" r="2.75" fill="currentColor"></circle></svg>'
                     || '<span><span class="hl-logo-word" style="font-size:18px;line-height:20px;display:block">HarvestLink</span></span></a>'
                     || '<a href="' || apex_plugin_util.replace_substitutions('&LOGOUT_URL.', p_escape => false) || '" style="font-size:13px;font-weight:600;color:#fff;text-decoration:none">Sign out</a></div>'
-                    || '<div style="display:flex;flex-direction:column;gap:6px"><p class="hlc-eyebrow">' || apex_escape.html(nvl(l_place, 'Your farm')) || '</p>'
+                    || '<div style="display:flex;flex-direction:column;gap:6px"><b class="hlc-role-chip hlc-role-farmer">Farmer</b><p class="hlc-eyebrow">' || apex_escape.html(nvl(l_place, 'Your farm')) || '</p>'
                     || '<h1 style="margin:0;font:800 28px/34px var(--font-display);letter-spacing:-0.02em;color:#fff">Habari, ' || apex_escape.html(regexp_substr(nvl(l_name, 'farmer'), '^\S+')) || '</h1>'
                     || '<p style="margin:0;font-size:15px;line-height:22px;color:rgba(255,255,255,.88)">We find buyers before you pick.</p></div></div></header>');
                 end;
