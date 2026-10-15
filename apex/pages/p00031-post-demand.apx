@@ -342,6 +342,39 @@ page 31 (
             templateOptions: #DEFAULT#
         }
     )
+    process load-draft (
+        name: Load a saved draft
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                for d in (select f.buyer_id, f.crop_id, f.grade_required, f.target_kg, f.price_per_kg,
+                                 f.need_by_date, f.receiving_window, x.notes
+                            from hl_fulfil_v f
+                            join hl_demands x on x.demand_id = f.demand_id
+                           where f.demand_id = to_number(:P31_DEMAND_ID)
+                             and f.status = 'DRAFT'
+                             and (hl_auth.buyer_id is null or f.buyer_id = hl_auth.buyer_id)) loop
+                  :P31_BUYER_ID     := d.buyer_id;
+                  :P31_CROP_ID      := d.crop_id;
+                  :P31_GRADE        := d.grade_required;
+                  :P31_QTY_KG       := d.target_kg;
+                  :P31_PRICE_PER_KG := d.price_per_kg;
+                  :P31_NEED_BY      := to_char(d.need_by_date);
+                  :P31_WINDOW       := d.receiving_window;
+                  :P31_NOTES        := d.notes;
+                end loop;
+                ```
+        }
+        execution {
+            sequence: 5
+            point: beforeHeader
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :P31_DEMAND_ID is not null and :P31_CROP_ID is null
+        }
+    )
     process defaults (
         name: Suggest values for a new demand
         type: executeCode
