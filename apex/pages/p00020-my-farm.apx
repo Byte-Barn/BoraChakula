@@ -16,6 +16,9 @@ page 20 (
         pageAccessProtection: argumentsMustHaveChecksum
         formAutoComplete: false
     }
+    advanced {
+        reloadOnSubmit: always
+    }
     javaScript {
         executeWhenPageLoads:
             ```javascript
