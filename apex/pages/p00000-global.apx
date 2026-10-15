@@ -61,7 +61,7 @@ page 0 (
         }
         serverSideCondition {
             type: expression
-            plsqlExpression: :APP_PAGE_ID in (30, 31, 32, 40, 41, 42)
+            plsqlExpression: :APP_PAGE_ID in (20, 30, 31, 32, 40, 41, 42)
         }
     )
 )

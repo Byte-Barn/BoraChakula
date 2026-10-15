@@ -79,6 +79,7 @@ page 20 (
         appearance {
             template: @/blank-with-attributes
             templateOptions: #DEFAULT#
+            cssClasses: hlc-farm-head
         }
     )
     region offers (
@@ -215,7 +216,7 @@ page 20 (
         appearance {
             template: @/standard
             templateOptions: #DEFAULT#
-            cssClasses: hlc-phone-card
+            cssClasses: hlc-phone-card hlc-farm-side
         }
         advanced {
             htmlDomId: register-harvest
