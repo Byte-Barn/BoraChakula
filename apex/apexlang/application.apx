@@ -28,6 +28,7 @@ app HARVESTLINK (
     }
     userInterface {
         currentTheme: @universal-theme
+        globalPage: 0
     }
     errorHandling {
         defaultDisplayLocation: inlineInNotification

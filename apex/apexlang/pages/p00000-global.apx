@@ -1,10 +1,5 @@
 page 0 (
     name: Global Page
-    alias: GLOBAL
-    title: Global Page
-    appearance {
-        pageTemplate: @/blank
-    }
     comments {
         comments: Shared regions. The HarvestLink app navigation (canvas AppNav) shows on the pages rebuilt to the design canvas.
     }
