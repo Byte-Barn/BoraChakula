@@ -125,10 +125,10 @@ commit; end;` switches it back on. If the schema user itself is recreated, rerun
 
 Update these with real figures before the pitch:
 
-- `hl_crops`: `typical_broker_price_kg` (FAOSTAT 2024 farm-gate for five crops, estimates for peppers, French beans
-  and kale), `typical_market_price_kg` (estimates), `shelf_life_days` (estimates)
-- `hl_settings`: vehicle capacities. `BASELINE_LOSS_RATE` (IFPRI 2022) and the emission factors (UK DESNZ 2024) are
-  sourced; the `db/04_seed.sql` header lists the references. When you replace a figure, cite its source in the
+- `hl_crops`: `typical_broker_price_kg` (FAOSTAT 2024 farm-gate for six crops; FAO has no Kenyan price for French
+  beans or kale, so those are estimates), `typical_market_price_kg` (estimates), `shelf_life_days` (estimates)
+- `hl_settings`: vehicle capacities. `BASELINE_LOSS_RATE` (IFPRI 2022) and the emission factors (Kenyan fleet
+  averages, GIZ/INFRAS 2018) are sourced; the `db/04_seed.sql` header lists the references. When you replace a figure, cite its source in the
   setting description and set the metric's `provenance` in `HL_IMPACT_METRICS_V` to `sourced`.
 
 Then re-run `begin hl_match_pkg.rematch_all; commit; end;`.
