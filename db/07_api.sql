@@ -539,8 +539,8 @@ union all
 select 5, 'MARKET_ACCESS', 'INCOME_UPLIFT', 'Estimated farmer income uplift', i.farmer_income_uplift_kes, 'KES', 'demo',
        'Allocated kg × (buyer price − typical broker price). Grade C counts against KES 0, '
        || 'because it usually goes unsold. Broker prices are FAO farm-gate producer prices for Kenya '
-       || '(FAOSTAT, January 2024) for tomatoes, onions, carrots, cabbage and avocado; team estimates '
-       || 'for peppers, French beans and kale until the market interviews.'
+       || '(FAOSTAT 2024, official values) for tomatoes, onions, green peppers, carrots, cabbage and '
+       || 'avocado; FAO has no Kenyan price for French beans or kale, so those two are team estimates.'
   from i
 union all
 select 6, 'WASTE_EMISSIONS', 'LOSS_AVOIDED', 'Estimated post-harvest loss avoided', i.loss_avoided_kg, 'kg', 'sourced',
@@ -554,10 +554,11 @@ select 7, 'WASTE_EMISSIONS', 'DISTANCE_SAVED', 'Truck distance saved', i.km_save
        || to_char(hl_match_pkg.get_setting('ROAD_FACTOR'), 'fm990.0') || ' (simulated road distance).'
   from i
 union all
-select 8, 'WASTE_EMISSIONS', 'CO2_AVOIDED', 'Estimated CO₂ avoided', i.co2_saved_kg, 'kg CO₂e', 'simulated',
-       'Kilometres saved × diesel emission factors from UK DESNZ 2024 conversion factors (van '
-       || to_char(hl_match_pkg.get_setting('PICKUP_CO2_KG_PER_KM'), 'fm0.000') || ', 7.5–17 t rigid truck '
-       || to_char(hl_match_pkg.get_setting('TRUCK_CO2_KG_PER_KM'), 'fm0.000') || ' kg CO₂e per km). '
+select 8, 'WASTE_EMISSIONS', 'CO2_AVOIDED', 'Estimated CO₂ avoided', i.co2_saved_kg, 'kg CO₂', 'simulated',
+       'Kilometres saved × Kenyan road fleet CO₂ factors (GIZ/INFRAS 2018, reference year 2015: light '
+       || 'commercial vehicle ' || to_char(hl_match_pkg.get_setting('PICKUP_CO2_KG_PER_KM'), 'fm0.000')
+       || ', heavy goods vehicle ' || to_char(hl_match_pkg.get_setting('TRUCK_CO2_KG_PER_KM'), 'fm0.000')
+       || ' kg CO₂ per km). '
        || 'Factors are published; distances are simulated, so the total is too.'
   from i
 union all

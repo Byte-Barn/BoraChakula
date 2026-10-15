@@ -2,23 +2,28 @@
 -- HarvestLink reference data: matching settings and crops.
 -- The loss rate and emission factors are published figures; each setting's
 -- description names its source. Crop farm-gate prices are FAOSTAT producer
--- prices where FAO publishes one, otherwise team estimates; replace them with
--- figures from the market interviews (form: Appendix A of
--- docs/HarvestLink_Hackathon_Plan.pdf) when available.
+-- prices where FAO publishes one (six of eight crops), otherwise team
+-- estimates; figures from the market interviews (form: Appendix A of
+-- docs/HarvestLink_Hackathon_Plan.pdf) can replace them when available.
 -- Sources:
 --   [IFPRI 2022] Gatere, Hoffmann, Murphy & Scollard, "Post-harvest Losses and
 --     Food Safety in Tomatoes Produced in Laikipia County", IFPRI, 2022:
 --     overall loss 28.2% of value, farmer to point of sale (16.4% at farm).
 --     https://agris.fao.org/search/en/records/6474812d79cbb2c2c1b91e33 (record)
 --     https://cgspace.cgiar.org/server/api/core/bitstreams/38e6297a-b2e1-4294-aea6-8645986e3b1c/content (PDF)
---   [DESNZ 2024] UK Department for Energy Security and Net Zero, Greenhouse gas
---     reporting: conversion factors 2024 (condensed set v1.1), sheet
---     "Freighting goods", diesel, kg CO2e per km. UK fleet averages, used as a
---     proxy until Kenyan factors are available.
---     https://www.gov.uk/government/publications/greenhouse-gas-reporting-conversion-factors-2024
---   [FAOSTAT 2024] FAO, FAOSTAT Producer Prices, Kenya, as republished in KES/kg
---     (price as of January 2024) by Selina Wamucii market insights, e.g.
---     https://www.selinawamucii.com/insights/prices/kenya/tomatoes/
+--   [GIZ 2018] Notter & Fussler (INFRAS), "Road transport GHG emission factors
+--     for Kenya: pilot study for 2015", short report commissioned by GIZ TraCS
+--     with the Kenyan Ministry of Transport, 21 September 2018, Table 2: average
+--     CO2 per km of the Kenyan fleet, by vehicle category (HBEFA 3.3 adapted to
+--     Kenyan vehicle stock, mileage and traffic data from the University of
+--     Nairobi). LCV 216.48 g/km, HGV 759.88 g/km. CO2 only, not CO2e.
+--     https://changing-transport.org/wp-content/uploads/GIZ_Road-transport-GHG-emission-factors-for-Kenya.pdf
+--   [FAOSTAT 2024] FAO, FAOSTAT Prices domain, Producer Price (LCU/tonne),
+--     Kenya, annual value 2024, all flagged A (official value); divided by 1,000
+--     for KES/kg. Items: Tomatoes (388), Onions and shallots, dry (403),
+--     Chillies and peppers, green (401), Carrots and turnips (426), Cabbages
+--     (358), Avocados (572). Bulk file Prices_E_Africa.zip, downloaded
+--     15 Oct 2026. https://www.fao.org/faostat/en/#data/PP
 -- The demo farmers, buyers, harvests and demands are loaded by HL_DEMO
 -- (db/08_demo.sql), which can also reset them before a rehearsal.
 -- =============================================================================
@@ -33,9 +38,9 @@ insert into hl_settings values ('WEIGHT_DISTANCE',      0.25, 'Matching weight: 
 insert into hl_settings values ('MAX_DISTANCE_KM',      200,  'Farms further than this (road km) are not matched');
 insert into hl_settings values ('ROAD_FACTOR',          1.3,  'Road distance / straight-line distance');
 insert into hl_settings values ('TRUCK_CAPACITY_KG',    5000, 'Shared aggregation truck payload');
-insert into hl_settings values ('TRUCK_CO2_KG_PER_KM',  0.595, 'Medium truck emissions (kg CO2e per km): diesel rigid HGV 7.5-17 t, average laden [DESNZ 2024]');
+insert into hl_settings values ('TRUCK_CO2_KG_PER_KM',  0.760, 'Truck emissions (kg CO2 per km): Kenyan HGV fleet average 759.88 g/km, 2015 [GIZ 2018]. The average includes 34-40 t trucks, so it overstates a 5 t truck and understates savings');
 insert into hl_settings values ('PICKUP_CAPACITY_KG',   1000, 'Pickup hired by an individual farmer');
-insert into hl_settings values ('PICKUP_CO2_KG_PER_KM', 0.25, 'Pickup emissions (kg CO2e per km): average diesel van up to 3.5 t, 0.250 [DESNZ 2024]');
+insert into hl_settings values ('PICKUP_CO2_KG_PER_KM', 0.216, 'Pickup emissions (kg CO2 per km): Kenyan light commercial vehicle fleet average 216.48 g/km, 2015 [GIZ 2018]');
 insert into hl_settings values ('BASELINE_LOSS_RATE',   0.28, 'Share of produce lost without a pre-arranged buyer: tomato losses farm to point of sale, 28.2% of value, Laikipia [IFPRI 2022]');
 insert into hl_settings values ('ROUTE_START_HOUR',     5,    'Pickup vehicle leaves the buyer at this hour the day before delivery');
 insert into hl_settings values ('AVG_SPEED_KMH',        40,   'Average road speed for pickup time estimates (simulated)');
@@ -43,21 +48,21 @@ insert into hl_settings values ('STOP_MINUTES',         30,   'Loading time at e
 
 -- ---------------------------------------------------------------------------
 -- Crops (KES per kg at farm gate from brokers, and at wholesale market).
--- Broker price: the farm-gate producer price [FAOSTAT 2024] for tomatoes,
---   onions, carrots, cabbage and avocado (the republisher marks avocado as
---   estimated); peppers, French beans and kale have none, so those are team
---   estimates.
+-- Broker price: the 2024 farm-gate producer price [FAOSTAT 2024] for
+--   tomatoes, onions, green peppers, carrots, cabbage and avocado. FAOSTAT has
+--   no Kenyan series for French beans ("Other beans, green" is empty) or kale,
+--   so those two are team estimates.
 -- Market price: team estimate, farm-gate + 50% for broker margin and
---   transport (rounded to KES 5); the original estimates for crops without a
---   FAOSTAT price. Not used in any metric.
+--   transport (rounded to the nearest KES 5); the original estimates for French
+--   beans and kale. Not used in any metric.
 -- Shelf lives are team estimates.
 -- ---------------------------------------------------------------------------
-insert into hl_crops (crop_id, crop_name, shelf_life_days, typical_broker_price_kg, typical_market_price_kg) values (1, 'Roma tomatoes',      10, 42.17, 65);
-insert into hl_crops (crop_id, crop_name, shelf_life_days, typical_broker_price_kg, typical_market_price_kg) values (2, 'Onions',             30, 58.01, 85);
-insert into hl_crops (crop_id, crop_name, shelf_life_days, typical_broker_price_kg, typical_market_price_kg) values (3, 'Green peppers',      10, 45,    80);
-insert into hl_crops (crop_id, crop_name, shelf_life_days, typical_broker_price_kg, typical_market_price_kg) values (4, 'Carrots',            21, 30.89, 45);
-insert into hl_crops (crop_id, crop_name, shelf_life_days, typical_broker_price_kg, typical_market_price_kg) values (5, 'Cabbage',            21, 14.88, 25);
-insert into hl_crops (crop_id, crop_name, shelf_life_days, typical_broker_price_kg, typical_market_price_kg) values (6, 'Hass avocado',       14, 19,    30);
+insert into hl_crops (crop_id, crop_name, shelf_life_days, typical_broker_price_kg, typical_market_price_kg) values (1, 'Roma tomatoes',      10, 40.94, 60);
+insert into hl_crops (crop_id, crop_name, shelf_life_days, typical_broker_price_kg, typical_market_price_kg) values (2, 'Onions',             30, 56.31, 85);
+insert into hl_crops (crop_id, crop_name, shelf_life_days, typical_broker_price_kg, typical_market_price_kg) values (3, 'Green peppers',      10, 50.08, 75);
+insert into hl_crops (crop_id, crop_name, shelf_life_days, typical_broker_price_kg, typical_market_price_kg) values (4, 'Carrots',            21, 29.99, 45);
+insert into hl_crops (crop_id, crop_name, shelf_life_days, typical_broker_price_kg, typical_market_price_kg) values (5, 'Cabbage',            21, 14.44, 20);
+insert into hl_crops (crop_id, crop_name, shelf_life_days, typical_broker_price_kg, typical_market_price_kg) values (6, 'Hass avocado',       14, 30.89, 45);
 insert into hl_crops (crop_id, crop_name, shelf_life_days, typical_broker_price_kg, typical_market_price_kg) values (7, 'French beans',        7, 50,    90);
 insert into hl_crops (crop_id, crop_name, shelf_life_days, typical_broker_price_kg, typical_market_price_kg) values (8, 'Kale (sukuma wiki)',  3, 15,    35);
 
