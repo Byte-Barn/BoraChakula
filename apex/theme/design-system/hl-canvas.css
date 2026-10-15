@@ -131,6 +131,10 @@ html:has(.hlc-site-header) { scroll-padding-top: var(--hlc-site-bar); }
 /* the hero right below repeats Post a demand */
 @media (max-width: 480px) { .hlc-site-actions .hlc-site-post { display: none; } }
 
+/* Landing impact figures: the cards rise over the bottom of the photo behind the heading */
+.hlc-band-cards.hlc-band-overlap { position: relative; margin-top: -136px; padding-bottom: 96px;
+  background: linear-gradient(180deg, transparent 136px, var(--forest-deep) 136px); }
+
 /* Canvas pages in APEX: the Blank page template plus regions using the
    "Blank with Attributes" region template, so the canvas markup sets the layout */
 body.hlc-page { margin: 0; background: var(--surface); color: var(--ink); font-family: var(--font-sans); }
