@@ -169,8 +169,34 @@ def register_developer(conn):
     cur.execute("begin hl_auth.register_user(:u, 'OPS'); commit; end;", u=env("HL_APEX_USER"))
 
 
+def ai_enabled(cur):
+    """AI_ENABLED before a reset, or None when HarvestLink isn't installed."""
+    try:
+        cur.execute("select max(setting_value) from hl_settings where setting_key = 'AI_ENABLED'")
+        return cur.fetchone()[0]
+    except oracledb.DatabaseError:
+        return None
+
+
+def ai_setup_exists(cur):
+    """True when the Select AI profile and credential survive a reset.
+
+    enable_select_ai.py creates them with DBMS_CLOUD and DBMS_CLOUD_AI, outside
+    the objects uninstall.sql drops. Databases without Select AI (Oracle
+    Database Free) have neither view, which counts as not set up.
+    """
+    try:
+        cur.execute("select count(*) from user_cloud_ai_profiles where profile_name = 'HL_EXPLAIN'")
+        profiles = cur.fetchone()[0]
+        cur.execute("select count(*) from user_credentials where credential_name = 'HL_AI_CRED'")
+        return profiles > 0 and cur.fetchone()[0] > 0
+    except oracledb.DatabaseError:
+        return False
+
+
 def install(conn, reset):
     cur = conn.cursor()
+    ai_before = ai_enabled(cur) if reset else None
     if reset:
         for stmt in split_sql((REPO / "db" / "uninstall.sql").read_text()):
             try:
@@ -207,6 +233,15 @@ def install(conn, reset):
     cur.execute("select total_matched_kg, farmers_matched, demands_served from hl_impact_v")
     kg, farmers, demands = cur.fetchone()
     print(f"Check: {kg} kg matched, {farmers} farmers, {demands} demands")
+
+    # 14_ai.sql installs AI_ENABLED = 0; keep Select AI on across a reset when it
+    # was on and its profile and credential are still there (issue #28)
+    if ai_before == 1:
+        if ai_setup_exists(cur):
+            cur.execute("begin hl_ai.set_enabled(true); commit; end;")
+            print("Select AI kept on (HL_EXPLAIN profile and HL_AI_CRED credential still present)")
+        else:
+            print("Select AI was on but its profile or credential is gone; run scripts/enable_select_ai.py")
 
 
 def main():
