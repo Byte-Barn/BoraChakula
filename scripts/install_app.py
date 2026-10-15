@@ -202,7 +202,15 @@ def apply_frontend_pages():
     home = "        homeUrl: {\n            page: 1\n        }\n"
     if home not in text:
         sys.exit(f"Unexpected home URL in {app}; cannot make the landing page the home page")
-    app.write_text(text.replace(home, home.replace("page: 1", "page: 50"), 1), encoding="utf-8", newline="\n")
+    text = text.replace(home, home.replace("page: 1", "page: 50"), 1)
+
+    # Page 0 only renders its shared regions (the canvas app navigation) once
+    # the user interface names it as the global page; the blueprint doesn't
+    ui = "    userInterface {\n        currentTheme: @universal-theme\n    }\n"
+    if ui not in text:
+        sys.exit(f"Unexpected user interface block in {app}; cannot set the global page")
+    text = text.replace(ui, ui.replace("    }\n", "        globalPage: 0\n    }\n"), 1)
+    app.write_text(text, encoding="utf-8", newline="\n")
 
     # Visitors on the landing page should not see a user menu for "nobody"
     user_entry = "    entry app-user (\n        label: &APP_USER.\n"
