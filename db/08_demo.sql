@@ -101,7 +101,9 @@ create or replace package body hl_demo as
     return l_id;
   end add_demand;
 
-  -- The farmer's yes, as a field agent would record it
+  -- The farmer's yes, as a field agent would record it. Uses accept_match,
+  -- not confirm: the loader runs as whoever resets the demo, and confirm only
+  -- lets the order's own buyer, the farmer or operations act.
   procedure confirm (p_demand in number, p_farmer in number) is
   begin
     for m in (select m.match_id
@@ -110,8 +112,9 @@ create or replace package body hl_demo as
                where m.demand_id = p_demand
                  and h.farmer_id = p_farmer
                  and m.status = 'PROPOSED') loop
-      hl_match_pkg.confirm(m.match_id);
+      hl_match_pkg.accept_match(m.match_id);
     end loop;
+    hl_match_pkg.refresh_statuses(p_demand);
   end confirm;
 
   -- A past order: matched, confirmed and delivered (goes through the ledger)

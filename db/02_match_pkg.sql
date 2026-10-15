@@ -61,6 +61,13 @@ create or replace package hl_match_pkg as
   -- rerun_open: re-match every active demand, earliest deadline first
   procedure rerun_open;
 
+  -- 'Y' when the signed-in user may act on (and see the farmer's phone for) a
+  -- match: operations, the buyer who owns the demand, the farmer who owns the
+  -- harvest, or a script outside APEX with no mapped login. run, confirm,
+  -- decline and rerun_open raise -20113 otherwise. Reads HL_AUTH at run time
+  -- (db/09_auth.sql is installed after this package).
+  function can_act (p_demand_id in number, p_harvest_id in number) return varchar2;
+
 end hl_match_pkg;
 /
 
@@ -509,14 +516,59 @@ create or replace package body hl_match_pkg as
     end if;
   end reject_match;
 
+  function can_act (p_demand_id in number, p_harvest_id in number) return varchar2 is
+    l_role   varchar2(10);
+    l_buyer  number;
+    l_farmer number;
+    l_found  number;
+  begin
+    begin
+      execute immediate 'begin :r := hl_auth.role; :b := hl_auth.buyer_id; :f := hl_auth.farmer_id; end;'
+        using out l_role, out l_buyer, out l_farmer;
+    exception
+      when others then
+        l_role := null;   -- HL_AUTH not installed yet (during install)
+    end;
+    if l_role = 'OPS' then
+      return 'Y';
+    elsif l_role is null then
+      return case when sys_context('APEX$SESSION', 'APP_USER') is null then 'Y' else 'N' end;
+    elsif l_role = 'BUYER' and p_demand_id is not null then
+      select count(*) into l_found from hl_demands where demand_id = p_demand_id and buyer_id = l_buyer;
+    elsif l_role = 'FARMER' and p_harvest_id is not null then
+      select count(*) into l_found from hl_harvests where harvest_id = p_harvest_id and farmer_id = l_farmer;
+    end if;
+    return case when nvl(l_found, 0) > 0 then 'Y' else 'N' end;
+  end can_act;
+
+  procedure check_can_act (p_demand_id in number, p_harvest_id in number) is
+  begin
+    if can_act(p_demand_id, p_harvest_id) = 'N' then
+      raise_application_error(-20113, 'You can only act on your own orders and offers');
+    end if;
+  end check_can_act;
+
+  procedure check_match (p_match_id in number) is
+    l_demand_id  hl_matches.demand_id%type;
+    l_harvest_id hl_matches.harvest_id%type;
+  begin
+    select max(demand_id), max(harvest_id) into l_demand_id, l_harvest_id
+      from hl_matches where match_id = p_match_id;
+    if l_demand_id is not null then
+      check_can_act(l_demand_id, l_harvest_id);
+    end if;
+  end check_match;
+
   procedure run (p_demand_id in number) is
   begin
+    check_can_act(p_demand_id, null);
     run_matching(p_demand_id);
   end run;
 
   procedure confirm (p_match_id in number) is
     l_demand_id hl_matches.demand_id%type;
   begin
+    check_match(p_match_id);
     update hl_matches set status = 'ACCEPTED'
      where match_id = p_match_id and status = 'PROPOSED'
      returning demand_id into l_demand_id;
@@ -529,6 +581,7 @@ create or replace package body hl_match_pkg as
   procedure decline (p_match_id in number) is
     l_demand_id hl_matches.demand_id%type;
   begin
+    check_match(p_match_id);
     select demand_id into l_demand_id
       from hl_matches
      where match_id = p_match_id and status in ('PROPOSED', 'ACCEPTED');
@@ -541,6 +594,7 @@ create or replace package body hl_match_pkg as
 
   procedure rerun_open is
   begin
+    check_can_act(null, null);
     rematch_all;
   end rerun_open;
 
