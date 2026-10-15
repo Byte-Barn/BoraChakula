@@ -19,10 +19,44 @@ page 50 (
     advanced {
         enableDuplicatePageSubmissions: false
     }
+    javaScript {
+        executeWhenPageLoads:
+            ```javascript
+            (function () {
+              var header = document.querySelector('.hlc-site-header');
+              if (!header) { return; }
+              function update() { header.classList.toggle('is-top', window.scrollY < 8); }
+              update();
+              window.addEventListener('scroll', update, { passive: true });
+            })();
+            ```
+    }
     comments {
         comments: Canvas screen 1 (Main), public. Layout and copy from the HarvestLink design canvas; live figures from HL_FULFIL_V, HL_MATCH_V, HL_ROUTE_LINE_V and HL_IMPACT_METRICS_V, labelled as illustrative.
     }
 
+    region site-header (
+        name: Site header
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div class="hlc-root hlc-on-dark"><header class="hlc-site-bar hlc-pad"><div class="hlc-site-bar-in"><a class="hl-logo hl-logo-inverse" href="f?p=&APP_ID.:50:&SESSION." aria-label="HarvestLink home"><svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true" focusable="false"><path d="M16 29C8 26 3.5 18.5 4.5 8c8 2 12.5 8 11.5 21z" fill="currentColor"></path><path d="M16 29c8-3 12.5-10.5 11.5-21-8 2-12.5 8-11.5 21z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"></path><circle cx="16" cy="4.5" r="2.75" fill="currentColor"></circle></svg><span><span class="hl-logo-word" style="font-size:22px;line-height:24px;display:block">HarvestLink</span><span class="hl-logo-by">by Bora Chakula</span></span></a><nav class="hlc-topnav" aria-label="Main"><a href="#how">How it works</a><a href="#farmers">For farmers</a><a href="#buyers">For buyers</a><a href="#impact">Our impact</a></nav><div class="hlc-site-actions"><a class="hl-btn hl-btn-secondary hlc-wide-only" href="f?p=&APP_ID.:9000:&SESSION.">Farmer sign in</a><a class="hl-btn hl-btn-secondary hlc-wide-only" href="f?p=&APP_ID.:9000:&SESSION.">Buyer sign in</a><a class="hl-btn hl-btn-secondary hlc-narrow-only" href="f?p=&APP_ID.:9000:&SESSION.">Sign in</a><a class="hl-btn hl-btn-primary hlc-site-post" href="f?p=&APP_ID.:31:&SESSION.">Post a demand</a></div></div></header></div>
+                ```
+        }
+        layout {
+            sequence: 5
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-site-header is-top
+        }
+        settings {
+            outputAs: html
+        }
+    )
     region hero (
         name: Hero
         type: dynamicContent
@@ -56,7 +90,7 @@ page 50 (
                   select * into l_f from hl_fulfil_v where demand_id = l_d;
                   select count(*) into l_farms from hl_match_v where demand_id = l_d and ui_status <> 'DECLINED';
                   -- #APP_FILES# (photos) is only substituted in static regions; expand it here
-                  return apex_plugin_util.replace_substitutions(p_escape => false, p_value => q'~<div class="hlc-root"><section class="hlc-on-dark" style="position:relative;overflow:hidden;color:#fff;background:var(--forest-deep)"><img src="#APP_FILES#images/photo-farmer-crate.jpg" alt="A farmer carrying a crate of fresh carrots, beetroot and greens" class="hlc-photo" style="position:absolute;inset:0;object-position:70% 30%"><div class="hlc-shade" style="position:absolute;inset:0"></div><header class="hlc-pad" style="position:relative;padding:24px 40px"><div style="max-width:1240px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:16px 40px"><a class="hl-logo hl-logo-inverse" href="f?p=&APP_ID.:50:&SESSION." aria-label="HarvestLink home"><svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true" focusable="false"><path d="M16 29C8 26 3.5 18.5 4.5 8c8 2 12.5 8 11.5 21z" fill="currentColor"></path><path d="M16 29c8-3 12.5-10.5 11.5-21-8 2-12.5 8-11.5 21z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"></path><circle cx="16" cy="4.5" r="2.75" fill="currentColor"></circle></svg><span><span class="hl-logo-word" style="font-size:22px;line-height:24px;display:block">HarvestLink</span><span class="hl-logo-by">by Bora Chakula</span></span></a><nav class="hlc-topnav" aria-label="Main" style="display:flex;gap:32px;flex-grow:1;justify-content:center;font-weight:500;font-size:15px"><a href="#how" style="text-decoration:none">How it works</a><a href="#farmers" style="text-decoration:none">For farmers</a><a href="#buyers" style="text-decoration:none">For buyers</a><a href="#impact" style="text-decoration:none">Our impact</a></nav><div style="display:flex;flex-wrap:wrap;gap:10px;margin-left:auto"><a class="hl-btn hl-btn-secondary" href="f?p=&APP_ID.:9000:&SESSION.">Farmer sign in</a><a class="hl-btn hl-btn-secondary" href="f?p=&APP_ID.:9000:&SESSION.">Buyer sign in</a><a class="hl-btn hl-btn-primary" href="f?p=&APP_ID.:31:&SESSION.">Post a demand</a></div></div></header><div class="hlc-pad" style="position:relative;padding:72px 40px 128px"><div style="max-width:1240px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:48px;align-items:end"><div style="display:flex;flex-direction:column;gap:28px;max-width:620px"><span class="hlc-chip" style="background:rgba(132,204,22,.16);color:var(--lime);width:fit-content">Demand-first marketplace · Kenya</span><h1 class="hlc-h1" style="margin:0;color:#fff">Sell before you <span class="hlc-lime">harvest.</span></h1><p style="margin:0;font-size:19px;line-height:30px;color:rgba(255,255,255,.88);max-width:52ch">Buyers post what they need before harvest. We bring smallholder farmers together to fill the order, find an outlet for every grade, and send one truck instead of many.</p><div style="display:flex;flex-wrap:wrap;gap:12px"><a class="hl-btn hl-btn-primary hl-btn-lg" href="f?p=&APP_ID.:31:&SESSION.">Post a demand<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 8h10M9 4l4 4-4 4"></path></svg></a><a class="hl-btn hl-btn-secondary hl-btn-lg" href="f?p=&APP_ID.:20:&SESSION.">Register your harvest</a></div></div><div class="hlc-card hlc-lift" style="justify-self:end;width:100%;max-width:420px;color:var(--ink);padding:24px;display:flex;flex-direction:column;gap:18px"><div style="display:flex;gap:14px;align-items:center"><img src="#APP_FILES#images/crop-tomato.jpg" alt="" style="width:64px;height:64px;border-radius:14px;border:1px solid var(--line);object-fit:contain;background:#fff"><div style="flex:1;min-width:0"><p style="margin:0;font:700 19px/26px var(--font-display)">~'
+                  return apex_plugin_util.replace_substitutions(p_escape => false, p_value => q'~<div class="hlc-root"><section class="hlc-on-dark" style="position:relative;overflow:hidden;color:#fff;background:var(--forest-deep)"><img src="#APP_FILES#images/photo-farmer-crate.jpg" alt="A farmer carrying a crate of fresh carrots, beetroot and greens" class="hlc-photo" style="position:absolute;inset:0;object-position:70% 30%"><div class="hlc-shade" style="position:absolute;inset:0"></div><div class="hlc-pad" style="position:relative;padding:152px 40px 128px"><div style="max-width:1240px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:48px;align-items:end"><div style="display:flex;flex-direction:column;gap:28px;max-width:620px"><span class="hlc-chip" style="background:rgba(132,204,22,.16);color:var(--lime);width:fit-content">Demand-first marketplace · Kenya</span><h1 class="hlc-h1" style="margin:0;color:#fff">Sell before you <span class="hlc-lime">harvest.</span></h1><p style="margin:0;font-size:19px;line-height:30px;color:rgba(255,255,255,.88);max-width:52ch">Buyers post what they need before harvest. We bring smallholder farmers together to fill the order, find an outlet for every grade, and send one truck instead of many.</p><div style="display:flex;flex-wrap:wrap;gap:12px"><a class="hl-btn hl-btn-primary hl-btn-lg" href="f?p=&APP_ID.:31:&SESSION.">Post a demand<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 8h10M9 4l4 4-4 4"></path></svg></a><a class="hl-btn hl-btn-secondary hl-btn-lg" href="f?p=&APP_ID.:20:&SESSION.">Register your harvest</a></div></div><div class="hlc-card hlc-lift" style="justify-self:end;width:100%;max-width:420px;color:var(--ink);padding:24px;display:flex;flex-direction:column;gap:18px"><div style="display:flex;gap:14px;align-items:center"><img src="#APP_FILES#images/crop-tomato.jpg" alt="" style="width:64px;height:64px;border-radius:14px;border:1px solid var(--line);object-fit:contain;background:#fff"><div style="flex:1;min-width:0"><p style="margin:0;font:700 19px/26px var(--font-display)">~'
                     || apex_escape.html(rtrim(rtrim(to_char(l_f.target_kg / 1000, 'FM990D0', 'NLS_NUMERIC_CHARACTERS=''.,'''), '0'), '.') || ' t Grade ' || l_f.grade_required || ' ' || l_f.crop_name)
                     || '</p><p style="margin:0;font-size:13px;color:var(--ink-muted)">'
                     || apex_escape.html(l_f.buyer_name || ' · ' || to_char(l_f.need_by_date, 'Dy DD Mon'))
@@ -383,7 +417,7 @@ page 50 (
         source {
             htmlCode:
                 ```html
-                <div class="hlc-root"><div class="hlc-pad hlc-on-dark" id="impact" style="padding:96px 40px 40px;background:var(--forest-deep);color:#fff"><div style="max-width:1240px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:32px;align-items:end"><div style="display:flex;flex-direction:column;gap:14px"><p class="hlc-eyebrow">Illustrative figures from the demo dataset</p><h2 class="hlc-h2" style="margin:0;color:#fff">What the pilot changes so far</h2></div><p style="margin:0;font-size:17px;line-height:27px;color:rgba(255,255,255,.82)">Totals across every demand in the demo dataset, including the tomato order above. Every figure says where it comes from and how it is calculated.</p></div></div></div>
+                <div class="hlc-root"><div class="hlc-pad hlc-on-dark" id="impact" style="position:relative;overflow:hidden;padding:96px 40px 176px;background:var(--forest-deep);color:#fff"><img src="#APP_FILES#images/photo-harvest-lettuce.jpg" alt="" class="hlc-photo" style="position:absolute;inset:0;object-position:50% 40%"><div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(3,36,27,.94) 0%,rgba(3,36,27,.8) 50%,rgba(3,36,27,.45) 100%)"></div><div style="position:relative;max-width:1240px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:32px;align-items:end"><div style="display:flex;flex-direction:column;gap:14px"><p class="hlc-eyebrow">Illustrative figures from the demo dataset</p><h2 class="hlc-h2" style="margin:0;color:#fff">What the pilot changes so far</h2></div><p style="margin:0;font-size:17px;line-height:27px;color:rgba(255,255,255,.82)">Totals across every demand in the demo dataset, including the tomato order above. Every figure says where it comes from and how it is calculated.</p></div></div></div>
                 ```
         }
         layout {
@@ -424,7 +458,7 @@ page 50 (
         appearance {
             template: @/blank-with-attributes
             templateOptions: #DEFAULT#
-            cssClasses: hlc-band-dark hlc-band-cards
+            cssClasses: hlc-band-dark hlc-band-cards hlc-band-overlap
         }
         componentAppearance {
             display: report
@@ -486,28 +520,6 @@ page 50 (
                 dataType: varchar2
             }
         )
-    )
-
-    region impact-photo (
-        name: Impact photo
-        type: staticContent
-        source {
-            htmlCode:
-                ```html
-                <div class="hlc-root"><div class="hlc-pad" style="padding:40px 40px 96px;background:var(--forest-deep)"><div style="max-width:1240px;margin:0 auto;border-radius:24px;overflow:hidden;height:260px;position:relative"><img src="#APP_FILES#images/photo-harvest-lettuce.jpg" alt="Farmers harvesting lettuce together in a green field" class="hlc-photo" style="object-position:50% 40%"></div></div></div>
-                ```
-        }
-        layout {
-            sequence: 100
-            slot: body
-        }
-        appearance {
-            template: @/blank-with-attributes
-            templateOptions: #DEFAULT#
-        }
-        settings {
-            outputAs: html
-        }
     )
 
     region call-to-action (
