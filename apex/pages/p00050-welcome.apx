@@ -417,7 +417,7 @@ page 50 (
         source {
             htmlCode:
                 ```html
-                <div class="hlc-root"><div class="hlc-pad hlc-on-dark" id="impact" style="padding:96px 40px 40px;background:var(--forest-deep);color:#fff"><div style="max-width:1240px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:32px;align-items:end"><div style="display:flex;flex-direction:column;gap:14px"><p class="hlc-eyebrow">Illustrative figures from the demo dataset</p><h2 class="hlc-h2" style="margin:0;color:#fff">What the pilot changes so far</h2></div><p style="margin:0;font-size:17px;line-height:27px;color:rgba(255,255,255,.82)">Totals across every demand in the demo dataset, including the tomato order above. Every figure says where it comes from and how it is calculated.</p></div></div></div>
+                <div class="hlc-root"><div class="hlc-pad hlc-on-dark" id="impact" style="position:relative;overflow:hidden;padding:96px 40px 176px;background:var(--forest-deep);color:#fff"><img src="#APP_FILES#images/photo-harvest-lettuce.jpg" alt="" class="hlc-photo" style="position:absolute;inset:0;object-position:50% 40%"><div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(3,36,27,.94) 0%,rgba(3,36,27,.8) 50%,rgba(3,36,27,.45) 100%)"></div><div style="position:relative;max-width:1240px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:32px;align-items:end"><div style="display:flex;flex-direction:column;gap:14px"><p class="hlc-eyebrow">Illustrative figures from the demo dataset</p><h2 class="hlc-h2" style="margin:0;color:#fff">What the pilot changes so far</h2></div><p style="margin:0;font-size:17px;line-height:27px;color:rgba(255,255,255,.82)">Totals across every demand in the demo dataset, including the tomato order above. Every figure says where it comes from and how it is calculated.</p></div></div></div>
                 ```
         }
         layout {
@@ -458,7 +458,7 @@ page 50 (
         appearance {
             template: @/blank-with-attributes
             templateOptions: #DEFAULT#
-            cssClasses: hlc-band-dark hlc-band-cards
+            cssClasses: hlc-band-dark hlc-band-cards hlc-band-overlap
         }
         componentAppearance {
             display: report
@@ -520,28 +520,6 @@ page 50 (
                 dataType: varchar2
             }
         )
-    )
-
-    region impact-photo (
-        name: Impact photo
-        type: staticContent
-        source {
-            htmlCode:
-                ```html
-                <div class="hlc-root"><div class="hlc-pad" style="padding:40px 40px 96px;background:var(--forest-deep)"><div style="max-width:1240px;margin:0 auto;border-radius:24px;overflow:hidden;height:260px;position:relative"><img src="#APP_FILES#images/photo-harvest-lettuce.jpg" alt="Farmers harvesting lettuce together in a green field" class="hlc-photo" style="object-position:50% 40%"></div></div></div>
-                ```
-        }
-        layout {
-            sequence: 100
-            slot: body
-        }
-        appearance {
-            template: @/blank-with-attributes
-            templateOptions: #DEFAULT#
-        }
-        settings {
-            outputAs: html
-        }
     )
 
     region call-to-action (
