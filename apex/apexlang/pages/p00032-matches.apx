@@ -91,7 +91,7 @@ page 32 (
                     || '<div style="flex:2 1 480px;min-width:0;display:flex;flex-direction:column;gap:20px"><div style="display:flex;flex-direction:column;gap:6px">'
                     || '<p class="hl-overline" style="margin:0">Aggregation</p><div style="display:flex;gap:18px;align-items:center">'
                     || '<img src="#APP_FILES#images/' || l_img || '" alt="" style="width:76px;height:76px;border-radius:16px;object-fit:contain;background:#fff;border:1px solid var(--line);flex:none">'
-                    || '<h2 style="margin:0;font:800 40px/46px var(--font-display);letter-spacing:-0.025em">'
+                    || '<h2 class="hlc-agg-title">'
                     || case when l_farms between 1 and 8 then l_words(l_farms) else l_farms || ' farms fill' end || ' one order</h2></div>'
                     || '<p style="margin:0;color:var(--ink-muted);max-width:60ch">' || apex_escape.html('No single farm can supply ' || kg(l_f.target_kg) || ' kg. Together, '
                     || l_farms || ' farms in' || nvl(l_county, ' the area') || ' cover ' || l_f.fill_pct || '% of it.') || '</p></div>'
