@@ -89,6 +89,22 @@ begin
 end;
 ```
 
+## Account emails with Brevo (optional)
+
+Sign-up, verification, password reset and buyer approval emails (`HL_MAIL`, `db/15_accounts.sql`) wait in
+`HL_MAIL_OUTBOX` until email is switched on. Switch it on with a Brevo API key and a sender address verified in
+Brevo:
+
+```bash
+export HL_BREVO_API_KEY=<key> HL_MAIL_SENDER_EMAIL=<verified sender>   # optional: HL_MAIL_SENDER_NAME, HL_APP_URL
+python scripts/enable_brevo.py --wallet infra/.wallet/wallet.zip --test-to <your email>
+```
+
+The script opens HTTPS to `api.brevo.com` (as ADMIN), stores the key as the APEX web credential `BREVO_API`,
+sets the sender and the verify, reset and sign-in links, switches `MAIL_ENABLED` on, sends anything queued and,
+with `--test-to`, sends a test email. `--disable` switches email off again. The credential and the settings
+survive backend deploys.
+
 ## Select AI match sentences (optional)
 
 `hl_ai.explain_match(match_id, 'en' | 'sw')` rewords a match's four reasons as one sentence with Select AI
