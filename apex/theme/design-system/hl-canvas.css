@@ -211,6 +211,8 @@ body.hlc-app .t-Region-buttons--top, body.hlc-phone .t-Region-buttons--top { ord
   .hlc-appnav { margin: -20px -16px 0; }
   .hlc-appnav .hl-nav { width: auto; min-height: 0; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 10px 12px; padding: 12px 16px; }
   .hlc-appnav .hl-logo { grid-row: 1; grid-column: 1; }
+  /* a one-line logo, so the role chip and Sign out line up with the wordmark */
+  .hlc-appnav .hl-logo-by { display: none; }
   /* only the role chip stays, between the logo and Sign out */
   .hlc-appnav .hl-nav { grid-template-columns: 1fr auto auto; }
   .hlc-appnav .hl-nav-role { grid-row: 1; grid-column: 2; padding: 0; background: none; }
