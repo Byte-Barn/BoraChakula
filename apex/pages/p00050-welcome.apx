@@ -381,7 +381,7 @@ page 50 (
         source {
             htmlCode:
                 ```html
-                <div class="hlc-root"><div class="hlc-pad hlc-on-dark" id="impact" style="padding:96px 40px 40px;background:var(--forest-deep);color:#fff"><div style="max-width:1240px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:32px;align-items:end"><div style="display:flex;flex-direction:column;gap:14px"><p class="hlc-eyebrow">Illustrative figures from the demo dataset</p><h2 class="hlc-h2" style="margin:0;color:#fff">What one demand changes</h2></div><p style="margin:0;font-size:17px;line-height:27px;color:rgba(255,255,255,.82)">One order of 2 t Grade A tomatoes, filled by four farms in Kirinyaga. Every figure says where it comes from and how it is calculated.</p></div></div></div>
+                <div class="hlc-root"><div class="hlc-pad hlc-on-dark" id="impact" style="padding:96px 40px 40px;background:var(--forest-deep);color:#fff"><div style="max-width:1240px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:32px;align-items:end"><div style="display:flex;flex-direction:column;gap:14px"><p class="hlc-eyebrow">Illustrative figures from the demo dataset</p><h2 class="hlc-h2" style="margin:0;color:#fff">What the pilot changes so far</h2></div><p style="margin:0;font-size:17px;line-height:27px;color:rgba(255,255,255,.82)">Totals across every demand in the demo dataset, including the tomato order above. Every figure says where it comes from and how it is calculated.</p></div></div></div>
                 ```
         }
         layout {
