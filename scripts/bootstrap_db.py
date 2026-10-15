@@ -6,7 +6,10 @@ Steps (each can be skipped):
   2. As ADMIN: create the HARVESTLINK APEX workspace, a developer login, a
      judge login (HL_DEMO_USER) and buyer/farmer/ops demo logins
      (HL_ROLE_DEMO_PASSWORD).
-  3. As HARVESTLINK: install db/01..14 (12 only where APEX is installed) (optionally dropping existing objects).
+  3. As HARVESTLINK: install db/01..15 (12 only where APEX is installed) (optionally dropping existing objects).
+     --reset keeps registered accounts with their farmer and buyer records,
+     harvests and demands, the email settings and Select AI's on/off switch.
+  4. Sets the passwords of the judge, demo and developer logins (HL_ACCOUNT_API).
 
 Secrets are read from the environment, never from arguments:
   HL_ADMIN_PASSWORD, HL_WALLET_PASSWORD, HL_SCHEMA_PASSWORD,
@@ -33,7 +36,7 @@ REPO = Path(__file__).resolve().parent.parent
 SQL_FILES = ["01_schema.sql", "02_match_pkg.sql", "03_views.sql", "04_seed.sql", "05_auto_match.sql",
              "06_agreements.sql", "07_api.sql",
              "08_demo.sql", "09_auth.sql",
-             "10_alloc.sql", "11_routes.sql", "13_farmer_api.sql", "14_ai.sql",
+             "10_alloc.sql", "11_routes.sql", "13_farmer_api.sql", "14_ai.sql", "15_accounts.sql",
              "12_apex_error.sql"]  # 12 only where APEX is installed
 SCHEMA = "HARVESTLINK"
 PLSQL_START = re.compile(
@@ -92,6 +95,7 @@ def create_schema_user(conn):
     cur.execute("select count(*) from dba_users where username = :u", u=SCHEMA)
     if cur.fetchone()[0]:
         print(f"User {SCHEMA} exists, skipping")
+        grant_crypto(cur)
         return
     # Password is quoted as an identifier; bind variables are not allowed in DDL
     cur.execute(f'create user {SCHEMA} identified by "{env("HL_SCHEMA_PASSWORD")}" '
@@ -100,6 +104,12 @@ def create_schema_user(conn):
                 f"create procedure, create trigger, create type, create synonym, "
                 f"create job to {SCHEMA}")
     print(f"Created user {SCHEMA}")
+    grant_crypto(cur)
+
+
+def grant_crypto(cur):
+    """Password hashing and sign-in tokens (db/15_accounts.sql) use DBMS_CRYPTO."""
+    cur.execute(f"grant execute on sys.dbms_crypto to {SCHEMA}")
 
 
 def create_workspace(conn):
@@ -161,6 +171,25 @@ def create_end_users(conn):
             create_end_user(conn, user, env("HL_ROLE_DEMO_PASSWORD"))
 
 
+def set_login_passwords(conn):
+    """The app signs in with HL_ACCOUNT_API, so the judge, demo and developer
+    logins get the passwords their APEX accounts have (each only when its
+    variables are set). These predate the password rules, so they skip them."""
+    logins = []
+    if os.environ.get("HL_DEMO_USER") and os.environ.get("HL_DEMO_PASSWORD"):
+        logins.append((env("HL_DEMO_USER"), env("HL_DEMO_PASSWORD")))
+    if os.environ.get("HL_ROLE_DEMO_PASSWORD"):
+        logins += [(u, env("HL_ROLE_DEMO_PASSWORD")) for u in ROLE_DEMO_USERS]
+    if os.environ.get("HL_APEX_USER") and os.environ.get("HL_APEX_PASSWORD"):
+        logins.append((env("HL_APEX_USER"), env("HL_APEX_PASSWORD")))
+    cur = conn.cursor()
+    for user, password in logins:
+        cur.execute("begin hl_account_api.set_password(:u, :p, p_check => false); end;", u=user, p=password)
+    conn.commit()
+    if logins:
+        print(f"Set sign-in passwords for {', '.join(u.upper() for u, _ in logins)}")
+
+
 def register_developer(conn):
     """The workspace developer signs in to the app as operations."""
     if not os.environ.get("HL_APEX_USER"):
@@ -194,9 +223,120 @@ def ai_setup_exists(cur):
         return False
 
 
+def columns(cur, table):
+    cur.execute("select column_name from user_tab_columns where table_name = :t order by column_id", t=table)
+    return [r[0] for r in cur]
+
+
+def select_rows(cur, table, where=""):
+    cols = columns(cur, table)
+    if not cols:
+        return None
+    cur.execute(f"select {', '.join(cols)} from {table} {where}")
+    return {"cols": cols, "rows": [dict(zip(cols, r)) for r in cur]}
+
+
+def snapshot(cur):
+    """What --reset keeps: accounts, registered parties and their harvests and
+    demands, and the email settings. Matches, routes and the ledger are not
+    kept; registered demands are matched again after the restore."""
+    snap = {}
+    try:
+        snap["users"] = select_rows(cur, "HL_APP_USERS")
+    except oracledb.DatabaseError:
+        return {}  # not installed yet
+    # Before IS_DEMO existed, every farmer and buyer was demo data
+    registered = "where is_demo = 'N'"
+    snap["farmers"] = (select_rows(cur, "HL_FARMERS", registered)
+                       if "IS_DEMO" in columns(cur, "HL_FARMERS") else None)
+    snap["buyers"] = (select_rows(cur, "HL_BUYERS", registered)
+                      if "IS_DEMO" in columns(cur, "HL_BUYERS") else None)
+    if snap["farmers"]:
+        snap["harvests"] = select_rows(cur, "HL_HARVESTS",
+            "where farmer_id in (select farmer_id from hl_farmers where is_demo = 'N')")
+    if snap["buyers"]:
+        snap["demands"] = select_rows(cur, "HL_DEMANDS",
+            "where buyer_id in (select buyer_id from hl_buyers where is_demo = 'N')")
+    if columns(cur, "HL_TEXT_SETTINGS"):
+        snap["text"] = select_rows(cur, "HL_TEXT_SETTINGS")
+        cur.execute("select max(setting_value) from hl_settings where setting_key = 'MAIL_ENABLED'")
+        snap["mail_enabled"] = cur.fetchone()[0]
+    counts = {k: len(v["rows"]) for k, v in snap.items() if isinstance(v, dict)}
+    print(f"Keeping across the reset: {counts}")
+    return snap
+
+
+def insert_row(cur, table, row, cols, id_col=None):
+    """Inserts the columns the new table still has; returns the new ID."""
+    names = [c for c in cols if c in row and c != id_col]
+    sql = (f"insert into {table} ({', '.join(names)}) values ({', '.join(':' + str(i + 1) for i in range(len(names)))})")
+    values = [row[c] for c in names]
+    if id_col:
+        new_id = cur.var(oracledb.NUMBER)
+        cur.execute(sql + f" returning {id_col} into :{len(names) + 1}", values + [new_id])
+        return int(new_id.getvalue()[0])
+    cur.execute(sql, values)
+    return None
+
+
+def restore(cur, snap):
+    if not snap:
+        return
+    cur.execute("begin hl_match_pkg.g_auto_match := false; end;")
+    farmer_ids, buyer_ids, demand_ids = {}, {}, []
+    for key, table, id_col, ids in (("farmers", "HL_FARMERS", "FARMER_ID", farmer_ids),
+                                    ("buyers", "HL_BUYERS", "BUYER_ID", buyer_ids)):
+        data = snap.get(key)
+        if data:
+            cols = columns(cur, table)
+            for row in data["rows"]:
+                ids[row[id_col]] = insert_row(cur, table, row, cols, id_col)
+    # Their matches are gone, so promised supply and part-filled demand start open again
+    if snap.get("harvests"):
+        cols = columns(cur, "HL_HARVESTS")
+        for row in snap["harvests"]["rows"]:
+            row["FARMER_ID"] = farmer_ids[row["FARMER_ID"]]
+            if row.get("STATUS") in ("PARTIAL", "COMMITTED"):
+                row["STATUS"] = "OPEN"
+            insert_row(cur, "HL_HARVESTS", row, cols, "HARVEST_ID")
+    if snap.get("demands"):
+        cols = columns(cur, "HL_DEMANDS")
+        for row in snap["demands"]["rows"]:
+            row["BUYER_ID"] = buyer_ids[row["BUYER_ID"]]
+            if row.get("STATUS") in ("PARTIAL", "FILLED"):
+                row["STATUS"] = "OPEN"
+            new_id = insert_row(cur, "HL_DEMANDS", row, cols, "DEMAND_ID")
+            if row.get("STATUS") == "OPEN":
+                demand_ids.append(new_id)
+    if snap.get("users"):
+        cols = columns(cur, "HL_APP_USERS")
+        for row in snap["users"]["rows"]:
+            # Demo logins are linked by name; registered ones follow their records' new IDs
+            if row.get("FARMER_ID") is not None:
+                row["FARMER_ID"] = farmer_ids.get(row["FARMER_ID"])
+            if row.get("BUYER_ID") is not None:
+                row["BUYER_ID"] = buyer_ids.get(row["BUYER_ID"])
+            cur.execute("delete from hl_app_users where user_name = :u", u=row["USER_NAME"])
+            insert_row(cur, "HL_APP_USERS", row, cols)
+    if snap.get("text"):
+        for row in snap["text"]["rows"]:
+            cur.execute("update hl_text_settings set setting_value = :v where setting_key = :k",
+                        v=row["SETTING_VALUE"], k=row["SETTING_KEY"])
+    if snap.get("mail_enabled") is not None:
+        cur.execute("update hl_settings set setting_value = :v where setting_key = 'MAIL_ENABLED'",
+                    v=snap["mail_enabled"])
+    cur.execute("begin hl_match_pkg.g_auto_match := true; end;")
+    for demand_id in demand_ids:
+        cur.execute("begin hl_match_pkg.run_matching(:d); end;", d=demand_id)
+    cur.connection.commit()
+    print(f"Restored {len(farmer_ids)} farmers, {len(buyer_ids)} buyers, "
+          f"{len(snap['users']['rows']) if snap.get('users') else 0} accounts")
+
+
 def install(conn, reset):
     cur = conn.cursor()
     ai_before = ai_enabled(cur) if reset else None
+    kept = snapshot(cur) if reset else {}
     if reset:
         for stmt in split_sql((REPO / "db" / "uninstall.sql").read_text()):
             try:
@@ -230,6 +370,7 @@ def install(conn, reset):
     invalid = [r[0] for r in cur]
     if invalid:
         sys.exit(f"Invalid objects after install: {', '.join(invalid)}")
+    restore(cur, kept)
     cur.execute("select total_matched_kg, farmers_matched, demands_served from hl_impact_v")
     kg, farmers, demands = cur.fetchone()
     print(f"Check: {kg} kg matched, {farmers} farmers, {demands} demands")
@@ -277,6 +418,7 @@ def main():
             with connect(SCHEMA, env("HL_SCHEMA_PASSWORD"), args, wallet_dir) as conn:
                 install(conn, args.reset)
                 register_developer(conn)
+                set_login_passwords(conn)
 
 
 if __name__ == "__main__":
