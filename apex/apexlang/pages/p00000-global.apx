@@ -34,8 +34,9 @@ page 0 (
                     || '<a class="hl-logo hl-logo-inverse" href="' || apex_page.get_url(p_page => 50) || '" aria-label="HarvestLink home">'
                     || '<svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true" focusable="false"><path d="M16 29C8 26 3.5 18.5 4.5 8c8 2 12.5 8 11.5 21z" fill="currentColor"></path><path d="M16 29c8-3 12.5-10.5 11.5-21-8 2-12.5 8-11.5 21z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"></path><circle cx="16" cy="4.5" r="2.75" fill="currentColor"></circle></svg>'
                     || '<span><span class="hl-logo-word" style="font-size:22px;line-height:24px;display:block">HarvestLink</span><span class="hl-logo-by">by Bora Chakula</span></span></a>'
-                    || '<div class="hl-nav-role"><small>' || case l_role when 'BUYER' then 'Buyer' when 'FARMER' then 'Farmer' else 'Operations' end
-                    || '</small><span>' || apex_escape.html(nvl(l_name, 'Bora Chakula operations')) || '</span></div><ul>';
+                    || '<div class="hl-nav-role"><small>Signed in as</small>'
+                    || '<b class="hlc-role-chip hlc-role-' || lower(l_role) || '">' || case l_role when 'BUYER' then 'Buyer' when 'FARMER' then 'Farmer' else 'Admin' end || '</b>'
+                    || '<span>' || apex_escape.html(nvl(l_name, 'Bora Chakula operations')) || '</span></div><ul>';
                   if l_role = 'BUYER' then
                     l_html := l_html || item(30, 'Dashboard', 'M2.25 2.25h4.5v4.5h-4.5zM9.25 2.25h4.5v4.5h-4.5zM2.25 9.25h4.5v4.5h-4.5zM9.25 9.25h4.5v4.5h-4.5z') || item(31, 'Post a demand', 'M8 3v10M3 8h10')
                                      || item(32, 'Matches', 'M8 2l6 3.25-6 3.25-6-3.25zM2 8.25l6 3.25 6-3.25M2 11.25l6 3.25 6-3.25', l_pending) || item(41, 'Orders', 'M5.5 4h8M5.5 8h8M5.5 12h8M2.5 4h.25M2.5 8h.25M2.5 12h.25');
@@ -43,7 +44,7 @@ page 0 (
                     l_html := l_html || item(20, 'My farm', 'M8 14V7.5M8 7.5C8 4.5 5.5 3 2.5 3c0 3 2.5 4.5 5.5 4.5zM8 9.5c0-2.75 2.25-4.25 5.5-4.25 0 2.75-2.25 4.25-5.5 4.25z') || item(41, 'Pickups', 'M1.75 4h7.5v6.5h-7.5zM9.25 6.5h3l2 2.25v1.75h-5M4.5 12.5a1.25 1.25 0 1 0 0-.01M11.5 12.5a1.25 1.25 0 1 0 0-.01');
                   else
                     l_html := l_html || item(32, 'Matching overview', 'M8 2l6 3.25-6 3.25-6-3.25zM2 8.25l6 3.25 6-3.25M2 11.25l6 3.25 6-3.25') || item(40, 'Grade routing', 'M8 2v12M3 14h10M2 6.5l2.5-4 2.5 4a2.5 2.5 0 0 1-5 0zM9 6.5l2.5-4 2.5 4a2.5 2.5 0 0 1-5 0zM4.5 2.5h7')
-                                     || item(41, 'Logistics', 'M3.5 12.5a1.5 1.5 0 1 0 0-.01M12.5 3.5a1.5 1.5 0 1 0 0-.01M3.5 11V7.5a2 2 0 0 1 2-2h5M12.5 5v3.5a2 2 0 0 1-2 2h-5') || item(42, 'Impact', 'M13.5 2.5C6 2.5 2.5 6 2.5 11.5c0 1 .25 1.75.25 1.75S3.5 13.5 4.5 13.5c5.5 0 9-3.5 9-11zM2.75 13.25L9 7') || item(1, 'Admin dashboard', 'M2.25 2.25h4.5v4.5h-4.5zM9.25 2.25h4.5v4.5h-4.5zM2.25 9.25h4.5v4.5h-4.5zM9.25 9.25h4.5v4.5h-4.5z');
+                                     || item(41, 'Logistics', 'M3.5 12.5a1.5 1.5 0 1 0 0-.01M12.5 3.5a1.5 1.5 0 1 0 0-.01M3.5 11V7.5a2 2 0 0 1 2-2h5M12.5 5v3.5a2 2 0 0 1-2 2h-5') || item(42, 'Impact', 'M13.5 2.5C6 2.5 2.5 6 2.5 11.5c0 1 .25 1.75.25 1.75S3.5 13.5 4.5 13.5c5.5 0 9-3.5 9-11zM2.75 13.25L9 7');
                   end if;
                   return l_html || '</ul><div class="hl-nav-foot">Demo account · seeded data<br><a href="'
                       || apex_plugin_util.replace_substitutions('&LOGOUT_URL.', p_escape => false) || '">Sign out</a></div></nav>';
