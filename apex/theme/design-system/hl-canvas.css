@@ -281,7 +281,8 @@ body.hlc-phone .hlc-appnav { display: none; }
   body.hlc-phone .t-Body-contentInner > .hlc-appnav { grid-column: auto; }
   body.hlc-phone .t-Body-contentInner > .hlc-farm-head, body.hlc-phone .t-Body-contentInner > .apex-page-success,
   body.hlc-phone .t-Body-contentInner > .apex-page-error { grid-column: 1 / -1; }
-  body.hlc-phone .t-Body-contentInner > .hlc-farm-side { grid-column: 2; grid-row: span 3; position: sticky; top: 24px; }
+  /* spanning many rows spreads the tall form's height thinly, so the left cards stay packed */
+  body.hlc-phone .t-Body-contentInner > .hlc-farm-side { grid-column: 2; grid-row: 2 / span 12; position: sticky; top: 24px; }
   body.hlc-phone .hlc-farm-head header { height: 240px !important; }
   html:has(body.hlc-phone) { scroll-padding-bottom: 12px; }
 }
