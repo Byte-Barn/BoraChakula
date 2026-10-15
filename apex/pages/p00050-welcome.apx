@@ -195,6 +195,8 @@ page 50 (
                 select '#APP_FILES#images/' || case lower(f.crop_name)
                          when 'roma tomatoes' then 'crop-tomato.jpg' when 'onions' then 'crop-onion.jpg'
                          when 'green peppers' then 'crop-pepper.jpg' when 'carrots' then 'crop-carrot.jpg'
+                         when 'cabbage' then 'crop-cabbage.jpg' when 'hass avocado' then 'crop-avocado.jpg'
+                         when 'french beans' then 'crop-french-beans.jpg' when 'kale (sukuma wiki)' then 'crop-kale.jpg'
                          else 'crop-tomato.jpg' end                                         as IMAGE_URL
                      , f.CROP_NAME                                                         as CROP
                      , f.BUYER_NAME                                                        as BUYER
