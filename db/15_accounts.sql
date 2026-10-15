@@ -248,8 +248,9 @@ create or replace package hl_account_api as
   procedure set_disabled (p_user_name in varchar2, p_disabled in boolean);
 
   -- Setup scripts only (demo and admin logins): sets a password and makes the
-  -- account ACTIVE. Not for pages.
-  procedure set_password (p_user_name in varchar2, p_password in varchar2);
+  -- account ACTIVE. p_check => false skips the password rules, for logins
+  -- whose password was set before the rules existed. Not for pages.
+  procedure set_password (p_user_name in varchar2, p_password in varchar2, p_check in boolean default true);
 
   -- Custom APEX authentication function. Accepts the email or the user name.
   -- True only for an ACTIVE account with the right password.
@@ -615,10 +616,14 @@ create or replace package body hl_account_api as
      where user_name = l_user.user_name;
   end set_disabled;
 
-  procedure set_password (p_user_name in varchar2, p_password in varchar2) is
+  procedure set_password (p_user_name in varchar2, p_password in varchar2, p_check in boolean default true) is
     l_hash varchar2(200);
   begin
-    check_password(p_password);
+    if p_check then
+      check_password(p_password);
+    elsif p_password is null then
+      raise_application_error(-20704, 'Password too weak. Use at least 10 characters.');
+    end if;
     l_hash := hash_password(p_password);
     update hl_app_users
        set password_hash = l_hash, status = 'ACTIVE', failed_logins = 0, locked_until = null

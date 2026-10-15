@@ -6,7 +6,7 @@ Tables behind them may change; the names, parameters and columns here will not
 change without a note in this file.
 
 - Database: Oracle Autonomous AI Database 26ai, schema `HARVESTLINK` (APEX parsing schema).
-- Source: `db/02_match_pkg.sql` (matching), `db/06_agreements.sql` (ledger), `db/07_api.sql` (APIs and contract views), `db/08_demo.sql` (demo dataset and reset), `db/09_auth.sql` (roles and "my" views), `db/10_alloc.sql` (grade allocation), `db/11_routes.sql` (route stops and map views), `db/13_farmer_api.sql` (farmer consent, data export and account deletion), `db/14_ai.sql` (Select AI match sentences).
+- Source: `db/02_match_pkg.sql` (matching), `db/06_agreements.sql` (ledger), `db/07_api.sql` (APIs and contract views), `db/08_demo.sql` (demo dataset and reset), `db/09_auth.sql` (roles and "my" views), `db/10_alloc.sql` (grade allocation), `db/11_routes.sql` (route stops and map views), `db/13_farmer_api.sql` (farmer consent, data export and account deletion), `db/14_ai.sql` (Select AI match sentences), `db/15_accounts.sql` (sign-up, sign-in, email).
 - Status of each item: **Ready** (in this PR) or **Planned** (a later backend PR, listed at the end).
 
 ## Conventions
@@ -32,8 +32,8 @@ change without a note in this file.
 
 ## Roles and the signed-in party — Ready
 
-Every APEX login maps to one role. Buyer and farmer logins are linked to their party by name, so they keep
-working after `hl_demo.reset`.
+Every login maps to one role. The demo logins are linked to their party by name, so they keep working after
+`hl_demo.reset`; accounts made by sign-up are linked by ID (see Accounts and sign-in below).
 
 | Login | Role | Party |
 |---|---|---|
@@ -42,6 +42,7 @@ working after `hl_demo.reset`.
 | `OPS_DEMO`, `JUDGE`, the workspace developer | `OPS` | sees everything |
 
 Passwords are in the team's secrets file (`HL_ROLE_DEMO_PASSWORD`, `HL_DEMO_PASSWORD`), never in the repo.
+`scripts/bootstrap_db.py` gives these logins the same passwords in `HL_ACCOUNT_API`.
 
 | Use | Call |
 |---|---|
@@ -60,6 +61,48 @@ Passwords are in the team's secrets file (`HL_ROLE_DEMO_PASSWORD`, `HL_DEMO_PASS
 | `HL_MY_DEMANDS_V` | The buyer's demands; same columns as `HL_FULFIL_V` | Buyer dashboard |
 | `HL_MY_HARVESTS_V` | The farmer's harvests: `crop_name`, `grade`, `expected_qty_kg`, `available_kg` (not yet promised), window, `status` | Farmer dashboard |
 | `HL_MY_OFFERS_V` | Matches offered to the farmer with the buyer's terms: `ui_status`, `allocated_kg`, `price_per_kg`, `offer_value_kes`, `need_by_date`, `buyer_name`, `buyer_location`, reasons, `agreement_hash` | Farmer dashboard (accept: `hl_match_pkg.confirm`, decline: `hl_match_pkg.decline`) |
+
+## Accounts and sign-in — Ready (backend); pages Planned
+
+Farmers and buyers sign up themselves with an email address; admin (`OPS`) accounts are created by scripts.
+
+| Role | After sign-up | After the email link | Then |
+|---|---|---|---|
+| Farmer | `PENDING_EMAIL` | `ACTIVE` | |
+| Buyer | `PENDING_EMAIL` | `PENDING_APPROVAL` | an admin approves: `ACTIVE` |
+
+Only `ACTIVE` accounts sign in. An admin can also set an account `DISABLED`. Five wrong passwords lock an account
+for 15 minutes. Passwords are stored as PBKDF2-SHA256 hashes and need at least 10 characters, not only digits.
+
+**Sign-in (custom authentication scheme).** Authentication function: `hl_account_api.authenticate` (takes the
+email or the user name). In the post-authentication procedure, sign in as the account's user name:
+`apex_custom_auth.set_user(hl_account_api.login_user);`. When sign-in fails, show
+`hl_account_api.login_message` on the login page: it explains a wrong password, an unconfirmed email, a buyer
+awaiting approval, a locked or a disabled account. `APP_USER` is the upper-case email for sign-ups, so
+`hl_auth` and the "my" views work unchanged.
+
+| Page | Call | Notes |
+|---|---|---|
+| Sign up (public) | `hl_account_api.register(p_email, p_password, p_role, p_name, p_phone, p_county, p_location_name, p_latitude, p_longitude, p_buyer_type, p_consent)` returns the user name | `p_role` `FARMER` or `BUYER`. Farmers: phone and `p_consent => 'Y'` (the data notice) required. Buyers: `p_buyer_type` one of `RETAILER`, `EXPORTER`, `PROCESSOR`, `SCHOOL`, `HOTEL`, `WHOLESALE_MARKET`. Latitude and longitude must be in Kenya (a map pin or "use my location"). Emails a verification link |
+| Verify email (public, link `VERIFY_URL`) | `hl_account_api.verify_email(p_token)` returns `ACTIVE` or `PENDING_APPROVAL` | The link works once, for 24 hours |
+| Resend the link (public) | `hl_account_api.resend_verification(p_email)` | Says nothing about unknown emails |
+| Forgot password (public) | `hl_account_api.request_password_reset(p_email)` | Same; the link works once, for 1 hour |
+| Reset password (public, link `RESET_URL`) | `hl_account_api.reset_password(p_token, p_new_password)` | Also unlocks the account and confirms the email |
+| Change password (signed in) | `hl_account_api.change_password(p_current_password, p_new_password)` | |
+| Password rule hint (validation) | `hl_account_api.password_problem(p_password)` returns null or a sentence | |
+| Approve buyers (admin) | `HL_PENDING_ACCOUNTS_V`; `hl_account_api.approve(p_user_name)` | Emails the buyer. Columns: `user_name`, `email`, `role`, `party_name`, `status`, `buyer_type`, `county`, `location_name`, `contact_phone`, `email_verified_at`, `created_at` |
+| Disable / re-enable (admin) | `hl_account_api.set_disabled(p_user_name, p_disabled)` | |
+| Account settings (signed in) | `HL_MY_ACCOUNT_V`: `user_name`, `email`, `role`, `party_name`, `status`, `email_verified_at`, `last_login_at`, `created_at` | |
+
+**Email.** Messages go to `HL_MAIL_OUTBOX` and are sent through Brevo's transactional email API when the
+`MAIL_ENABLED` setting is 1 (`scripts/enable_brevo.py`, planned, stores the key as the APEX web credential
+`BREVO_API`). Until then they stay `QUEUED`, so sign-up works without email. `HL_TEXT_SETTINGS` holds
+`MAIL_SENDER_EMAIL`, `MAIL_SENDER_NAME`, and the page links `VERIFY_URL` and `RESET_URL` (with a `#TOKEN#`
+placeholder) and `SIGN_IN_URL`.
+
+**Kept across resets.** `hl_demo.reset` replaces only the demo dataset (`IS_DEMO = 'Y'`). Backend deploys
+(`bootstrap_db.py --reset`) keep accounts, registered farmers and buyers with their harvests and demands, and the
+email settings; registered demands are matched again.
 
 ## Screen by screen
 
@@ -325,6 +368,18 @@ In the demo, `hl_demo.reset` brings deleted demo farmers back and re-maps `FARME
 | -20606 | `hl_farmer_api` | Farmer has already been deleted |
 | -20611 | `hl_ai` | Match does not exist |
 | -20612 | `hl_ai` | Language must be en (English) or sw (Kiswahili) |
+| -20701 | `hl_account_api.register` | Sign up as a farmer or a buyer |
+| -20702 | `register` | Enter a valid email address |
+| -20703 | `register` | An account with this email already exists. Sign in or reset your password. |
+| -20704 | `register`, `reset_password`, `change_password`, `set_password` | Password too weak, with the rule |
+| -20705 | `register` | Enter your full name / business name |
+| -20706 | `register` | Choose your location in Kenya |
+| -20707 | `register` | Agree to the data notice to sign up as a farmer |
+| -20708 | `verify_email`, `reset_password` | This link is not valid or has expired. Ask for a new one. |
+| -20709 | `register` | Enter your phone number / A farmer with this phone number is already registered |
+| -20710 | `register` | Choose what kind of buyer you are |
+| -20711 | `change_password` | Your current password is not right |
+| -20712 | `approve`, `set_disabled`, `set_password` | Only the HarvestLink team can do this; account not waiting for approval; no such account |
 
 The app's error handling function, `hl_apex_error.handle` (`db/12_apex_error.sql`), shows these messages without
 the `ORA-20xxx:` prefix or stack, in the page notification. It is set on every build by `scripts/install_app.py`,
