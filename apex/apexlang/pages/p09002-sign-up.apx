@@ -1,0 +1,580 @@
+page 9002 (
+    name: Sign Up
+    alias: SIGN-UP
+    title: Create an account · HarvestLink
+    appearance {
+        pageTemplate: @/blank
+        templateOptions: #DEFAULT#
+        cssClasses: hlc-page hlc-auth
+    }
+    navigation {
+        warnOnUnsavedChanges: false
+    }
+    security {
+        authentication: public
+        pageAccessProtection: unrestricted
+        formAutoComplete: false
+    }
+    advanced {
+        enableDuplicatePageSubmissions: false
+    }
+    javaScript {
+        executeWhenPageLoads:
+            ```javascript
+            // Farmer-only and buyer-only fields follow the chosen role
+            function hlRole() {
+              var checked = document.querySelector('input[name="P9002_ROLE"]:checked');
+              var role = checked ? checked.value : '';
+              [['P9002_BUYER_TYPE_CONTAINER', role === 'BUYER'],
+               ['hlc-consent-card', role === 'FARMER']].forEach(function (pair) {
+                var el = document.getElementById(pair[0]);
+                if (el) { el.style.display = pair[1] ? '' : 'none'; }
+              });
+              var name = document.querySelector('#P9002_NAME_LABEL, label[for="P9002_NAME"]');
+              if (name) { name.textContent = role === 'BUYER' ? 'Business name' : 'Full name'; }
+            }
+            document.querySelectorAll('input[name="P9002_ROLE"]').forEach(function (r) { r.addEventListener('change', hlRole); });
+            hlRole();
+
+            // Location: the device's position, or a click on the map
+            var status = document.getElementById('hlc-loc-status');
+            var marker = null;
+            function hlSetLocation(lat, lng, how) {
+              apex.item('P9002_LATITUDE').setValue(lat.toFixed(6));
+              apex.item('P9002_LONGITUDE').setValue(lng.toFixed(6));
+              if (status) { status.textContent = how + ': ' + lat.toFixed(4) + ', ' + lng.toFixed(4); status.dataset.state = 'set'; }
+              var region = apex.region('signup-map');
+              var map = region && region.getMapObject && region.getMapObject();
+              if (map) {
+                if (window.maplibregl) {
+                  if (!marker) { marker = new maplibregl.Marker({ color: '#1f6b3a' }); }
+                  marker.setLngLat([lng, lat]).addTo(map);
+                }
+                if (how !== 'Pinned on the map') { map.flyTo({ center: [lng, lat], zoom: 11 }); }
+              }
+            }
+            var locate = document.getElementById('hlc-use-location');
+            if (locate) {
+              locate.addEventListener('click', function () {
+                if (!navigator.geolocation) { status.textContent = 'This browser cannot share its location. Click your farm or business on the map.'; return; }
+                status.textContent = 'Finding your location…';
+                navigator.geolocation.getCurrentPosition(
+                  function (pos) { hlSetLocation(pos.coords.latitude, pos.coords.longitude, 'Your location'); },
+                  function () { status.textContent = 'Location not shared. Click your farm or business on the map instead.'; },
+                  { enableHighAccuracy: true, timeout: 10000 });
+              });
+            }
+            apex.jQuery('#signup-map').on('spatialmapclick', function (e, data) {
+              var lat = data && (data.lat !== undefined ? data.lat : data.lngLat && data.lngLat.lat);
+              var lng = data && (data.lng !== undefined ? data.lng : data.lngLat && data.lngLat.lng);
+              if (lat !== undefined && lng !== undefined) { hlSetLocation(Number(lat), Number(lng), 'Pinned on the map'); }
+            });
+            if (apex.item('P9002_LATITUDE').getValue()) {
+              hlSetLocation(Number(apex.item('P9002_LATITUDE').getValue()), Number(apex.item('P9002_LONGITUDE').getValue()), 'Saved location');
+            }
+            ```
+    }
+    comments {
+        comments: Sign-up for farmers and buyers (HL_ACCOUNT_API.register). Farmers are active after confirming their email; buyers then wait for the team's approval (page 43).
+    }
+
+    region auth-head (
+        name: Header
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <header class="hlc-root hlc-auth-head"><a class="hl-logo" href="f?p=&APP_ID.:50:&SESSION." aria-label="HarvestLink home"><svg width="28" height="28" viewBox="0 0 32 32" fill="none" aria-hidden="true" focusable="false"><path d="M16 29C8 26 3.5 18.5 4.5 8c8 2 12.5 8 11.5 21z" fill="currentColor"></path><path d="M16 29c8-3 12.5-10.5 11.5-21-8 2-12.5 8-11.5 21z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"></path><circle cx="16" cy="4.5" r="2.75" fill="currentColor"></circle></svg><span class="hl-logo-word">HarvestLink</span></a><a class="hlc-auth-back" href="f?p=&APP_ID.:9000:&SESSION.">Already have an account? Sign in</a></header>
+                ```
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+        settings {
+            outputAs: html
+        }
+    )
+
+    region account (
+        name: Account
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div class="hlc-root"><h1 class="hlc-auth-title">Create an account</h1><p class="hlc-auth-lead">Farmers sell before they harvest; buyers source from farms they can name. We will email you a link to confirm your address.</p></div>
+                ```
+        }
+        layout {
+            sequence: 20
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-form hlc-auth-card
+        }
+        settings {
+            outputAs: html
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :P9002_SENT is null
+        }
+    )
+    pageItem P9002_ROLE (
+        type: radioGroup
+        label {
+            label: I am signing up as
+            alignment: right
+        }
+        settings {
+            noOfCols: 1
+        }
+        lov {
+            type: sharedComponent
+            lov: @lov-account-roles
+            displayNullValue: false
+        }
+        layout {
+            sequence: 10
+            region: @account
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-above
+            templateOptions: #DEFAULT#
+        }
+        validation {
+            valueRequired: true
+        }
+        security {
+            sessionStateProtection: unrestricted
+        }
+    )
+    pageItem P9002_NAME (
+        type: textField
+        label {
+            label: Full name
+            alignment: right
+        }
+        layout {
+            sequence: 20
+            region: @account
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-above
+            templateOptions: #DEFAULT#
+        }
+        validation {
+            valueRequired: true
+            maxLength: 150
+        }
+        advanced {
+            customAttributes: autocomplete="name"
+        }
+    )
+    pageItem P9002_BUYER_TYPE (
+        type: selectList
+        label {
+            label: What kind of buyer are you?
+            alignment: right
+        }
+        lov {
+            type: sharedComponent
+            lov: @lov-signup-buyer-types
+        }
+        layout {
+            sequence: 30
+            region: @account
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-above
+            templateOptions: #DEFAULT#
+        }
+    )
+    pageItem P9002_EMAIL (
+        type: textField
+        label {
+            label: Email
+            alignment: right
+        }
+        layout {
+            sequence: 40
+            region: @account
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-above
+            templateOptions: #DEFAULT#
+        }
+        validation {
+            valueRequired: true
+            maxLength: 254
+        }
+        advanced {
+            customAttributes: autocomplete="email" inputmode="email"
+        }
+    )
+    pageItem P9002_PHONE (
+        type: textField
+        label {
+            label: Phone number
+            alignment: right
+        }
+        layout {
+            sequence: 50
+            region: @account
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-above
+            templateOptions: #DEFAULT#
+            valuePlaceholder: +254 7…
+        }
+        validation {
+            maxLength: 20
+        }
+        advanced {
+            customAttributes: autocomplete="tel" inputmode="tel"
+        }
+    )
+    pageItem P9002_PASSWORD (
+        type: password
+        label {
+            label: Password (at least 10 characters, not only numbers)
+            alignment: right
+        }
+        layout {
+            sequence: 60
+            region: @account
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-above
+            templateOptions: #DEFAULT#
+        }
+        validation {
+            valueRequired: true
+            maxLength: 128
+        }
+        advanced {
+            customAttributes: autocomplete="new-password"
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    region location (
+        name: Location
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div class="hlc-root"><h2 class="hlc-auth-subtitle">Where are you?</h2><p class="hlc-auth-lead">We match farms and buyers by distance. Share your location, or click your farm or business on the map.</p><div class="hlc-auth-locate"><button type="button" id="hlc-use-location" class="hl-btn hl-btn-secondary">Use my location</button><span id="hlc-loc-status" class="hlc-muted" role="status">No location yet</span></div></div>
+                ```
+        }
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-form hlc-auth-card
+        }
+        settings {
+            outputAs: html
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :P9002_SENT is null
+        }
+    )
+    pageItem P9002_COUNTY (
+        type: textField
+        label {
+            label: County
+            alignment: right
+        }
+        layout {
+            sequence: 10
+            region: @location
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-above
+            templateOptions: #DEFAULT#
+            valuePlaceholder: e.g. Kirinyaga
+        }
+        validation {
+            valueRequired: true
+            maxLength: 60
+        }
+    )
+    pageItem P9002_PLACE (
+        type: textField
+        label {
+            label: Town or village
+            alignment: right
+        }
+        layout {
+            sequence: 20
+            region: @location
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-above
+            templateOptions: #DEFAULT#
+        }
+        validation {
+            maxLength: 100
+        }
+    )
+    pageItem P9002_LATITUDE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 30
+            region: @location
+            slot: regionBody
+        }
+        security {
+            sessionStateProtection: unrestricted
+        }
+    )
+    pageItem P9002_LONGITUDE (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 40
+            region: @location
+            slot: regionBody
+        }
+        security {
+            sessionStateProtection: unrestricted
+        }
+    )
+
+    region signup-map (
+        name: Pin your location
+        type: map
+        source {
+            location: localDatabase
+            type: sqlQuery
+            sqlQuery:
+                ```sql
+                select -0.5 as LATITUDE, 37.4 as LONGITUDE from dual where 1 = 0
+                ```
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-auth-card hlc-auth-map
+        }
+        advanced {
+            htmlDomId: signup-map
+        }
+        controls {
+            options: [
+                scaleBar
+            ]
+        }
+        initialPositionAndZoom {
+            type: staticValues
+            longitude: 37.9
+            latitude: 0.2
+            zoomLevel: 5
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :P9002_SENT is null
+        }
+
+        layer no-points (
+            name: No points
+            layout {
+                sequence: 10
+            }
+            source {
+                location: regionSource
+            }
+            columnMapping {
+                geometryColumnDataType: longitudeLatitude
+                longitudeColumn: LONGITUDE
+                latitudeColumn: LATITUDE
+            }
+        )
+    )
+
+    region consent (
+        name: Data notice
+        type: dynamicContent
+        source {
+            plsqlFunctionBody:
+                ```plsql
+                declare
+                  l_text hl_consent_texts.consent_text%type;
+                begin
+                  select max(consent_text) keep (dense_rank last order by published_at) into l_text from hl_consent_texts;
+                  return '<div class="hlc-root" id="hlc-consent-notice"><details class="hlc-auth-notice"><summary>Data notice for farmers</summary><p>'
+                      || replace(apex_escape.html(l_text), chr(10), '<br>') || '</p></details></div>';
+                end;
+                ```
+        }
+        layout {
+            sequence: 50
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-form hlc-auth-card
+        }
+        advanced {
+            htmlDomId: hlc-consent-card
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :P9002_SENT is null
+        }
+    )
+    pageItem P9002_CONSENT (
+        type: checkbox
+        label {
+            label: I agree to the data notice
+            alignment: right
+        }
+        layout {
+            sequence: 10
+            region: @consent
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/optional-above
+            templateOptions: #DEFAULT#
+        }
+    )
+
+    region sign-up-actions (
+        name: Sign up actions
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div class="hlc-root hlc-auth-actions"><button type="button" class="hl-btn hl-btn-primary hl-btn-lg" onclick="apex.submit('SIGN_UP');">Create account</button></div><p class="hlc-root hlc-auth-switch">Buyers are checked by our team before their first order.</p>
+                ```
+        }
+        layout {
+            sequence: 60
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-auth-card hlc-auth-foot
+        }
+        settings {
+            outputAs: html
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :P9002_SENT is null
+        }
+    )
+
+    region sent (
+        name: Check your email
+        type: dynamicContent
+        source {
+            plsqlFunctionBody:
+                ```plsql
+                return '<div class="hlc-root"><h1 class="hlc-auth-title">Check your email</h1><p class="hlc-auth-lead">We sent a link to <b>'
+                    || apex_escape.html(:P9002_EMAIL) || '</b>. Open it to confirm your address'
+                    || case when :P9002_ROLE = 'BUYER' then '; then our team will review your buyer account and email you when it is ready.' else ' and sign in.' end
+                    || '</p><p class="hlc-auth-switch">No email after a few minutes? Check your spam folder, or <a href="f?p='
+                    || :APP_ID || ':9004:' || :APP_SESSION || '">ask for a new link</a>.</p></div>';
+                ```
+        }
+        layout {
+            sequence: 70
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-form hlc-auth-card
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :P9002_SENT = 'Y'
+        }
+    )
+    pageItem P9002_SENT (
+        type: hidden
+        layout {
+            sequence: 10
+            region: @sent
+            slot: regionBody
+        }
+    )
+
+    process sign-up (
+        name: Create the account
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                declare
+                  l_user varchar2(255);
+                begin
+                  l_user := hl_account_api.register(
+                    p_email         => :P9002_EMAIL,
+                    p_password      => :P9002_PASSWORD,
+                    p_role          => :P9002_ROLE,
+                    p_name          => :P9002_NAME,
+                    p_phone         => :P9002_PHONE,
+                    p_county        => :P9002_COUNTY,
+                    p_location_name => :P9002_PLACE,
+                    p_latitude      => to_number(:P9002_LATITUDE, '999D999999', 'NLS_NUMERIC_CHARACTERS=''.,'''),
+                    p_longitude     => to_number(:P9002_LONGITUDE, '999D999999', 'NLS_NUMERIC_CHARACTERS=''.,'''),
+                    p_buyer_type    => :P9002_BUYER_TYPE,
+                    p_consent       => nvl(:P9002_CONSENT, 'N'));
+                  commit;
+                  :P9002_SENT := 'Y';
+                end;
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :REQUEST = 'SIGN_UP'
+        }
+    )
+)

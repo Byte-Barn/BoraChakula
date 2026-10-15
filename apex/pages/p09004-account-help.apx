@@ -1,0 +1,199 @@
+page 9004 (
+    name: Account Help
+    alias: ACCOUNT-HELP
+    title: Account help · HarvestLink
+    appearance {
+        pageTemplate: @/blank
+        templateOptions: #DEFAULT#
+        cssClasses: hlc-page hlc-auth
+    }
+    navigation {
+        warnOnUnsavedChanges: false
+    }
+    security {
+        authentication: public
+        pageAccessProtection: unrestricted
+        formAutoComplete: false
+    }
+    advanced {
+        enableDuplicatePageSubmissions: false
+    }
+    comments {
+        comments: Forgot password and resend confirmation (HL_ACCOUNT_API). Never says whether an email has an account.
+    }
+
+    region auth-head (
+        name: Header
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <header class="hlc-root hlc-auth-head"><a class="hl-logo" href="f?p=&APP_ID.:50:&SESSION." aria-label="HarvestLink home"><svg width="28" height="28" viewBox="0 0 32 32" fill="none" aria-hidden="true" focusable="false"><path d="M16 29C8 26 3.5 18.5 4.5 8c8 2 12.5 8 11.5 21z" fill="currentColor"></path><path d="M16 29c8-3 12.5-10.5 11.5-21-8 2-12.5 8-11.5 21z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"></path><circle cx="16" cy="4.5" r="2.75" fill="currentColor"></circle></svg><span class="hl-logo-word">HarvestLink</span></a><a class="hlc-auth-back" href="f?p=&APP_ID.:9000:&SESSION.">Sign in</a></header>
+                ```
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+        settings {
+            outputAs: html
+        }
+    )
+
+    region help (
+        name: Account help
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div class="hlc-root"><h1 class="hlc-auth-title">Account help</h1><p class="hlc-auth-lead">Enter the email you signed up with. We will send a link to choose a new password, or a new link to confirm your email.</p></div>
+                ```
+        }
+        layout {
+            sequence: 20
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-form hlc-auth-card
+        }
+        settings {
+            outputAs: html
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :P9004_SENT is null
+        }
+    )
+    pageItem P9004_EMAIL (
+        type: textField
+        label {
+            label: Email
+            alignment: right
+        }
+        layout {
+            sequence: 10
+            region: @help
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-above
+            templateOptions: #DEFAULT#
+        }
+        validation {
+            valueRequired: true
+            maxLength: 254
+        }
+        advanced {
+            customAttributes: autocomplete="email" inputmode="email"
+        }
+    )
+
+    region help-actions (
+        name: Actions
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div class="hlc-root hlc-auth-actions"><button type="button" class="hl-btn hl-btn-primary hl-btn-lg" onclick="apex.submit('RESET_LINK');">Reset my password</button><button type="button" class="hl-btn hl-btn-secondary hl-btn-lg" onclick="apex.submit('CONFIRM_LINK');">Send a new confirmation link</button></div>
+                ```
+        }
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-auth-card hlc-auth-foot
+        }
+        settings {
+            outputAs: html
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :P9004_SENT is null
+        }
+    )
+
+    region sent (
+        name: Sent
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div class="hlc-root"><h1 class="hlc-auth-title">Check your email</h1><p class="hlc-auth-lead">If an account uses that address, we have sent it a link. It can take a few minutes; check your spam folder too.</p><div class="hlc-auth-actions"><a class="hl-btn hl-btn-secondary hl-btn-lg" href="f?p=&APP_ID.:9000:&SESSION.">Back to sign in</a></div></div>
+                ```
+        }
+        layout {
+            sequence: 40
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-form hlc-auth-card
+        }
+        settings {
+            outputAs: html
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :P9004_SENT = 'Y'
+        }
+    )
+    pageItem P9004_SENT (
+        type: hidden
+        layout {
+            sequence: 1
+            region: @sent
+            slot: regionBody
+        }
+    )
+
+    process reset-link (
+        name: Send a reset link
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                hl_account_api.request_password_reset(:P9004_EMAIL);
+                commit;
+                :P9004_SENT := 'Y';
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :REQUEST = 'RESET_LINK'
+        }
+    )
+
+    process confirm-link (
+        name: Send a new confirmation link
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                hl_account_api.resend_verification(:P9004_EMAIL);
+                commit;
+                :P9004_SENT := 'Y';
+                ```
+        }
+        execution {
+            sequence: 20
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :REQUEST = 'CONFIRM_LINK'
+        }
+    )
+)

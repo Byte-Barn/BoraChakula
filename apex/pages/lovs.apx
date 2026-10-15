@@ -24,3 +24,69 @@ lov lov-receiving-windows (
 
 
 )
+
+lov lov-account-roles (
+    name: LOV_ACCOUNT_ROLES
+    source {
+        location: staticValues
+    }
+
+    entry farmer (
+        sequence: 1
+        display: I grow produce (farmer)
+        return: FARMER
+    )
+
+    entry buyer (
+        sequence: 2
+        display: I buy produce (buyer)
+        return: BUYER
+    )
+
+
+)
+
+lov lov-signup-buyer-types (
+    name: LOV_SIGNUP_BUYER_TYPES
+    source {
+        location: staticValues
+    }
+
+    entry retailer (
+        sequence: 1
+        display: Retailer or grocer
+        return: RETAILER
+    )
+
+    entry wholesale (
+        sequence: 2
+        display: Wholesale market trader
+        return: WHOLESALE_MARKET
+    )
+
+    entry processor (
+        sequence: 3
+        display: Processor
+        return: PROCESSOR
+    )
+
+    entry exporter (
+        sequence: 4
+        display: Exporter
+        return: EXPORTER
+    )
+
+    entry school (
+        sequence: 5
+        display: School
+        return: SCHOOL
+    )
+
+    entry hotel (
+        sequence: 6
+        display: Hotel or restaurant
+        return: HOTEL
+    )
+
+
+)

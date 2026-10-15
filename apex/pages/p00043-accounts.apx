@@ -1,0 +1,140 @@
+page 43 (
+    name: Accounts
+    alias: ACCOUNTS
+    title: Accounts
+    pageGroup: @dashboard
+    appearance {
+        pageTemplate: @/blank
+        templateOptions: #DEFAULT#
+        cssClasses: hlc-app
+    }
+    navigation {
+        cursorFocus: doNotFocusCursor
+    }
+    security {
+        authorizationScheme: mustNotBePublicUser
+        pageAccessProtection: argumentsMustHaveChecksum
+        formAutoComplete: false
+    }
+    advanced {
+        enableDuplicatePageSubmissions: false
+    }
+    comments {
+        comments: Admin. Sign-ups waiting for the team (HL_PENDING_ACCOUNTS_V); buyers are approved with HL_ACCOUNT_API.approve.
+    }
+
+    region header (
+        name: Header
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <header class="hlc-root hl-ph"><p class="hlc-eyebrow" style="color:var(--forest)">Admin</p><h1 class="hl-ph-title">Accounts</h1><p class="hl-ph-sub">Buyers who confirmed their email wait here until the team approves them. Accounts still waiting for their email confirmation are listed below them.</p></header>
+                ```
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-full
+        }
+        settings {
+            outputAs: html
+        }
+    )
+
+    region pending (
+        name: Waiting for the team
+        type: dynamicContent
+        source {
+            plsqlFunctionBody:
+                ```plsql
+                declare
+                  l_html clob;
+                  l_rows pls_integer := 0;
+                begin
+                  if not hl_auth.is_ops then
+                    return '<div class="hlc-root hl-alert hl-alert-info" role="status"><div><b>Admins only</b>Only the HarvestLink team can see and approve accounts.</div></div>';
+                  end if;
+                  l_html := '<section class="hlc-root hlc-card" style="padding:24px;display:flex;flex-direction:column;gap:16px">'
+                    || '<h2 class="hlc-section-title" style="margin:0">Waiting for the team</h2><ul class="hlc-account-list">';
+                  for a in (select * from hl_pending_accounts_v
+                             order by case status when 'PENDING_APPROVAL' then 0 else 1 end, created_at) loop
+                    l_rows := l_rows + 1;
+                    l_html := l_html || '<li class="hlc-account"><div class="hlc-account-main">'
+                      || '<b class="hlc-role-chip hlc-account-role">' || initcap(a.role) || '</b>'
+                      || '<h3>' || apex_escape.html(a.party_name) || '</h3>'
+                      || '<p class="hlc-muted">' || apex_escape.html(a.email)
+                      || case when a.buyer_type is not null then ' · ' || initcap(replace(a.buyer_type, '_', ' ')) end
+                      || case when a.location_name is not null or a.county is not null
+                              then ' · ' || apex_escape.html(ltrim(a.location_name || ', ' || a.county, ', ')) end
+                      || case when a.contact_phone is not null then ' · ' || apex_escape.html(a.contact_phone) end
+                      || '</p><p class="hlc-muted">Signed up ' || to_char(a.created_at, 'Dy DD Mon, HH24:MI')
+                      || case when a.email_verified_at is not null
+                              then ' · email confirmed ' || to_char(a.email_verified_at, 'Dy DD Mon') end
+                      || '</p></div><div class="hlc-account-act">'
+                      || case a.status
+                           when 'PENDING_APPROVAL' then
+                             '<button type="button" class="hl-btn hl-btn-primary" onclick="apex.submit({request:''APPROVE'',set:{P43_USER:'''
+                             || apex_escape.js_literal(a.user_name, '''') || '''}});">Approve</button>'
+                           else '<span class="hl-badge hl-badge--pending">Email not confirmed</span>'
+                         end
+                      || '</div></li>';
+                  end loop;
+                  if l_rows = 0 then
+                    l_html := l_html || '<li class="hlc-muted">Nobody is waiting. New buyers appear here after they confirm their email.</li>';
+                  end if;
+                  return l_html || '</ul></section>';
+                end;
+                ```
+        }
+        layout {
+            sequence: 20
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-full
+        }
+    )
+    pageItem P43_USER (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 10
+            region: @pending
+            slot: regionBody
+        }
+        security {
+            sessionStateProtection: unrestricted
+        }
+    )
+
+    process approve (
+        name: Approve the buyer
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                hl_account_api.approve(:P43_USER);
+                commit;
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :REQUEST = 'APPROVE'
+        }
+        successMessage {
+            successMessage: Buyer approved. We have emailed them.
+        }
+    )
+)

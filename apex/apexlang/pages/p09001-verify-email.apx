@@ -1,0 +1,130 @@
+page 9001 (
+    name: Verify Email
+    alias: VERIFY-EMAIL
+    title: Confirm your email · HarvestLink
+    appearance {
+        pageTemplate: @/blank
+        templateOptions: #DEFAULT#
+        cssClasses: hlc-page hlc-auth
+    }
+    navigation {
+        warnOnUnsavedChanges: false
+    }
+    security {
+        authentication: public
+        pageAccessProtection: unrestricted
+        formAutoComplete: false
+    }
+    advanced {
+        enableDuplicatePageSubmissions: false
+    }
+    comments {
+        comments: Opened from the sign-up email (VERIFY_URL). Confirms the address with HL_ACCOUNT_API.verify_email.
+    }
+
+    region auth-head (
+        name: Header
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <header class="hlc-root hlc-auth-head"><a class="hl-logo" href="f?p=&APP_ID.:50:&SESSION." aria-label="HarvestLink home"><svg width="28" height="28" viewBox="0 0 32 32" fill="none" aria-hidden="true" focusable="false"><path d="M16 29C8 26 3.5 18.5 4.5 8c8 2 12.5 8 11.5 21z" fill="currentColor"></path><path d="M16 29c8-3 12.5-10.5 11.5-21-8 2-12.5 8-11.5 21z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"></path><circle cx="16" cy="4.5" r="2.75" fill="currentColor"></circle></svg><span class="hl-logo-word">HarvestLink</span></a><a class="hlc-auth-back" href="f?p=&APP_ID.:9000:&SESSION.">Sign in</a></header>
+                ```
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+        settings {
+            outputAs: html
+        }
+    )
+
+    region result (
+        name: Result
+        type: dynamicContent
+        source {
+            plsqlFunctionBody:
+                ```plsql
+                declare
+                  l_link varchar2(400) := 'f?p=' || :APP_ID || ':9000:' || :APP_SESSION;
+                begin
+                  return '<div class="hlc-root">' || case :P9001_RESULT
+                    when 'ACTIVE' then '<h1 class="hlc-auth-title">Email confirmed</h1><p class="hlc-auth-lead">Your account is ready.</p>'
+                         || '<div class="hlc-auth-actions"><a class="hl-btn hl-btn-primary hl-btn-lg" href="' || l_link || '">Sign in</a></div>'
+                    when 'PENDING_APPROVAL' then '<h1 class="hlc-auth-title">Email confirmed</h1><p class="hlc-auth-lead">Thank you. Our team checks every buyer before their first order; we will email you when your account is approved.</p>'
+                    else '<h1 class="hlc-auth-title">This link did not work</h1><p class="hlc-auth-lead">' || apex_escape.html(nvl(:P9001_MESSAGE, 'This link is not valid or has expired.'))
+                         || '</p><div class="hlc-auth-actions"><a class="hl-btn hl-btn-primary hl-btn-lg" href="f?p=' || :APP_ID || ':9004:' || :APP_SESSION || '">Send me a new link</a></div>'
+                  end || '</div>';
+                end;
+                ```
+        }
+        layout {
+            sequence: 20
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-form hlc-auth-card
+        }
+    )
+    pageItem P9001_TOKEN (
+        type: hidden
+        settings {
+            valueProtected: false
+        }
+        layout {
+            sequence: 1
+            region: @result
+            slot: regionBody
+        }
+        security {
+            sessionStateProtection: unrestricted
+        }
+    )
+    pageItem P9001_RESULT (
+        type: hidden
+        layout {
+            sequence: 2
+            region: @result
+            slot: regionBody
+        }
+    )
+    pageItem P9001_MESSAGE (
+        type: hidden
+        layout {
+            sequence: 2
+            region: @result
+            slot: regionBody
+        }
+    )
+
+    process verify (
+        name: Confirm the email
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                begin
+                  :P9001_RESULT := hl_account_api.verify_email(:P9001_TOKEN);
+                  commit;
+                exception
+                  when others then
+                    rollback;
+                    :P9001_RESULT  := 'ERROR';
+                    :P9001_MESSAGE := case when sqlcode between -20999 and -20000
+                                           then regexp_replace(regexp_substr(sqlerrm, '^[^' || chr(10) || ']*'), '^ORA-2[0-9]{4}: ') end;
+                end;
+                ```
+        }
+        execution {
+            sequence: 10
+            point: beforeHeader
+        }
+    )
+)

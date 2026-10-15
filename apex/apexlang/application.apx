@@ -9,7 +9,7 @@ app HARVESTLINK (
             page: 50
         }
         loginUrl: {
-            page: LOGIN
+            page: 9000
         }
     }
     navigationMenu {
@@ -35,7 +35,7 @@ app HARVESTLINK (
         errorHandlingFunctionName: hl_apex_error.handle
     }
     authentication {
-        scheme: @oracle-apex-accounts
+        scheme: @harvestlink-accounts
     }
     
     substitution APP_NAME (
