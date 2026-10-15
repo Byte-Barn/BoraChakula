@@ -56,7 +56,8 @@ To force a rebuild of one layer: `terraform apply -replace=terraform_data.apex_a
 1. **Backend tests**: `db/tests/run.sh` on Oracle Database 23ai Free. A failure stops the deploy.
 2. **Deploy**, in the `production` environment (only `main` may deploy):
    - `db/*.sql` or `scripts/bootstrap_db.py` changed: `bootstrap_db.py --reset` (schema and demo data rebuilt),
-     then `enable_select_ai.py` if the `HL_AI_API_KEY` secret is set, then the app.
+     then the app. The reset keeps Select AI on if it was on and its profile and credential exist;
+     `enable_select_ai.py` also runs if the `HL_AI_API_KEY` secret is set.
    - `apex/` or `scripts/install_app.py` changed: `install_app.py` rebuilds and imports app 100.
    - The landing page must answer HTTP 200 afterwards.
 

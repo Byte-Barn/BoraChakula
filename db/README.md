@@ -108,8 +108,10 @@ provider's host (as ADMIN), then creates the credential and the `HL_EXPLAIN` pro
 the featured match's sentence in both languages. `--disable` switches it off again. For OCI Generative AI, create
 an OCI credential and call `hl_ai.create_profile('oci', '<credential>', '<model>')` by hand.
 
-A reinstall resets `AI_ENABLED` to 0 but keeps the credential and profile, so `begin hl_ai.set_enabled(true);
-commit; end;` switches it back on. If the schema user itself is recreated, rerun the script.
+A reinstall keeps the credential and profile. `bootstrap_db.py --reset` also keeps `AI_ENABLED`: when AI was on
+and both still exist, it switches AI back on after reinstalling, so backend deploys no longer turn it off. A plain
+install of `db/install.sql` still starts at 0; `begin hl_ai.set_enabled(true); commit; end;` switches it on. If
+the schema user itself is recreated, rerun the script.
 
 ## Views for APEX
 
