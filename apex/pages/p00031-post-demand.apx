@@ -257,6 +257,7 @@ page 31 (
         appearance {
             template: @/required-above
             templateOptions: #DEFAULT#
+            cssClasses: hlc-grade-chips
         }
         validation {
             valueRequired: true
