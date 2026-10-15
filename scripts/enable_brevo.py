@@ -39,7 +39,7 @@ APP_URL = "https://gc0208e4d90b947-harvestlinkstrathmore.adb.eu-frankfurt-1.orac
 LINKS = {
     "VERIFY_URL": "verify-email?p9001_token=#TOKEN#",
     "RESET_URL": "reset-password?p9003_token=#TOKEN#",
-    "SIGN_IN_URL": "login",
+    "SIGN_IN_URL": "sign-in",
 }
 
 
