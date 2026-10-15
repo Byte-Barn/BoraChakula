@@ -57,10 +57,12 @@ create table hl_farmers (
   consent_version varchar2(20),             -- notice the farmer agreed to
   consent_at      timestamp,                -- when they agreed
   erased_at       timestamp,                -- account deleted; row kept as a pseudonymous stub
+  is_demo         varchar2(1)   default 'N' not null,  -- demo dataset (HL_DEMO); registered farmers are 'N'
   created_at      timestamp     default systimestamp not null,
   constraint hl_farmers_pk primary key (farmer_id),
   constraint hl_farmers_phone_uk unique (phone),
   constraint hl_farmers_smart_ck check (has_smartphone in ('Y','N')),
+  constraint hl_farmers_demo_ck check (is_demo in ('Y','N')),
   constraint hl_farmers_consent_ck check (consent_given in ('Y','N')),
   constraint hl_farmers_consent_text_fk foreign key (consent_version) references hl_consent_texts,
   constraint hl_farmers_consent_rec_ck check (
@@ -106,8 +108,10 @@ create table hl_buyers (
   accepted_grades  varchar2(10)  default 'A' not null,  -- e.g. 'A', 'A,B', 'B,C'
   kra_pin          varchar2(20),
   is_verified      varchar2(1)   default 'N' not null,
+  is_demo          varchar2(1)   default 'N' not null,  -- demo dataset (HL_DEMO); registered buyers are 'N'
   created_at       timestamp     default systimestamp not null,
   constraint hl_buyers_pk primary key (buyer_id),
+  constraint hl_buyers_demo_ck check (is_demo in ('Y','N')),
   constraint hl_buyers_type_ck check (buyer_type in
     ('RETAILER','EXPORTER','PROCESSOR','SCHOOL','HOTEL','WHOLESALE_MARKET')),
   constraint hl_buyers_verified_ck check (is_verified in ('Y','N'))

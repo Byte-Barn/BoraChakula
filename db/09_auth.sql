@@ -1,22 +1,37 @@
 -- HarvestLink: roles, the signed-in party, and "my" views.
 --
--- Each APEX login maps to one role: BUYER, FARMER or OPS (operations, sees
--- everything). Buyer and farmer logins link to their party by name rather than
--- ID, so hl_demo.reset (which recreates every party with new IDs) never breaks a
--- login. Pages and authorization schemes use HL_AUTH; they never read
--- HL_APP_USERS directly.
+-- Each login maps to one role: BUYER, FARMER or OPS (operations, sees
+-- everything). Demo logins link to their party by name, so hl_demo.reset (which
+-- recreates the demo parties with new IDs) never breaks them; accounts created
+-- by sign-up (HL_ACCOUNT_API, db/15_accounts.sql) link by FARMER_ID / BUYER_ID.
+-- The sign-in columns (email, password hash, status) belong to HL_ACCOUNT_API.
+-- Pages and authorization schemes use HL_AUTH; they never read HL_APP_USERS
+-- directly.
 
 create table hl_app_users (
-  user_name   varchar2(255)  not null,   -- APEX user name, upper case
-  role        varchar2(10)   not null,
-  party_name  varchar2(150),             -- HL_BUYERS.BUYER_NAME or HL_FARMERS.FULL_NAME
-  created_at  timestamp      default systimestamp not null,
+  user_name          varchar2(255)  not null,   -- login name, upper case (the email, for sign-ups)
+  role               varchar2(10)   not null,
+  party_name         varchar2(150),             -- HL_BUYERS.BUYER_NAME or HL_FARMERS.FULL_NAME
+  farmer_id          number,                    -- set for sign-ups; demo logins match by name
+  buyer_id           number,
+  email              varchar2(254),
+  password_hash      varchar2(200),             -- pbkdf2-sha256$iterations$salt$hash (HL_ACCOUNT_API)
+  status             varchar2(20)   default 'ACTIVE' not null,
+  email_verified_at  timestamp,
+  approved_at        timestamp,
+  approved_by        varchar2(255),
+  failed_logins      number         default 0 not null,
+  locked_until       timestamp,
+  last_login_at      timestamp,
+  created_at         timestamp      default systimestamp not null,
   constraint hl_app_users_pk primary key (user_name),
+  constraint hl_app_users_status_ck check (status in ('PENDING_EMAIL', 'PENDING_APPROVAL', 'ACTIVE', 'DISABLED')),
   constraint hl_app_users_role_ck check (role in ('BUYER', 'FARMER', 'OPS')),
   constraint hl_app_users_party_ck check (
     (role = 'OPS' and party_name is null) or (role <> 'OPS' and party_name is not null)),
   constraint hl_app_users_upper_ck check (user_name = upper(user_name))
 );
+create unique index hl_app_users_email_uk on hl_app_users (lower(email));
 
 create or replace package hl_auth as
 
@@ -88,6 +103,9 @@ create or replace package body hl_auth as
     if l_map.role <> 'BUYER' or l_map.role is null then
       return null;
     end if;
+    if l_map.buyer_id is not null then
+      return l_map.buyer_id;
+    end if;
     select min(buyer_id) into l_id from hl_buyers where buyer_name = l_map.party_name;
     return l_id;
   end buyer_id;
@@ -98,6 +116,9 @@ create or replace package body hl_auth as
   begin
     if l_map.role <> 'FARMER' or l_map.role is null then
       return null;
+    end if;
+    if l_map.farmer_id is not null then
+      return l_map.farmer_id;
     end if;
     select min(farmer_id) into l_id from hl_farmers where full_name = l_map.party_name;
     return l_id;
