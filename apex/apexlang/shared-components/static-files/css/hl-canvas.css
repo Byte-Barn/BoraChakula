@@ -127,6 +127,18 @@ html:has(.hlc-site-header) { scroll-padding-top: var(--hlc-site-bar); }
   .hlc-site-actions .hlc-narrow-only { display: inline-flex; }
 }
 @media (max-width: 1023px) { .hlc-site-bar .hlc-topnav { display: none !important; } }
+/* Below 1024 px the section links move into a menu button beside Sign in */
+.hlc-site-menu { display: none; position: relative; }
+.hlc-site-menu > summary { list-style: none; display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px;
+  box-sizing: border-box; border-radius: 10px; border: 1px solid rgba(255, 255, 255, .45); color: #fff; cursor: pointer; }
+.hlc-site-menu > summary::-webkit-details-marker { display: none; }
+.hlc-site-menu > summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.hlc-site-menu[open] > summary { background: rgba(255, 255, 255, .16); }
+.hlc-site-menu nav { position: absolute; right: 0; top: calc(100% + 8px); min-width: 200px; display: flex; flex-direction: column; padding: 8px;
+  border-radius: 14px; background: var(--forest-deep); box-shadow: 0 12px 32px rgba(3, 36, 27, .35); }
+.hlc-site-menu nav a { padding: 12px; border-radius: 8px; text-decoration: none; font-size: 15px; font-weight: 500; }
+.hlc-site-menu nav a:hover { background: rgba(255, 255, 255, .1); }
+@media (max-width: 1023px) { .hlc-site-menu { display: block; } }
 @media (max-width: 760px) { :root { --hlc-site-bar: 64px; } .hlc-site-bar .hl-logo-by { display: none; } }
 /* the hero right below repeats Post a demand */
 @media (max-width: 480px) { .hlc-site-actions .hlc-site-post { display: none; } }
