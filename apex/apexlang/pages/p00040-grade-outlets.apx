@@ -251,7 +251,7 @@ page 40 (
         appearance {
             template: @/standard
             templateOptions: #DEFAULT#
-            cssClasses: hlc-right hlc-rows-1
+            cssClasses: hlc-right hlc-rows-1 hlc-fields
         }
         settings {
             outputAs: text
@@ -397,7 +397,7 @@ page 40 (
             alignment: left
         }
         appearance {
-            template: @/required-floating
+            template: @/required-above
             templateOptions: #DEFAULT#
         }
     )
@@ -418,7 +418,7 @@ page 40 (
             alignment: left
         }
         appearance {
-            template: @/required-floating
+            template: @/required-above
             templateOptions: #DEFAULT#
         }
     )
@@ -435,7 +435,7 @@ page 40 (
             alignment: left
         }
         appearance {
-            template: @/required-floating
+            template: @/required-above
             templateOptions: #DEFAULT#
             width: 32
         }
