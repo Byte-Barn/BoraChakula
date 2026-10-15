@@ -240,7 +240,10 @@ page 30 (
                               from hl_fulfil_v f where f.buyer_id = l_buyer and f.status <> 'CANCELLED'
                              order by case when f.status = 'CLOSED' then 1 else 0 end, f.need_by_date desc) loop
                     l_html := l_html || '<tr' || case when d.demand_id = hl_demo.featured_demand_id then ' aria-selected="true"' end || '><td><span class="hlc-crop-cell"><img src="'
-                      || img(d.crop_name) || '" alt=""><span><a href="' || apex_page.get_url(p_page => 32, p_items => 'P32_DEMAND_ID', p_values => d.demand_id) || '">'
+                      || img(d.crop_name) || '" alt=""><span><a href="'
+                      || case when d.status = 'DRAFT'
+                              then apex_page.get_url(p_page => 31, p_clear_cache => '31', p_items => 'P31_DEMAND_ID', p_values => d.demand_id)
+                              else apex_page.get_url(p_page => 32, p_items => 'P32_DEMAND_ID', p_values => d.demand_id) end || '">'
                       || apex_escape.html(d.crop_name) || '</a><span class="hl-sub">HL-D-' || lpad(d.demand_id, 4, '0') || '</span></span></span></td>'
                       || '<td><span class="hl-grade hl-grade-' || lower(d.grade_required) || '" title="Grade ' || d.grade_required || '"><b aria-hidden="true">' || d.grade_required || '</b><span class="hl-sr">Grade ' || d.grade_required || '</span></span></td>'
                       || '<td class="hl-r">' || to_char(d.target_kg, 'FM999G999G990') || ' kg</td><td class="hl-r">' || to_char(d.matched_kg + d.pending_kg, 'FM999G999G990') || ' kg</td>'
@@ -251,7 +254,8 @@ page 30 (
                               when d.pending_farmers > 0 then badge('pending', 'Pending · ' || d.pending_farmers)
                               when d.unmatched_kg > 0 then badge('unmatched', 'Short ' || to_char(d.unmatched_kg, 'FM999G990') || ' kg')
                               else badge('matched', 'Matched') end || '</td><td>'
-                      || case when d.route_status is not null then '<a class="hl-link" href="' || apex_page.get_url(p_page => 41, p_clear_cache => '41', p_items => 'P41_DEMAND_ID', p_values => d.demand_id) || '">View route</a>'
+                      || case when d.status = 'DRAFT' then '<a class="hl-link" href="' || apex_page.get_url(p_page => 31, p_clear_cache => '31', p_items => 'P31_DEMAND_ID', p_values => d.demand_id) || '">Finish and post</a>'
+                              when d.route_status is not null then '<a class="hl-link" href="' || apex_page.get_url(p_page => 41, p_clear_cache => '41', p_items => 'P41_DEMAND_ID', p_values => d.demand_id) || '">View route</a>'
                               else '<span class="hl-sub">Not planned yet</span>' end || '</td></tr>';
                   end loop;
                   return apex_plugin_util.replace_substitutions(p_escape => false, p_value => l_html || '</tbody></table></div></section>');
