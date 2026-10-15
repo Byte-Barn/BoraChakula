@@ -112,7 +112,7 @@ body.hlc-page .row, body.hlc-page .col { padding: 0; margin: 0; max-width: none;
 body.hlc-page .t-Body-contentInner { min-width: 0; }
 .hlc-root a:not(.hl-btn) { color: var(--forest); }
 .hlc-root a:not(.hl-btn):hover { color: var(--forest-deep); }
-.hlc-root .hlc-on-dark a:not(.hl-btn) { color: #fff; }
+.hlc-root .hlc-on-dark a:not(.hl-btn), .hlc-root.hlc-on-dark a:not(.hl-btn) { color: #fff; }
 .hlc-root h1, .hlc-root h2, .hlc-root h3 { font-family: var(--font-display); }
 .hlc-root p { margin: 0; }
 
@@ -253,6 +253,17 @@ body.hlc-phone .t-Body-contentInner > .hlc-phone-card { margin: 0 16px; border-r
 .hlc-bottom-nav a[aria-current] { font-weight: 700; color: var(--forest) !important; background: var(--forest-soft); }
 body.hlc-phone .hlc-phone-card .t-Form-label { font: 600 13px/16px var(--font-sans); }
 body.hlc-phone .hlc-phone-card .apex-item-text, body.hlc-phone .hlc-phone-card .apex-item-select, body.hlc-phone .hlc-phone-card .apex-item-datepicker input { border-radius: 10px; min-height: 48px; }
+body.hlc-phone .hlc-phone-card .t-Form-itemWrapper > .apex-item-text, body.hlc-phone .hlc-phone-card .t-Form-itemWrapper > .apex-item-select,
+body.hlc-phone .hlc-phone-card .t-Form-itemWrapper > .apex-item-textarea, body.hlc-phone .hlc-phone-card .t-Form-itemWrapper > .apex-item-datepicker { flex: 1 1 auto; width: 100%; }
+body.hlc-phone .hlc-phone-card .apex-item-datepicker input { width: 100%; }
+/* Tablet and desktop: a wider column, rounded photo header and a floating tab bar instead of a phone mock-up */
+@media (min-width: 768px) {
+  body.hlc-phone .t-Body-contentInner, .hlc-bottom-nav { max-width: 720px; }
+  body.hlc-phone .t-Body-contentInner { padding-top: 24px; }
+  body.hlc-phone .t-Body-contentInner > .hlc-phone-card { margin: 0; }
+  body.hlc-phone .t-Body-contentInner > :first-child header { border-radius: 28px !important; height: 280px !important; }
+  .hlc-bottom-nav { bottom: 16px; border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--shadow-lift); }
+}
 
 /* Matches: aggregation headline ("Four farms fill one order") on phones */
 .hlc-agg-title { margin: 0; font: 800 40px/46px var(--font-display); letter-spacing: -0.025em; }
