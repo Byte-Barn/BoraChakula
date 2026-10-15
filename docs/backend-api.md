@@ -182,6 +182,10 @@ Drafts have `status = 'DRAFT'` in `HL_FULFIL_V` and `HL_MY_DEMANDS_V`. `receivin
 | "Not matched" card | `HL_NEAR_MISS_V` where `demand_id = :P12_DEMAND_ID`: farms that grow the crop but were ruled out, with the same four reason columns (a failing criterion has state `no`). Farmers who said no are in `HL_MATCH_V` with `ui_status = 'DECLINED'`. |
 | Agreement recorded | `HL_MATCH_V.AGREEMENT_HASH` (16 hex digits) once confirmed |
 
+Access: `run`, `confirm` and `decline` accept only operations, the buyer who owns the demand and the farmer who owns the
+harvest (`hl_match_pkg.can_act`); `farmer_phone` is unmasked only for those, once the farmer has confirmed. Buyer
+pages show only the signed-in buyer's own demands.
+
 `HL_MATCH_V` columns for MatchCard: `rank_no`, `ui_status`, `farmer_name`, `farmer_location`, `farmer_phone` (masked until confirmed), `distance_km`, `harvest_from`, `harvest_to`, `available_kg`, `allocated_kg`, `grade`, and four reasons, each a sentence plus a state:
 
 | Reason | Text column | State column |
@@ -336,6 +340,7 @@ In the demo, `hl_demo.reset` brings deleted demo farmers back and re-maps `FARME
 | -20101 | `run` | Demand is closed or cancelled |
 | -20111 | `confirm` | Match is not awaiting a farmer answer |
 | -20112 | `decline` | Match cannot be declined |
+| -20113 | `run`, `confirm`, `decline`, `rerun_open` | You can only act on your own orders and offers (operations may act on any) |
 | -20201 | `create_demand` | Quantity must be more than 0 kg and at most 50,000 kg |
 | -20202 | `create_demand` | Delivery date must be at least 7 days from today |
 | -20203 | `create_demand` | Grade must be A, B or C |
