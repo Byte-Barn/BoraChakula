@@ -183,13 +183,12 @@ body.hlc-app .t-Region-buttons--top, body.hlc-phone .t-Region-buttons--top { ord
   .hlc-appnav .hl-nav { grid-template-columns: 1fr auto auto; }
   .hlc-appnav .hl-nav-role { grid-row: 1; grid-column: 2; padding: 0; background: none; }
   .hlc-appnav .hl-nav-role small, .hlc-appnav .hl-nav-role span { display: none; }
-  .hlc-appnav .hl-nav-foot { grid-column: 3; }
   .hlc-appnav .hl-nav ul { grid-row: 2; grid-column: 1 / -1; flex-direction: row; gap: 4px; overflow-x: auto; margin: 0 -16px; padding: 0 16px; scrollbar-width: none; }
   .hlc-appnav .hl-nav ul::-webkit-scrollbar { display: none; }
   .hlc-appnav .hl-nav a { height: 40px; white-space: nowrap; }
-  .hlc-appnav .hl-nav-foot { grid-row: 1; grid-column: 2; margin: 0; font-size: 0; opacity: 1; }
+  .hlc-appnav .hl-nav-foot { grid-row: 1; grid-column: 3; display: flex; align-items: center; margin: 0; font-size: 0; opacity: 1; }
   .hlc-appnav .hl-nav-foot br { display: none; }
-  .hlc-appnav .hl-nav-foot a { font-size: 13px; }
+  .hlc-appnav .hl-nav-foot a { height: auto; padding: 0; font-size: 13px; }
   body.hlc-app .t-Body-contentInner { margin-left: 0; padding: 20px 16px 48px; grid-template-columns: minmax(0, 1fr); }
   /* asides (such as the Post demand panel) follow the main column instead of splitting it */
   body.hlc-app .t-Body-contentInner > .hlc-right { grid-column: 1; grid-row: auto; order: 1; }
