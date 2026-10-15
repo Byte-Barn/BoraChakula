@@ -1,0 +1,177 @@
+page 9000 (
+    name: Sign In
+    alias: SIGN-IN
+    title: Sign in · HarvestLink
+    appearance {
+        pageTemplate: @/blank
+        templateOptions: #DEFAULT#
+        cssClasses: hlc-page hlc-auth
+    }
+    navigation {
+        warnOnUnsavedChanges: false
+    }
+    security {
+        authentication: public
+        pageAccessProtection: unrestricted
+        formAutoComplete: false
+    }
+    advanced {
+        enableDuplicatePageSubmissions: false
+    }
+    javaScript {
+        executeWhenPageLoads:
+            ```javascript
+            // Enter in either field signs in
+            ['P9000_EMAIL', 'P9000_PASSWORD'].forEach(function (id) {
+              var el = document.getElementById(id);
+              if (el) {
+                el.addEventListener('keydown', function (e) {
+                  if (e.key === 'Enter') { e.preventDefault(); apex.submit('SIGN_IN'); }
+                });
+              }
+            });
+            ```
+    }
+    comments {
+        comments: The app's login page (custom authentication scheme harvestlink-accounts, HL_ACCOUNT_API). Links to sign-up and account help.
+    }
+
+    region auth-head (
+        name: Header
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <header class="hlc-root hlc-auth-head"><a class="hl-logo" href="f?p=&APP_ID.:50:&SESSION." aria-label="HarvestLink home"><svg width="28" height="28" viewBox="0 0 32 32" fill="none" aria-hidden="true" focusable="false"><path d="M16 29C8 26 3.5 18.5 4.5 8c8 2 12.5 8 11.5 21z" fill="currentColor"></path><path d="M16 29c8-3 12.5-10.5 11.5-21-8 2-12.5 8-11.5 21z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"></path><circle cx="16" cy="4.5" r="2.75" fill="currentColor"></circle></svg><span class="hl-logo-word">HarvestLink</span></a><a class="hlc-auth-back" href="f?p=&APP_ID.:50:&SESSION.">Back to HarvestLink</a></header>
+                ```
+        }
+        layout {
+            sequence: 10
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+        }
+        settings {
+            outputAs: html
+        }
+    )
+
+    region sign-in (
+        name: Sign in
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div class="hlc-root"><h1 class="hlc-auth-title">Sign in</h1><p class="hlc-auth-lead">Farmers, buyers and the HarvestLink team each have their own account.</p></div>
+                ```
+        }
+        layout {
+            sequence: 20
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-form hlc-auth-card
+        }
+        settings {
+            outputAs: html
+        }
+    )
+    pageItem P9000_EMAIL (
+        type: textField
+        label {
+            label: Email
+            alignment: right
+        }
+        layout {
+            sequence: 10
+            region: @sign-in
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-above
+            templateOptions: #DEFAULT#
+        }
+        validation {
+            valueRequired: true
+            maxLength: 254
+        }
+        advanced {
+            customAttributes: autocomplete="username" inputmode="email"
+        }
+    )
+    pageItem P9000_PASSWORD (
+        type: password
+        label {
+            label: Password
+            alignment: right
+        }
+        layout {
+            sequence: 20
+            region: @sign-in
+            slot: regionBody
+            alignment: left
+        }
+        appearance {
+            template: @/required-above
+            templateOptions: #DEFAULT#
+        }
+        validation {
+            valueRequired: true
+            maxLength: 128
+        }
+        advanced {
+            customAttributes: autocomplete="current-password"
+        }
+        sessionState {
+            storage: request
+        }
+    )
+
+    region sign-in-actions (
+        name: Sign in actions
+        type: staticContent
+        source {
+            htmlCode:
+                ```html
+                <div class="hlc-root hlc-auth-actions"><button type="button" class="hl-btn hl-btn-primary hl-btn-lg" onclick="apex.submit('SIGN_IN');">Sign in</button><a href="f?p=&APP_ID.:9004:&SESSION.">Forgot your password?</a></div><p class="hlc-root hlc-auth-switch">New to HarvestLink? <a href="f?p=&APP_ID.:9002:&SESSION.">Create an account</a></p>
+                ```
+        }
+        layout {
+            sequence: 30
+            slot: body
+        }
+        appearance {
+            template: @/blank-with-attributes
+            templateOptions: #DEFAULT#
+            cssClasses: hlc-auth-card hlc-auth-foot
+        }
+        settings {
+            outputAs: html
+        }
+    )
+
+    process sign-in (
+        name: Sign in
+        type: executeCode
+        source {
+            plsqlCode:
+                ```plsql
+                apex_authentication.login(
+                  p_username => :P9000_EMAIL,
+                  p_password => :P9000_PASSWORD);
+                ```
+        }
+        execution {
+            sequence: 10
+        }
+        serverSideCondition {
+            type: expression
+            plsqlExpression: :REQUEST = 'SIGN_IN'
+        }
+    )
+)

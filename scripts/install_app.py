@@ -204,6 +204,19 @@ def apply_frontend_pages():
         sys.exit(f"Unexpected home URL in {app}; cannot make the landing page the home page")
     text = text.replace(home, home.replace("page: 1", "page: 50"), 1)
 
+    # Sign-in with HarvestLink's own accounts (HL_ACCOUNT_API, db/15_accounts.sql)
+    # on the canvas sign-in page instead of APEX accounts on the generated one
+    auths = shared / "authentications.apx"
+    auths.write_text(auths.read_text(encoding="utf-8") + "\n"
+                     + (PAGES_DIR / "authentication.apx").read_text(encoding="utf-8"),
+                     encoding="utf-8", newline="\n")
+    scheme = "    authentication {\n        scheme: @oracle-apex-accounts\n    }\n"
+    login = "        loginUrl: {\n            page: LOGIN\n        }\n"
+    if scheme not in text or login not in text:
+        sys.exit(f"Unexpected authentication or login URL in {app}; cannot switch to HarvestLink accounts")
+    text = text.replace(scheme, scheme.replace("@oracle-apex-accounts", "@harvestlink-accounts"), 1)
+    text = text.replace(login, login.replace("page: LOGIN", "page: 9000"), 1)
+
     # Page 0 only renders its shared regions (the canvas app navigation) once
     # the user interface names it as the global page; the blueprint doesn't
     ui = "    userInterface {\n        currentTheme: @universal-theme\n    }\n"
