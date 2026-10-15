@@ -64,6 +64,11 @@
 .hl-logo-word { font-weight: 800; letter-spacing: -.02em; }
 .hl-nav { padding: 28px 16px; gap: 28px; }
 .hl-nav-role { background: rgba(255, 255, 255, .08); border-radius: 12px; }
+/* Role chip: who is signed in (Farmer, Buyer, Admin), in the sidebar, app bar and each role's first screen.
+   One neutral style: every colour token already has a meaning (pending, errors, grades, logistics) */
+.hlc-role-chip { display: inline-flex; align-self: flex-start; align-items: center; margin: 2px 0; padding: 2px 10px; border-radius: 999px;
+  font: 700 11px/18px var(--font-sans); letter-spacing: .06em; text-transform: uppercase; white-space: nowrap;
+  background: var(--surface); color: var(--forest-deep); }
 .hl-nav a { border-radius: 10px; height: 44px; }
 .hl-nav a[aria-current="page"] { background: #fff; color: var(--forest); box-shadow: inset 3px 0 0 var(--lime); }
 .hl-map-canvas { background: #EEF4EA; }
@@ -174,7 +179,11 @@ body.hlc-app .t-Region-buttons--top, body.hlc-phone .t-Region-buttons--top { ord
   .hlc-appnav { margin: -20px -16px 0; }
   .hlc-appnav .hl-nav { width: auto; min-height: 0; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 10px 12px; padding: 12px 16px; }
   .hlc-appnav .hl-logo { grid-row: 1; grid-column: 1; }
-  .hlc-appnav .hl-nav-role { display: none; }
+  /* only the role chip stays, between the logo and Sign out */
+  .hlc-appnav .hl-nav { grid-template-columns: 1fr auto auto; }
+  .hlc-appnav .hl-nav-role { grid-row: 1; grid-column: 2; padding: 0; background: none; }
+  .hlc-appnav .hl-nav-role small, .hlc-appnav .hl-nav-role span { display: none; }
+  .hlc-appnav .hl-nav-foot { grid-column: 3; }
   .hlc-appnav .hl-nav ul { grid-row: 2; grid-column: 1 / -1; flex-direction: row; gap: 4px; overflow-x: auto; margin: 0 -16px; padding: 0 16px; scrollbar-width: none; }
   .hlc-appnav .hl-nav ul::-webkit-scrollbar { display: none; }
   .hlc-appnav .hl-nav a { height: 40px; white-space: nowrap; }
