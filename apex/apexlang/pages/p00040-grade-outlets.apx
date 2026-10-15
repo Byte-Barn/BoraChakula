@@ -40,7 +40,9 @@ page 40 (
                     || '<span class="hl-overline">' || apex_escape.html(l_f.crop_name || ' · pickup ' || to_char(l_f.need_by_date - 1, 'Dy DD Mon')) || '</span>'
                     || '<div class="hl-ph-row"><div class="hl-stack" style="gap:4px"><h1>Grade routing</h1><p>'
                     || to_char(l_a + l_b + l_c, 'FM999G990') || ' kg of ' || apex_escape.html(lower(l_f.crop_name)) || ' in play: ' || to_char(l_a, 'FM999G990') || ' kg Grade A, '
-                    || to_char(l_b, 'FM999G990') || ' kg Grade B and ' || to_char(l_c, 'FM999G990') || ' kg Grade C. Every grade gets an outlet.</p></div></div></header></div>';
+                    || to_char(l_b, 'FM999G990') || ' kg Grade B and ' || to_char(l_c, 'FM999G990') || ' kg Grade C. Every grade gets an outlet.</p></div>'
+                    || '<button type="button" class="hl-btn hl-btn-secondary hl-btn-sm" onclick="apex.confirm(''Reset every demand, harvest, match and route to the demo story?'', ''RESET_DEMO'');">Reset demo data</button>'
+                    || '</div></header></div>';
                 end;
                 ```
         }

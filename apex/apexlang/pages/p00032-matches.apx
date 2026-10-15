@@ -216,7 +216,7 @@ page 32 (
                 select lpad(m.RANK_NO, 2, '0')                                                  as RANK
                      , case m.UI_STATUS when 'MATCHED' then 'matched' else 'pending' end           as STATUS
                      , m.FARMER_NAME                                                               as FARMER
-                     , m.FARMER_LOCATION                                                           as LOCATION
+                     , m.FARMER_LOCATION || nvl2(m.FARMER_PHONE, ' · ' || m.FARMER_PHONE, null)    as LOCATION
                      , m.DISTANCE_KM || ' km to delivery'                                          as DISTANCE
                      , to_char(m.HARVEST_FROM, 'DD') || '–' || to_char(m.HARVEST_TO, 'DD Mon')     as HARVEST
                      , to_char(m.ALLOCATED_KG, 'FM999G999G990') || ' kg'                           as QTY
