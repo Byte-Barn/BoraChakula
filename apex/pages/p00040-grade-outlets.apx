@@ -179,6 +179,9 @@ page 40 (
         accessibility {
             landmarkType: region
         }
+        messages {
+            whenNoDataFound: Every lot has an outlet. New lots appear here when farmers register harvests.
+        }
         componentAppearance {
             display: report
         }
@@ -288,6 +291,9 @@ page 40 (
         }
         accessibility {
             landmarkType: region
+        }
+        messages {
+            whenNoDataFound: Nothing sent to outlets yet. Allocate a lot to send it to a school, market or processor.
         }
         componentAppearance {
             display: report
