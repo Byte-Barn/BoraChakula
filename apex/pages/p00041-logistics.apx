@@ -97,6 +97,12 @@ page 41 (
         attributes {
             messagesPosition: below
         }
+        initialPositionAndZoom {
+            type: staticValues
+            longitude: 37.09
+            latitude: -0.93
+            zoomLevel: 8
+        }
 
         layer route-line (
             name: Shared route
@@ -178,7 +184,7 @@ page 41 (
                     || '<h2 style="margin:0;font-size:17px;line-height:24px">Vehicle</h2><dl style="margin:0;display:grid;grid-template-columns:auto 1fr;gap:8px 16px;font-size:15px">'
                     || '<dt style="color:var(--ink-muted)">' || initcap(l_r.vehicle_type) || '</dt><dd style="margin:0">' || to_char(l_cap, 'FM999G990') || ' kg, ' || l_r.trips || ' trip' || case when l_r.trips <> 1 then 's' end || '</dd>'
                     || '<dt style="color:var(--ink-muted)">Load</dt><dd style="margin:0;font-variant-numeric:tabular-nums">' || to_char(l_load, 'FM999G990') || ' kg of ' || to_char(l_cap * l_r.trips, 'FM999G990') || ' kg</dd>'
-                    || '<dt style="color:var(--ink-muted)">Transporter</dt><dd style="margin:0">[Transporter name]</dd></dl>'
+                    || '<dt style="color:var(--ink-muted)">Transporter</dt><dd style="margin:0;color:var(--ink-muted)">Assigned at dispatch</dd></dl>'
                     || '<div style="display:flex;gap:8px;align-items:center;font-size:13px;color:var(--ink-muted)">Live GPS tracking <span class="hl-prov hl-prov-roadmap">Roadmap</span></div>'
                     || '<p style="margin:0;font-size:13px;line-height:20px;color:var(--ink-muted)">Distances are straight-line × 1.3 and times assume an average speed; both are simulated.</p></section></div>';
                   return l_html;
