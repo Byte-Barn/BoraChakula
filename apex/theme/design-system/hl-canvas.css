@@ -106,6 +106,31 @@
   .hlc-shade { background: rgba(3,36,27,.8); }
 }
 
+/* Landing page header: one row that stays at the top while the page scrolls. It is
+   see-through over the hero photo and turns solid once the page moves (page 50 script) */
+:root { --hlc-site-bar: 80px; }
+body.hlc-page .t-Body-contentInner > .hlc-site-header { position: sticky; top: 0; z-index: 30; margin-bottom: calc(-1 * var(--hlc-site-bar)); }
+.hlc-site-bar { height: var(--hlc-site-bar); display: flex; align-items: center; padding: 0 40px; box-sizing: border-box;
+  background: rgba(3, 36, 27, .97); box-shadow: 0 8px 24px rgba(3, 36, 27, .25); transition: background-color .2s, box-shadow .2s; }
+.hlc-site-header.is-top .hlc-site-bar { background: transparent; box-shadow: none; }
+.hlc-site-bar-in { flex: 1; min-width: 0; max-width: 1240px; margin: 0 auto; display: flex; align-items: center; gap: 32px; }
+.hlc-site-bar .hlc-topnav { display: flex; flex: 1; justify-content: center; gap: 28px; font-weight: 500; font-size: 15px; }
+.hlc-site-bar .hlc-topnav a { text-decoration: none; white-space: nowrap; }
+.hlc-site-bar .hlc-topnav a:hover { text-decoration: underline; text-underline-offset: 6px; }
+.hlc-site-actions { display: flex; gap: 10px; margin-left: auto; flex: none; }
+.hlc-site-actions .hlc-narrow-only { display: none; }
+html:has(.hlc-site-header) { scroll-padding-top: var(--hlc-site-bar); }
+@media (prefers-reduced-motion: no-preference) { html:has(.hlc-site-header) { scroll-behavior: smooth; } }
+/* Farmers and buyers use the same sign-in page, so narrower screens show one button */
+@media (max-width: 1239px) {
+  .hlc-site-actions .hlc-wide-only { display: none; }
+  .hlc-site-actions .hlc-narrow-only { display: inline-flex; }
+}
+@media (max-width: 1023px) { .hlc-site-bar .hlc-topnav { display: none !important; } }
+@media (max-width: 760px) { :root { --hlc-site-bar: 64px; } .hlc-site-bar .hl-logo-by { display: none; } }
+/* the hero right below repeats Post a demand */
+@media (max-width: 480px) { .hlc-site-actions .hlc-site-post { display: none; } }
+
 /* Canvas pages in APEX: the Blank page template plus regions using the
    "Blank with Attributes" region template, so the canvas markup sets the layout */
 body.hlc-page { margin: 0; background: var(--surface); color: var(--ink); font-family: var(--font-sans); }
