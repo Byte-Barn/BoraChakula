@@ -50,8 +50,8 @@ create or replace package body hl_demo as
     l_id hl_farmers.farmer_id%type;
   begin
     insert into hl_farmers (full_name, phone, county, location_name, latitude, longitude,
-                            cooperative, has_smartphone, consent_given)
-    values (p_name, p_phone, 'Kirinyaga', p_place, p_lat, p_lon, p_coop, p_smartphone, 'Y')
+                            cooperative, has_smartphone, consent_given, is_demo)
+    values (p_name, p_phone, 'Kirinyaga', p_place, p_lat, p_lon, p_coop, p_smartphone, 'Y', 'Y')
     returning farmer_id into l_id;
     return l_id;
   end add_farmer;
@@ -63,8 +63,8 @@ create or replace package body hl_demo as
     l_id hl_buyers.buyer_id%type;
   begin
     insert into hl_buyers (buyer_name, buyer_type, county, location_name, latitude, longitude,
-                           accepted_grades, kra_pin, is_verified)
-    values (p_name, p_type, p_county, p_place, p_lat, p_lon, p_grades, p_kra, p_verified)
+                           accepted_grades, kra_pin, is_verified, is_demo)
+    values (p_name, p_type, p_county, p_place, p_lat, p_lon, p_grades, p_kra, p_verified, 'Y')
     returning buyer_id into l_id;
     return l_id;
   end add_buyer;
@@ -141,7 +141,7 @@ create or replace package body hl_demo as
     l_samuel number; l_lucy number; l_john number; l_mary number; l_daniel number;
     l_h number; l_count number;
   begin
-    select count(*) into l_count from hl_farmers;
+    select count(*) into l_count from hl_farmers where is_demo = 'Y';
     if l_count > 0 then
       raise_application_error(-20301, 'Demo tables are not empty; use hl_demo.reset');
     end if;
@@ -232,13 +232,23 @@ create or replace package body hl_demo as
   procedure reset is
   begin
     hl_match_pkg.g_auto_match := false;
-    delete from hl_matches;
-    delete from hl_routes;
-    delete from hl_demands;
-    delete from hl_harvests;
-    delete from hl_buyers;
-    delete from hl_farmers;
+    -- Only the demo dataset goes; registered farmers and buyers keep their
+    -- harvests and demands. Matches, routes and allocations cascade from the
+    -- demo harvests and demands (including registered demands' matches to
+    -- demo harvests, which are matched again below).
+    delete from hl_demands where buyer_id in (select buyer_id from hl_buyers where is_demo = 'Y');
+    delete from hl_harvests where farmer_id in (select farmer_id from hl_farmers where is_demo = 'Y');
+    delete from hl_buyers where is_demo = 'Y';
+    delete from hl_farmers where is_demo = 'Y';
     seed;
+    hl_match_pkg.g_auto_match := false;
+    for d in (select d.demand_id
+                from hl_demands d
+                join hl_buyers b on b.buyer_id = d.buyer_id
+               where b.is_demo = 'N' and d.status in ('OPEN', 'PARTIAL')) loop
+      hl_match_pkg.run_matching(d.demand_id);
+    end loop;
+    hl_match_pkg.g_auto_match := true;
     -- Deleting a demo farmer's account (hl_farmer_api.delete_account) also
     -- removes their login mapping; restore it. Dynamic because HL_AUTH is
     -- installed after this package (db/09_auth.sql).

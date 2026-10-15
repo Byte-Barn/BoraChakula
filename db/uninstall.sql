@@ -7,6 +7,13 @@ exception
     if sqlcode != -4043 then raise; end if;
 end;
 /
+drop view hl_my_account_v;
+drop view hl_pending_accounts_v;
+drop package hl_account_api;
+drop package hl_mail;
+drop table hl_mail_outbox purge;
+drop table hl_account_tokens purge;
+drop table hl_text_settings purge;
 drop package hl_ai;
 drop table hl_ai_explanations purge;
 drop view hl_my_data_v;
