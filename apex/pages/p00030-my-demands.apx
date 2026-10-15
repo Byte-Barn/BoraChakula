@@ -50,7 +50,7 @@ page 30 (
                     || '<img src="#APP_FILES#images/photo-farmer-crate.jpg" alt="A farmer carrying a crate of fresh vegetables" class="hlc-photo" style="position:absolute;inset:0;object-position:75% 35%">'
                     || '<div style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(3,36,27,.95) 0%,rgba(3,36,27,.82) 48%,rgba(3,36,27,.1) 100%)"></div>'
                     || '<div style="position:relative;padding:36px 40px;display:flex;flex-direction:column;gap:16px;max-width:560px">'
-                    || '<p class="hlc-eyebrow">' || to_char(sysdate + 3/24, 'Dy DD Mon') || '</p>'
+                    || '<b class="hlc-role-chip hlc-role-buyer">Buyer dashboard</b><p class="hlc-eyebrow">' || to_char(sysdate + 3/24, 'Dy DD Mon') || '</p>'
                     || '<h1 style="margin:0;font:800 34px/40px var(--font-display);letter-spacing:-0.02em;color:#fff">'
                     || case when l_hour < 12 then 'Good morning' when l_hour < 17 then 'Good afternoon' else 'Good evening' end || ', ' || apex_escape.html(l_name) || '</h1>'
                     || '<p style="margin:0;font-size:16px;line-height:25px;color:rgba(255,255,255,.88)">' || l_active || ' active demand' || case when l_active <> 1 then 's' end || '.'
