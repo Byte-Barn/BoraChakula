@@ -280,6 +280,14 @@ body.hlc-app .t-Region-buttons--top, body.hlc-phone .t-Region-buttons--top { ord
 .hlc-crop-tiles .apex-item-option input:focus-visible + label.u-radio { outline: 2px solid var(--focus); outline-offset: 2px; }
 /* APEX regions kept on canvas pages (reports, the map) sit in canvas cards */
 body.hlc-app .t-Region { border-radius: 16px; box-shadow: var(--shadow-card); border-color: var(--line); }
+/* Native regions on canvas app screens (Grade routing, Logistics) match the canvas cards:
+   24 px padding, no header rule, the card title type and 16 px from title to content */
+body.hlc-app .t-Region { --ut-region-header-padding-x: 24px; --ut-region-body-padding-x: 24px; --ut-region-body-padding-y: 24px;
+  --ut-region-header-border-width: 0; --ut-region-header-background-color: transparent;
+  --ut-region-header-font-size: 20px; --ut-region-header-line-height: 28px; }
+body.hlc-app .t-Region-headerItems--title { padding-block: 24px 16px; }
+body.hlc-app .t-Region-title { font-family: var(--font-display); font-weight: 700; color: var(--ink); }
+body.hlc-app .t-Region-header + .t-Region-bodyWrap .t-Region-body { padding-block-start: 0; }
 
 /* Farmer screens: phone first, one narrow column, bottom navigation */
 body.hlc-phone { margin: 0; background: var(--surface); color: var(--ink); font-family: var(--font-sans); }
