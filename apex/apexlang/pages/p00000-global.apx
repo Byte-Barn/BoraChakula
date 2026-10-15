@@ -48,7 +48,7 @@ page 0 (
                   else
                     l_html := l_html || item(32, 'Matching overview', 'M8 2l6 3.25-6 3.25-6-3.25zM2 8.25l6 3.25 6-3.25M2 11.25l6 3.25 6-3.25') || item(40, 'Grade routing', 'M8 2v12M3 14h10M2 6.5l2.5-4 2.5 4a2.5 2.5 0 0 1-5 0zM9 6.5l2.5-4 2.5 4a2.5 2.5 0 0 1-5 0zM4.5 2.5h7')
                                      || item(41, 'Logistics', 'M3.5 12.5a1.5 1.5 0 1 0 0-.01M12.5 3.5a1.5 1.5 0 1 0 0-.01M3.5 11V7.5a2 2 0 0 1 2-2h5M12.5 5v3.5a2 2 0 0 1-2 2h-5') || item(42, 'Impact', 'M13.5 2.5C6 2.5 2.5 6 2.5 11.5c0 1 .25 1.75.25 1.75S3.5 13.5 4.5 13.5c5.5 0 9-3.5 9-11zM2.75 13.25L9 7')
-                                     || item(13, 'Agreement ledger', 'M6.5 9.5l3-3M5 7L3.5 8.5a2.5 2.5 0 0 0 3.5 3.5L8.5 10.5M11 9l1.5-1.5a2.5 2.5 0 0 0-3.5-3.5L7.5 5.5')
+                                     || item(44, 'Agreement ledger', 'M6.5 9.5l3-3M5 7L3.5 8.5a2.5 2.5 0 0 0 3.5 3.5L8.5 10.5M11 9l1.5-1.5a2.5 2.5 0 0 0-3.5-3.5L7.5 5.5')
                                      || item(43, 'Accounts', 'M5.5 7a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5zM1.75 13.5c0-2.25 1.75-4 3.75-4s3.75 1.75 3.75 4M10.5 7.5l1.5 1.5 3-3', l_waiting);
                   end if;
                   return l_html || '</ul><div class="hl-nav-foot">Demo account · seeded data<br><a href="'
@@ -67,7 +67,7 @@ page 0 (
         }
         serverSideCondition {
             type: expression
-            plsqlExpression: :APP_PAGE_ID in (20, 30, 31, 32, 40, 41, 42, 43)
+            plsqlExpression: :APP_PAGE_ID in (20, 30, 31, 32, 40, 41, 42, 43, 44)
         }
     )
 )

@@ -80,7 +80,7 @@ page 43 (
                            when 'PENDING_APPROVAL' then
                              '<button type="button" class="hl-btn hl-btn-primary" onclick="apex.submit({request:''APPROVE'',set:{P43_USER:'
                              || apex_escape.js_literal(a.user_name) || '}});">Approve</button>'
-                           else '<span class="hl-badge hl-badge--pending">Email not confirmed</span>'
+                           else '<span class="hl-badge hl-badge-pending">Email not confirmed</span>'
                          end
                       || '</div></li>';
                   end loop;
