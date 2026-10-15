@@ -147,6 +147,9 @@ page 20 (
         accessibility {
             landmarkType: region
         }
+        messages {
+            whenNoDataFound: No offers yet. We match your registered harvests to buyers and show their offers here.
+        }
         componentAppearance {
             display: report
         }
@@ -263,6 +266,9 @@ page 20 (
         }
         accessibility {
             landmarkType: region
+        }
+        messages {
+            whenNoDataFound: No harvests yet. Register your first harvest to get matched with buyers.
         }
         componentAppearance {
             display: report

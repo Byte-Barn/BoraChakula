@@ -253,6 +253,9 @@ page 32 (
             templateOptions: #DEFAULT#
             cssClasses: hlc-left
         }
+        messages {
+            whenNoDataFound: No farms match this order yet. Matching runs again whenever a farmer registers a harvest.
+        }
         componentAppearance {
             display: report
         }
@@ -642,6 +645,9 @@ page 32 (
             template: @/blank-with-attributes
             templateOptions: #DEFAULT#
             cssClasses: hlc-left
+        }
+        messages {
+            whenNoDataFound: Every farm growing this crop nearby qualifies for this order.
         }
         componentAppearance {
             display: report
