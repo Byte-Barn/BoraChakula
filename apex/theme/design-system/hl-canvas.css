@@ -299,6 +299,7 @@ body.hlc-phone .hlc-phone-card .t-Form-itemWrapper > .apex-item-text, body.hlc-p
 body.hlc-phone .hlc-phone-card .t-Form-itemWrapper > .apex-item-textarea, body.hlc-phone .hlc-phone-card .t-Form-itemWrapper > .apex-item-datepicker { flex: 1 1 auto; width: 100%; }
 body.hlc-phone .hlc-phone-card .apex-item-datepicker input { width: 100%; }
 /* Tablet and desktop: a wider column, rounded photo header and a floating tab bar instead of a phone mock-up */
+.hlc-farm-head-in { justify-content: space-between; }
 @media (min-width: 768px) {
   body.hlc-phone .t-Body-contentInner, .hlc-bottom-nav { max-width: 720px; }
   body.hlc-phone .t-Body-contentInner { padding-top: 24px; }
@@ -326,6 +327,9 @@ body.hlc-phone .hlc-appnav { display: none; }
   /* spanning many rows spreads the tall form's height thinly, so the left cards stay packed */
   body.hlc-phone .t-Body-contentInner > .hlc-farm-side { grid-column: 2; grid-row: 2 / span 12; position: sticky; top: 24px; }
   body.hlc-phone .hlc-farm-head header { height: 240px !important; }
+  /* the sidebar already has the logo and Sign out */
+  body.hlc-phone .hlc-farm-topbar { display: none !important; }
+  body.hlc-phone .hlc-farm-head-in { justify-content: flex-end; }
   html:has(body.hlc-phone) { scroll-padding-bottom: 12px; }
 }
 
