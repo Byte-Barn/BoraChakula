@@ -121,7 +121,7 @@ page 42 (
             type: sqlQuery
             sqlQuery:
                 ```sql
-                select m.LABEL                              as LABEL
+                select case m.METRIC_KEY when 'INCOME_UPLIFT' then 'Farmer income uplift' else m.LABEL end as LABEL
                      , to_char(m.VALUE, 'FM999G999G990')    as VALUE_LABEL
                      , m.UNIT                               as UNIT
                      , m.PROVENANCE                         as PROVENANCE
