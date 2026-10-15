@@ -28,6 +28,13 @@ page 50 (
               function update() { header.classList.toggle('is-top', window.scrollY < 8); }
               update();
               window.addEventListener('scroll', update, { passive: true });
+              // The phone menu of section links closes after a choice, a click elsewhere or Escape
+              var menu = header.querySelector('.hlc-site-menu');
+              if (menu) {
+                menu.querySelectorAll('a').forEach(function (a) { a.addEventListener('click', function () { menu.open = false; }); });
+                document.addEventListener('click', function (e) { if (!menu.contains(e.target)) { menu.open = false; } });
+                document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && menu.open) { menu.open = false; menu.querySelector('summary').focus(); } });
+              }
             })();
             ```
     }
@@ -41,7 +48,7 @@ page 50 (
         source {
             htmlCode:
                 ```html
-                <div class="hlc-root hlc-on-dark"><header class="hlc-site-bar hlc-pad"><div class="hlc-site-bar-in"><a class="hl-logo hl-logo-inverse" href="f?p=&APP_ID.:50:&SESSION." aria-label="HarvestLink home"><svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true" focusable="false"><path d="M16 29C8 26 3.5 18.5 4.5 8c8 2 12.5 8 11.5 21z" fill="currentColor"></path><path d="M16 29c8-3 12.5-10.5 11.5-21-8 2-12.5 8-11.5 21z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"></path><circle cx="16" cy="4.5" r="2.75" fill="currentColor"></circle></svg><span><span class="hl-logo-word" style="font-size:22px;line-height:24px;display:block">HarvestLink</span><span class="hl-logo-by">by Bora Chakula</span></span></a><nav class="hlc-topnav" aria-label="Main"><a href="#how">How it works</a><a href="#farmers">For farmers</a><a href="#buyers">For buyers</a><a href="#impact">Our impact</a></nav><div class="hlc-site-actions"><a class="hl-btn hl-btn-secondary hlc-wide-only" href="f?p=&APP_ID.:9000:&SESSION.">Farmer sign in</a><a class="hl-btn hl-btn-secondary hlc-wide-only" href="f?p=&APP_ID.:9000:&SESSION.">Buyer sign in</a><a class="hl-btn hl-btn-secondary hlc-narrow-only" href="f?p=&APP_ID.:9000:&SESSION.">Sign in</a><a class="hl-btn hl-btn-primary hlc-site-post" href="f?p=&APP_ID.:31:&SESSION.">Post a demand</a></div></div></header></div>
+                <div class="hlc-root hlc-on-dark"><header class="hlc-site-bar hlc-pad"><div class="hlc-site-bar-in"><a class="hl-logo hl-logo-inverse" href="f?p=&APP_ID.:50:&SESSION." aria-label="HarvestLink home"><svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true" focusable="false"><path d="M16 29C8 26 3.5 18.5 4.5 8c8 2 12.5 8 11.5 21z" fill="currentColor"></path><path d="M16 29c8-3 12.5-10.5 11.5-21-8 2-12.5 8-11.5 21z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"></path><circle cx="16" cy="4.5" r="2.75" fill="currentColor"></circle></svg><span><span class="hl-logo-word" style="font-size:22px;line-height:24px;display:block">HarvestLink</span><span class="hl-logo-by">by Bora Chakula</span></span></a><nav class="hlc-topnav" aria-label="Main"><a href="#how">How it works</a><a href="#farmers">For farmers</a><a href="#buyers">For buyers</a><a href="#impact">Our impact</a></nav><div class="hlc-site-actions"><details class="hlc-site-menu"><summary><svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h11"></path></svg><span class="hl-sr">Page sections</span></summary><nav aria-label="Page sections"><a href="#how">How it works</a><a href="#farmers">For farmers</a><a href="#buyers">For buyers</a><a href="#impact">Our impact</a></nav></details><a class="hl-btn hl-btn-secondary hlc-wide-only" href="f?p=&APP_ID.:9000:&SESSION.">Farmer sign in</a><a class="hl-btn hl-btn-secondary hlc-wide-only" href="f?p=&APP_ID.:9000:&SESSION.">Buyer sign in</a><a class="hl-btn hl-btn-secondary hlc-narrow-only" href="f?p=&APP_ID.:9000:&SESSION.">Sign in</a><a class="hl-btn hl-btn-primary hlc-site-post" href="f?p=&APP_ID.:31:&SESSION.">Post a demand</a></div></div></header></div>
                 ```
         }
         layout {
